@@ -1,0 +1,28 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@import "./themes/default.css";
+@import "./typography.css";
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+
+    line-height: 1.75;
+    font-feature-settings: "pkna";
+    font-size: 16px;
+
+    @media (width < 48rem) {
+      font-size: 14px;
+    }
+  }
+
+  body {
+    @apply bg-background text-foreground;
+
+    scrollbar-gutter: stable;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    line-break: strict;
+  }
+}

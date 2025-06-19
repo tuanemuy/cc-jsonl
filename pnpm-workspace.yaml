@@ -1,0 +1,7 @@
+ignoredBuiltDependencies:
+  - bcrypt
+
+onlyBuiltDependencies:
+  - '@tailwindcss/oxide'
+  - esbuild
+  - sharp
