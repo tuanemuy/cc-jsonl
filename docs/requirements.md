@@ -19,8 +19,8 @@ Claude Codeのチャットログを監視・保存し、Webインターフェー
 ### 3.1 チャットログ監視サービス
 
 #### 3.1.1 ファイル監視機能
-- **対象ファイルパターン**: `${target}/${projectName}/${sessionId}.json*`
-- **監視対象**: Claude Codeのチャットログファイル
+- **対象ファイルパターン**: `${target}/${projectName}/${sessionId}.jsonl`
+- **監視対象**: Claude Codeのチャットログファイル（JSON Lines形式）
 - **監視方式**: リアルタイムファイル監視
 - **処理内容**: 新規ファイル作成・更新の検知
 
