@@ -74,23 +74,37 @@ export class DrizzleSqliteMessageRepository implements MessageRepository {
     const limit = pagination.limit;
     const offset = (pagination.page - 1) * pagination.limit;
 
-    const filters = [
-      filter?.sessionId ? eq(messages.sessionId, filter.sessionId) : undefined,
-      filter?.role ? eq(messages.role, filter.role) : undefined,
-    ].filter((filter) => filter !== undefined);
+    const conditions = [];
+    if (filter?.sessionId) {
+      conditions.push(eq(messages.sessionId, filter.sessionId));
+    }
+    if (filter?.role) {
+      conditions.push(eq(messages.role, filter.role));
+    }
 
     try {
+      let whereClause = undefined;
+      if (conditions.length === 1) {
+        whereClause = conditions[0];
+      } else if (conditions.length > 1) {
+        whereClause = and(...conditions);
+      }
+
       const [items, countResult] = await Promise.all([
-        this.db
-          .select()
-          .from(messages)
-          .where(and(...filters))
-          .limit(limit)
-          .offset(offset),
-        this.db
-          .select({ count: sql`count(*)` })
-          .from(messages)
-          .where(and(...filters)),
+        whereClause
+          ? this.db
+              .select()
+              .from(messages)
+              .where(whereClause)
+              .limit(limit)
+              .offset(offset)
+          : this.db.select().from(messages).limit(limit).offset(offset),
+        whereClause
+          ? this.db
+              .select({ count: sql<number>`count(*)` })
+              .from(messages)
+              .where(whereClause)
+          : this.db.select({ count: sql<number>`count(*)` }).from(messages),
       ]);
 
       const validItems = items

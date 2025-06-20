@@ -16,6 +16,16 @@ export function getDatabase(fileName: string) {
   });
 }
 
+export function getLocalDatabase(fileName: string) {
+  const filePath = path.resolve(fileName);
+  return drizzle({
+    client: createClient({
+      url: `file:${filePath}`,
+    }),
+    schema,
+  });
+}
+
 interface DatabaseError {
   code: string;
 }

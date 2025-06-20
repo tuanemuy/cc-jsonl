@@ -74,22 +74,34 @@ export class DrizzleSqliteSessionRepository implements SessionRepository {
     const limit = pagination.limit;
     const offset = (pagination.page - 1) * pagination.limit;
 
-    const filters = [
-      filter?.projectId ? eq(sessions.projectId, filter.projectId) : undefined,
-    ].filter((filter) => filter !== undefined);
+    const conditions = [];
+    if (filter?.projectId) {
+      conditions.push(eq(sessions.projectId, filter.projectId));
+    }
 
     try {
+      let whereClause = undefined;
+      if (conditions.length === 1) {
+        whereClause = conditions[0];
+      } else if (conditions.length > 1) {
+        whereClause = and(...conditions);
+      }
+
       const [items, countResult] = await Promise.all([
-        this.db
-          .select()
-          .from(sessions)
-          .where(and(...filters))
-          .limit(limit)
-          .offset(offset),
-        this.db
-          .select({ count: sql`count(*)` })
-          .from(sessions)
-          .where(and(...filters)),
+        whereClause
+          ? this.db
+              .select()
+              .from(sessions)
+              .where(whereClause)
+              .limit(limit)
+              .offset(offset)
+          : this.db.select().from(sessions).limit(limit).offset(offset),
+        whereClause
+          ? this.db
+              .select({ count: sql<number>`count(*)` })
+              .from(sessions)
+              .where(whereClause)
+          : this.db.select({ count: sql<number>`count(*)` }).from(sessions),
       ]);
 
       const validItems = items

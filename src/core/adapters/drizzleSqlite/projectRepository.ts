@@ -125,23 +125,37 @@ export class DrizzleSqliteProjectRepository implements ProjectRepository {
     const limit = pagination.limit;
     const offset = (pagination.page - 1) * pagination.limit;
 
-    const filters = [
-      filter?.name ? like(projects.name, `%${filter.name}%`) : undefined,
-      filter?.path ? like(projects.path, `%${filter.path}%`) : undefined,
-    ].filter((filter) => filter !== undefined);
+    const conditions = [];
+    if (filter?.name) {
+      conditions.push(like(projects.name, `%${filter.name}%`));
+    }
+    if (filter?.path) {
+      conditions.push(like(projects.path, `%${filter.path}%`));
+    }
 
     try {
+      let whereClause = undefined;
+      if (conditions.length === 1) {
+        whereClause = conditions[0];
+      } else if (conditions.length > 1) {
+        whereClause = and(...conditions);
+      }
+
       const [items, countResult] = await Promise.all([
-        this.db
-          .select()
-          .from(projects)
-          .where(and(...filters))
-          .limit(limit)
-          .offset(offset),
-        this.db
-          .select({ count: sql`count(*)` })
-          .from(projects)
-          .where(and(...filters)),
+        whereClause
+          ? this.db
+              .select()
+              .from(projects)
+              .where(whereClause)
+              .limit(limit)
+              .offset(offset)
+          : this.db.select().from(projects).limit(limit).offset(offset),
+        whereClause
+          ? this.db
+              .select({ count: sql<number>`count(*)` })
+              .from(projects)
+              .where(whereClause)
+          : this.db.select({ count: sql<number>`count(*)` }).from(projects),
       ]);
 
       const validItems = items
