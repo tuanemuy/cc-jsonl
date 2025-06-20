@@ -3,6 +3,7 @@ import { DrizzleSqliteMessageRepository } from "@/core/adapters/drizzleSqlite/me
 import { DrizzleSqliteProjectRepository } from "@/core/adapters/drizzleSqlite/projectRepository";
 import * as schema from "@/core/adapters/drizzleSqlite/schema";
 import { DrizzleSqliteSessionRepository } from "@/core/adapters/drizzleSqlite/sessionRepository";
+import { MockClaudeService } from "@/core/adapters/mock/claudeService";
 import type { Context } from "@/core/application/context";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
@@ -48,6 +49,7 @@ export function getWatcherContext(): { context: Context; targetDir: string } {
     projectRepository: new DrizzleSqliteProjectRepository(db),
     sessionRepository: new DrizzleSqliteSessionRepository(db),
     messageRepository: new DrizzleSqliteMessageRepository(db),
+    claudeService: new MockClaudeService(),
   };
 
   return {

@@ -110,8 +110,8 @@ async function ensureSessionExists(
 
   if (!sessionExists) {
     const result = await createSession(context, {
-      projectId: project.id,
       id: brandedSessionId,
+      projectId: project.id,
     });
     if (result.isErr()) {
       throw new Error(`Failed to create session: ${result.error.message}`);
