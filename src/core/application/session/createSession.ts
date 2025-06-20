@@ -8,9 +8,11 @@ import { validate } from "@/lib/validation";
 import { type Result, err } from "neverthrow";
 import type { Context } from "../context";
 
+export type CreateSessionInput = CreateSessionParams;
+
 export async function createSession(
   context: Context,
-  input: CreateSessionParams,
+  input: CreateSessionInput,
 ): Promise<Result<Session, ApplicationError>> {
   const parseResult = validate(createSessionParamsSchema, input);
 

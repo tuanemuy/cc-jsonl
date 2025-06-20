@@ -8,6 +8,8 @@ import { validate } from "@/lib/validation";
 import { type Result, err } from "neverthrow";
 import type { Context } from "../context";
 
+export type { ListMessageQuery };
+
 export async function listMessages(
   context: Context,
   query: ListMessageQuery,

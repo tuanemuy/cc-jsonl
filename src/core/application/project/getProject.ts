@@ -6,19 +6,27 @@ import {
 import { ApplicationError } from "@/lib/error";
 import { validate } from "@/lib/validation";
 import { type Result, err } from "neverthrow";
+import { z } from "zod/v4";
 import type { Context } from "../context";
+
+export const getProjectInputSchema = z.object({
+  id: projectIdSchema,
+});
+export type GetProjectInput = z.infer<typeof getProjectInputSchema>;
 
 export async function getProject(
   context: Context,
-  id: ProjectId,
+  input: GetProjectInput,
 ): Promise<Result<Project | null, ApplicationError>> {
-  const parseResult = validate(projectIdSchema, id);
+  const parseResult = validate(getProjectInputSchema, input);
 
   if (parseResult.isErr()) {
-    return err(new ApplicationError("Invalid project ID", parseResult.error));
+    return err(
+      new ApplicationError("Invalid project input", parseResult.error),
+    );
   }
 
-  const result = await context.projectRepository.findById(parseResult.value);
+  const result = await context.projectRepository.findById(parseResult.value.id);
   return result.mapErr(
     (error) => new ApplicationError("Failed to get project", error),
   );

@@ -8,9 +8,11 @@ import { validate } from "@/lib/validation";
 import { type Result, err } from "neverthrow";
 import type { Context } from "../context";
 
+export type CreateProjectInput = CreateProjectParams;
+
 export async function createProject(
   context: Context,
-  input: CreateProjectParams,
+  input: CreateProjectInput,
 ): Promise<Result<Project, ApplicationError>> {
   const parseResult = validate(createProjectParamsSchema, input);
 
