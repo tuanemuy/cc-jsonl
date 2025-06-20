@@ -1,3 +1,4 @@
+import { AnthropicClaudeService } from "@/core/adapters/anthropic/claudeService";
 import type { Database } from "@/core/adapters/drizzleSqlite/client";
 import { DrizzleSqliteMessageRepository } from "@/core/adapters/drizzleSqlite/messageRepository";
 import { DrizzleSqliteProjectRepository } from "@/core/adapters/drizzleSqlite/projectRepository";
@@ -12,6 +13,7 @@ export const envSchema = z.object({
   DATABASE_FILE_NAME: z.string().optional(),
   TURSO_DATABASE_URL: z.string().optional(),
   TURSO_AUTH_TOKEN: z.string().optional(),
+  ANTHROPIC_API_KEY: z.string(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -47,6 +49,7 @@ function getContext(): Context {
     projectRepository: new DrizzleSqliteProjectRepository(db),
     sessionRepository: new DrizzleSqliteSessionRepository(db),
     messageRepository: new DrizzleSqliteMessageRepository(db),
+    claudeService: new AnthropicClaudeService(env.data.ANTHROPIC_API_KEY),
   };
 }
 
