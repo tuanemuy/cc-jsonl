@@ -1,5 +1,6 @@
 import { getProjectAction } from "@/actions/project";
 import { listSessionsAction } from "@/actions/session";
+import { NewChatButton } from "@/app/components/project/NewChatButton";
 import { projectIdSchema } from "@/core/domain/project/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -47,7 +48,10 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           </div>
 
           <div className="grid gap-4">
-            <h2 className="text-xl font-semibold">Sessions</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Sessions</h2>
+              <NewChatButton projectId={project.id} />
+            </div>
             {sessions.items.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <p>No sessions found for this project.</p>
