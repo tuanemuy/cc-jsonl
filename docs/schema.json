@@ -134,7 +134,16 @@
           "type": "string"
         }
       },
-      "required": ["uuid", "parentUuid", "timestamp", "isSidechain", "userType", "cwd", "sessionId", "version"]
+      "required": [
+        "uuid",
+        "parentUuid",
+        "timestamp",
+        "isSidechain",
+        "userType",
+        "cwd",
+        "sessionId",
+        "version"
+      ]
     },
     "UserMessage": {
       "type": "object",
@@ -267,7 +276,12 @@
           ]
         }
       },
-      "required": ["input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens"],
+      "required": [
+        "input_tokens",
+        "cache_creation_input_tokens",
+        "cache_read_input_tokens",
+        "output_tokens"
+      ],
       "additionalProperties": false
     },
     "ToolUseResult": {
@@ -325,7 +339,13 @@
                   "type": "number"
                 }
               },
-              "required": ["filePath", "content", "numLines", "startLine", "totalLines"],
+              "required": [
+                "filePath",
+                "content",
+                "numLines",
+                "startLine",
+                "totalLines"
+              ],
               "additionalProperties": false
             }
           },
@@ -648,7 +668,14 @@
               "type": "string"
             }
           },
-          "required": ["bytes", "code", "codeText", "result", "durationMs", "url"],
+          "required": [
+            "bytes",
+            "code",
+            "codeText",
+            "result",
+            "durationMs",
+            "url"
+          ],
           "additionalProperties": false
         },
         {
@@ -1330,7 +1357,13 @@
         },
         "error_code": {
           "type": "string",
-          "enum": ["invalid_tool_input", "unavailable", "max_uses_exceeded", "too_many_requests", "query_too_long"]
+          "enum": [
+            "invalid_tool_input",
+            "unavailable",
+            "max_uses_exceeded",
+            "too_many_requests",
+            "query_too_long"
+          ]
         }
       },
       "required": ["type", "error_code"],
@@ -1529,7 +1562,14 @@
           "type": "number"
         }
       },
-      "required": ["type", "cited_text", "document_index", "document_title", "start_char_index", "end_char_index"],
+      "required": [
+        "type",
+        "cited_text",
+        "document_index",
+        "document_title",
+        "start_char_index",
+        "end_char_index"
+      ],
       "additionalProperties": false
     },
     "CitationPageLocation": {
@@ -1555,7 +1595,14 @@
           "type": "number"
         }
       },
-      "required": ["type", "cited_text", "document_index", "document_title", "start_page_number", "end_page_number"],
+      "required": [
+        "type",
+        "cited_text",
+        "document_index",
+        "document_title",
+        "start_page_number",
+        "end_page_number"
+      ],
       "additionalProperties": false
     },
     "CitationContentBlockLocation": {
@@ -1581,7 +1628,14 @@
           "type": "number"
         }
       },
-      "required": ["type", "cited_text", "document_index", "document_title", "start_block_index", "end_block_index"],
+      "required": [
+        "type",
+        "cited_text",
+        "document_index",
+        "document_title",
+        "start_block_index",
+        "end_block_index"
+      ],
       "additionalProperties": false
     },
     "CitationWebSearchResultLocation": {
@@ -1630,7 +1684,14 @@
           "type": "number"
         }
       },
-      "required": ["type", "cited_text", "document_index", "document_title", "start_char_index", "end_char_index"],
+      "required": [
+        "type",
+        "cited_text",
+        "document_index",
+        "document_title",
+        "start_char_index",
+        "end_char_index"
+      ],
       "additionalProperties": false
     },
     "CitationPageLocationParam": {
@@ -1656,7 +1717,14 @@
           "type": "number"
         }
       },
-      "required": ["type", "cited_text", "document_index", "document_title", "start_page_number", "end_page_number"],
+      "required": [
+        "type",
+        "cited_text",
+        "document_index",
+        "document_title",
+        "start_page_number",
+        "end_page_number"
+      ],
       "additionalProperties": false
     },
     "CitationContentBlockLocationParam": {
@@ -1682,7 +1750,14 @@
           "type": "number"
         }
       },
-      "required": ["type", "cited_text", "document_index", "document_title", "start_block_index", "end_block_index"],
+      "required": [
+        "type",
+        "cited_text",
+        "document_index",
+        "document_title",
+        "start_block_index",
+        "end_block_index"
+      ],
       "additionalProperties": false
     },
     "CitationWebSearchResultLocationParam": {
@@ -2217,7 +2292,13 @@
           ]
         }
       },
-      "required": ["cache_creation_input_tokens", "cache_read_input_tokens", "input_tokens", "output_tokens", "server_tool_use"],
+      "required": [
+        "cache_creation_input_tokens",
+        "cache_read_input_tokens",
+        "input_tokens",
+        "output_tokens",
+        "server_tool_use"
+      ],
       "additionalProperties": false
     },
     "RawMessageDeltaEvent": {
@@ -2232,7 +2313,15 @@
           "properties": {
             "stop_reason": {
               "type": ["string", "null"],
-              "enum": ["end_turn", "max_tokens", "stop_sequence", "tool_use", "pause_turn", "refusal", null]
+              "enum": [
+                "end_turn",
+                "max_tokens",
+                "stop_sequence",
+                "tool_use",
+                "pause_turn",
+                "refusal",
+                null
+              ]
             },
             "stop_sequence": {
               "type": ["string", "null"]
