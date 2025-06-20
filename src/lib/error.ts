@@ -16,6 +16,10 @@ export class ApplicationError extends AnyError {
   override readonly name: string = "ApplicationError";
 }
 
+export class ClaudeError extends AnyError {
+  override readonly name: string = "ClaudeError";
+}
+
 export function isError(error: unknown): error is AnyError | Error {
   return error instanceof Error || error instanceof AnyError;
 }
