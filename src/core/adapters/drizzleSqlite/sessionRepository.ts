@@ -20,7 +20,8 @@ export class DrizzleSqliteSessionRepository implements SessionRepository {
     params: CreateSessionParams,
   ): Promise<Result<Session, RepositoryError>> {
     try {
-      const result = await this.db.insert(sessions).values(params).returning();
+      const values = params.id ? params : { projectId: params.projectId };
+      const result = await this.db.insert(sessions).values(values).returning();
 
       const session = result[0];
       if (!session) {
