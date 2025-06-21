@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { beforeEach, describe, expect, it } from "vitest";
 import { MockClaudeService } from "@/core/adapters/mock/claudeService";
 import { MockLogParser } from "@/core/adapters/mock/logParser";
 import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
@@ -11,7 +14,6 @@ import type {
   ParsedLogFile,
   UserLog,
 } from "@/core/domain/watcher/types";
-import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
 import { processLogFile } from "./processLogFile";
 
@@ -278,7 +280,23 @@ describe("processLogFile", () => {
         filePath,
         projectName: "test-project",
         sessionId: "test-session",
-        entries: [],
+        entries: [
+          {
+            type: "user",
+            uuid: "test-uuid",
+            parentUuid: null,
+            timestamp: "2024-01-01T00:00:00Z",
+            isSidechain: false,
+            userType: "external",
+            cwd: "/workspace",
+            sessionId: "test-session",
+            version: "1.0.0",
+            message: {
+              role: "user",
+              content: "Hello",
+            },
+          },
+        ],
       };
 
       mockLogParser.setParsedFile(filePath, parsedFile);
@@ -302,7 +320,23 @@ describe("processLogFile", () => {
         filePath,
         projectName: "test-project",
         sessionId: "test-session",
-        entries: [],
+        entries: [
+          {
+            type: "user",
+            uuid: "test-uuid",
+            parentUuid: null,
+            timestamp: "2024-01-01T00:00:00Z",
+            isSidechain: false,
+            userType: "external",
+            cwd: "/workspace",
+            sessionId: "test-session",
+            version: "1.0.0",
+            message: {
+              role: "user",
+              content: "Hello",
+            },
+          },
+        ],
       };
 
       mockLogParser.setParsedFile(filePath, parsedFile);
@@ -406,6 +440,240 @@ describe("processLogFile", () => {
       expect(messages.isOk()).toBe(true);
       if (messages.isOk()) {
         expect(messages.value.items).toHaveLength(0);
+      }
+    });
+  });
+
+  describe("サンプルデータを使用したテスト", () => {
+    it("実際のサンプルファイルを処理できる", async () => {
+      // Arrange
+      const sampleFilePath = resolve(
+        process.cwd(),
+        "samples/0383fc27-750b-4b34-87a6-534df55b2038.jsonl",
+      );
+      const sampleContent = readFileSync(sampleFilePath, "utf-8");
+      const lines = sampleContent
+        .trim()
+        .split("\n")
+        .filter((line) => line.trim());
+
+      // 実際のサンプルデータから最初の数エントリを解析
+      const entries = lines.slice(1, 5).map((line) => JSON.parse(line)); // summaryを除いて4エントリ
+
+      const parsedFile: ParsedLogFile = {
+        filePath: sampleFilePath,
+        projectName: "kissa", // サンプルファイルから読み取れるプロジェクト名
+        sessionId: "0383fc27-750b-4b34-87a6-534df55b2038",
+        entries: entries,
+      };
+
+      mockLogParser.setParsedFile(sampleFilePath, parsedFile);
+
+      // Act
+      const result = await processLogFile(context, {
+        filePath: sampleFilePath,
+      });
+
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.entriesProcessed).toBe(4);
+      }
+
+      // プロジェクトが作成されたことを確認
+      const projects = await mockProjectRepository.list({
+        pagination: { page: 1, limit: 10, order: "asc", orderBy: "createdAt" },
+      });
+      expect(projects.isOk()).toBe(true);
+      if (projects.isOk()) {
+        expect(projects.value.items).toHaveLength(1);
+        expect(projects.value.items[0].name).toBe("kissa");
+      }
+
+      // セッションが作成されたことを確認
+      if (projects.isOk()) {
+        const sessions = await mockSessionRepository.list({
+          pagination: {
+            page: 1,
+            limit: 10,
+            order: "asc",
+            orderBy: "createdAt",
+          },
+          filter: { projectId: projects.value.items[0].id },
+        });
+        expect(sessions.isOk()).toBe(true);
+        if (sessions.isOk()) {
+          expect(sessions.value.items).toHaveLength(1);
+          expect(sessions.value.items[0].id).toBe(
+            sessionIdSchema.parse("0383fc27-750b-4b34-87a6-534df55b2038"),
+          );
+        }
+      }
+
+      // メッセージが保存されたことを確認
+      const messages = await mockMessageRepository.list({
+        pagination: { page: 1, limit: 10, order: "asc", orderBy: "createdAt" },
+        filter: {
+          sessionId: sessionIdSchema.parse(
+            "0383fc27-750b-4b34-87a6-534df55b2038",
+          ),
+        },
+      });
+      expect(messages.isOk()).toBe(true);
+      if (messages.isOk()) {
+        expect(messages.value.items).toHaveLength(4); // lines.slice(1, 5)で4つのエントリを処理
+      }
+    });
+
+    it("複数の異なるサンプルファイルを処理できる", async () => {
+      // Arrange
+      const sampleFiles = [
+        "samples/044471d0-cd97-458f-8343-e78160697ad0.jsonl",
+        "samples/0abf5859-5a69-4c53-9a04-31c40ca8d3b9.jsonl",
+      ];
+
+      let totalEntriesProcessed = 0;
+
+      for (const sampleFile of sampleFiles) {
+        const fullPath = resolve(process.cwd(), sampleFile);
+        const content = readFileSync(fullPath, "utf-8");
+        const lines = content
+          .trim()
+          .split("\n")
+          .filter((line) => line.trim());
+
+        // 最初の数エントリを処理（summaryを除く）
+        const entries = lines.slice(1, 4).map((line) => JSON.parse(line));
+        const sessionId =
+          fullPath.split("/").pop()?.replace(".jsonl", "") || "unknown";
+
+        const parsedFile: ParsedLogFile = {
+          filePath: fullPath,
+          projectName: "test-project",
+          sessionId: sessionId,
+          entries: entries,
+        };
+
+        mockLogParser.setParsedFile(fullPath, parsedFile);
+
+        // Act
+        const result = await processLogFile(context, { filePath: fullPath });
+
+        // Assert
+        expect(result.isOk()).toBe(true);
+        if (result.isOk()) {
+          totalEntriesProcessed += result.value.entriesProcessed;
+        }
+      }
+
+      expect(totalEntriesProcessed).toBeGreaterThan(0);
+
+      // プロジェクトが作成されたことを確認
+      const projects = await mockProjectRepository.list({
+        pagination: { page: 1, limit: 10, order: "asc", orderBy: "createdAt" },
+      });
+      expect(projects.isOk()).toBe(true);
+      if (projects.isOk()) {
+        expect(projects.value.items).toHaveLength(1);
+        expect(projects.value.items[0].name).toBe("test-project");
+      }
+
+      // 複数のセッションが作成されたことを確認
+      if (projects.isOk()) {
+        const sessions = await mockSessionRepository.list({
+          pagination: {
+            page: 1,
+            limit: 10,
+            order: "asc",
+            orderBy: "createdAt",
+          },
+          filter: { projectId: projects.value.items[0].id },
+        });
+        expect(sessions.isOk()).toBe(true);
+        if (sessions.isOk()) {
+          expect(sessions.value.items).toHaveLength(2);
+        }
+      }
+    });
+
+    it("大きなサンプルファイルのパフォーマンステスト", async () => {
+      // Arrange
+      const sampleFilePath = resolve(
+        process.cwd(),
+        "samples/0383fc27-750b-4b34-87a6-534df55b2038.jsonl",
+      );
+      const sampleContent = readFileSync(sampleFilePath, "utf-8");
+      const lines = sampleContent
+        .trim()
+        .split("\n")
+        .filter((line) => line.trim());
+
+      // 全エントリを処理（summaryを除く）
+      const entries = lines.slice(1).map((line) => JSON.parse(line));
+
+      const parsedFile: ParsedLogFile = {
+        filePath: sampleFilePath,
+        projectName: "large-project",
+        sessionId: "0383fc27-750b-4b34-87a6-534df55b2038",
+        entries: entries,
+      };
+
+      mockLogParser.setParsedFile(sampleFilePath, parsedFile);
+
+      const startTime = Date.now();
+
+      // Act
+      const result = await processLogFile(context, {
+        filePath: sampleFilePath,
+      });
+
+      const endTime = Date.now();
+      const processingTime = endTime - startTime;
+
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.entriesProcessed).toBe(entries.length);
+        // パフォーマンス要件：1秒以内で処理完了
+        expect(processingTime).toBeLessThan(1000);
+      }
+    });
+
+    it("不正な形式のサンプルデータでもエラー処理できる", async () => {
+      // Arrange
+      const invalidEntries: unknown[] = [
+        // 不正なJSONオブジェクト
+        { type: "invalid", data: "corrupted" },
+        // 必要なフィールドが欠けている
+        { type: "user" },
+        // timestampが不正
+        {
+          type: "user",
+          uuid: "test-uuid",
+          timestamp: "invalid-date",
+          sessionId: "test-session",
+          message: { role: "user", content: "test" },
+        },
+      ];
+
+      const parsedFile = {
+        filePath: "/path/to/invalid/file.jsonl",
+        projectName: "invalid-project",
+        sessionId: "invalid-session",
+        entries: invalidEntries,
+      } as ParsedLogFile;
+
+      mockLogParser.setParsedFile("/path/to/invalid/file.jsonl", parsedFile);
+
+      // Act
+      const result = await processLogFile(context, {
+        filePath: "/path/to/invalid/file.jsonl",
+      });
+
+      // Assert
+      expect(result.isOk()).toBe(true); // processLogFile は個別エントリのエラーを警告として処理
+      if (result.isOk()) {
+        expect(result.value.entriesProcessed).toBe(3); // 全エントリが処理されるが、無効なものは無視される
       }
     });
   });

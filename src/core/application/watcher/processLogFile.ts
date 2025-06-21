@@ -1,3 +1,5 @@
+import { err, ok, type Result } from "neverthrow";
+import { z } from "zod";
 import { type SessionId, sessionIdSchema } from "@/core/domain/session/types";
 import type { LogParser } from "@/core/domain/watcher/ports/logParser";
 import type {
@@ -6,8 +8,6 @@ import type {
   SystemLog,
   UserLog,
 } from "@/core/domain/watcher/types";
-import { type Result, err, ok } from "neverthrow";
-import { z } from "zod";
 import type { Context } from "../context";
 import { createProject } from "../project";
 import { createSession } from "../session";
@@ -250,13 +250,20 @@ async function processMessageEntry(
 ): Promise<Result<void, ProcessLogFileError>> {
   let content: string | null = null;
 
-  if (entry.type === "user") {
+  if (entry.type === "user" && entry.message?.content) {
     content =
       typeof entry.message.content === "string"
         ? entry.message.content
         : JSON.stringify(entry.message.content);
-  } else if (entry.type === "assistant") {
+  } else if (entry.type === "assistant" && entry.message?.content) {
     content = JSON.stringify(entry.message.content);
+  }
+
+  if (!entry.message?.role) {
+    return err({
+      type: "PROCESS_LOG_FILE_ERROR",
+      message: `Invalid message entry: missing role for ${entry.type} entry`,
+    });
   }
 
   const result = await context.messageRepository.upsert({
