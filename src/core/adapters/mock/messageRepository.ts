@@ -29,6 +29,9 @@ export class MockMessageRepository implements MessageRepository {
       content: params.content,
       timestamp: params.timestamp,
       rawData: params.rawData,
+      uuid: params.uuid,
+      parentUuid: params.parentUuid,
+      cwd: params.cwd,
       createdAt: now,
       updatedAt: now,
     };
@@ -42,6 +45,45 @@ export class MockMessageRepository implements MessageRepository {
   ): Promise<Result<Message | null, RepositoryError>> {
     const message = this.messages.get(id);
     return ok(message || null);
+  }
+
+  async findByUuid(
+    uuid: string,
+  ): Promise<Result<Message | null, RepositoryError>> {
+    const message = Array.from(this.messages.values()).find(
+      (msg) => msg.uuid === uuid,
+    );
+    return ok(message || null);
+  }
+
+  async upsert(
+    params: CreateMessageParams,
+  ): Promise<Result<Message, RepositoryError>> {
+    const existingResult = await this.findByUuid(params.uuid);
+
+    if (existingResult.isErr()) {
+      return err(existingResult.error);
+    }
+
+    const existing = existingResult.value;
+
+    if (existing) {
+      const updatedMessage: Message = {
+        ...existing,
+        sessionId: params.sessionId,
+        role: params.role,
+        content: params.content,
+        timestamp: params.timestamp,
+        rawData: params.rawData,
+        parentUuid: params.parentUuid,
+        cwd: params.cwd,
+        updatedAt: new Date(),
+      };
+
+      this.messages.set(existing.id, updatedMessage);
+      return ok(updatedMessage);
+    }
+    return this.create(params);
   }
 
   async delete(id: MessageId): Promise<Result<void, RepositoryError>> {
