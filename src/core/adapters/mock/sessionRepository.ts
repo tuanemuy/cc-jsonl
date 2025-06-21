@@ -1,13 +1,13 @@
-import { ok, err, type Result } from "neverthrow";
+import type { ProjectId } from "@/core/domain/project/types";
 import type { SessionRepository } from "@/core/domain/session/ports/sessionRepository";
 import type {
-  Session,
-  SessionId,
   CreateSessionParams,
   ListSessionQuery,
+  Session,
+  SessionId,
 } from "@/core/domain/session/types";
-import type { ProjectId } from "@/core/domain/project/types";
 import { RepositoryError } from "@/lib/error";
+import { type Result, err, ok } from "neverthrow";
 import { v7 as uuidv7 } from "uuid";
 
 export class MockSessionRepository implements SessionRepository {
@@ -39,9 +39,20 @@ export class MockSessionRepository implements SessionRepository {
     return ok(session);
   }
 
-  async findById(id: SessionId): Promise<Result<Session | null, RepositoryError>> {
+  async findById(
+    id: SessionId,
+  ): Promise<Result<Session | null, RepositoryError>> {
     const session = this.sessions.get(id);
     return ok(session || null);
+  }
+
+  async delete(id: SessionId): Promise<Result<void, RepositoryError>> {
+    if (!this.sessions.has(id)) {
+      return err(new RepositoryError("Session not found"));
+    }
+
+    this.sessions.delete(id);
+    return ok(undefined);
   }
 
   async list(
@@ -52,12 +63,14 @@ export class MockSessionRepository implements SessionRepository {
     // Apply filters
     if (query.filter?.projectId) {
       filteredSessions = filteredSessions.filter(
-        (session) => session.projectId === query.filter!.projectId,
+        (session) => session.projectId === query.filter?.projectId,
       );
     }
 
     // Sort by createdAt (newest first)
-    filteredSessions.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    filteredSessions.sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    );
 
     const count = filteredSessions.length;
     const { limit, page } = query.pagination;
@@ -73,10 +86,10 @@ export class MockSessionRepository implements SessionRepository {
     const sessions = Array.from(this.sessions.values()).filter(
       (session) => session.projectId === projectId,
     );
-    
+
     // Sort by createdAt (newest first)
     sessions.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    
+
     return ok(sessions);
   }
 

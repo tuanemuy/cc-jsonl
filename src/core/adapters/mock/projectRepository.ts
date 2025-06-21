@@ -1,13 +1,13 @@
-import { ok, err, type Result } from "neverthrow";
 import type { ProjectRepository } from "@/core/domain/project/ports/projectRepository";
 import type {
+  CreateProjectParams,
+  ListProjectQuery,
   Project,
   ProjectId,
-  CreateProjectParams,
   UpdateProjectParams,
-  ListProjectQuery,
 } from "@/core/domain/project/types";
 import { RepositoryError } from "@/lib/error";
+import { type Result, err, ok } from "neverthrow";
 
 export class MockProjectRepository implements ProjectRepository {
   private projects: Map<ProjectId, Project> = new Map();
@@ -25,7 +25,9 @@ export class MockProjectRepository implements ProjectRepository {
     // Check if project with same path already exists
     for (const project of this.projects.values()) {
       if (project.path === params.path) {
-        return err(new RepositoryError("Project with this path already exists"));
+        return err(
+          new RepositoryError("Project with this path already exists"),
+        );
       }
     }
 
@@ -42,12 +44,16 @@ export class MockProjectRepository implements ProjectRepository {
     return ok(project);
   }
 
-  async findById(id: ProjectId): Promise<Result<Project | null, RepositoryError>> {
+  async findById(
+    id: ProjectId,
+  ): Promise<Result<Project | null, RepositoryError>> {
     const project = this.projects.get(id);
     return ok(project || null);
   }
 
-  async findByPath(path: string): Promise<Result<Project | null, RepositoryError>> {
+  async findByPath(
+    path: string,
+  ): Promise<Result<Project | null, RepositoryError>> {
     for (const project of this.projects.values()) {
       if (project.path === path) {
         return ok(project);
@@ -68,7 +74,9 @@ export class MockProjectRepository implements ProjectRepository {
     if (params.path) {
       for (const [id, project] of this.projects.entries()) {
         if (id !== params.id && project.path === params.path) {
-          return err(new RepositoryError("Project with this path already exists"));
+          return err(
+            new RepositoryError("Project with this path already exists"),
+          );
         }
       }
     }
@@ -100,19 +108,23 @@ export class MockProjectRepository implements ProjectRepository {
 
     // Apply filters
     if (query.filter?.name) {
+      const filterName = query.filter.name;
       filteredProjects = filteredProjects.filter((project) =>
-        project.name.toLowerCase().includes(query.filter!.name!.toLowerCase()),
+        project.name.toLowerCase().includes(filterName.toLowerCase()),
       );
     }
 
     if (query.filter?.path) {
+      const filterPath = query.filter.path;
       filteredProjects = filteredProjects.filter((project) =>
-        project.path.toLowerCase().includes(query.filter!.path!.toLowerCase()),
+        project.path.toLowerCase().includes(filterPath.toLowerCase()),
       );
     }
 
     // Sort by createdAt (newest first)
-    filteredProjects.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    filteredProjects.sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    );
 
     const count = filteredProjects.length;
     const { limit, page } = query.pagination;
