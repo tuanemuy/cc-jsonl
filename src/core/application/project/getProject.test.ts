@@ -1,12 +1,18 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { MockClaudeService } from "@/core/adapters/mock/claudeService";
+import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
 import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
-import { getProject, getProjectByPath } from "./getProject";
-import type { Context } from "../context";
-import type { GetProjectInput } from "./getProject";
+import { MockSessionRepository } from "@/core/adapters/mock/sessionRepository";
 import type { Project, ProjectId } from "@/core/domain/project/types";
+import { beforeEach, describe, expect, it } from "vitest";
+import type { Context } from "../context";
+import { getProject, getProjectByPath } from "./getProject";
+import type { GetProjectInput } from "./getProject";
 
 describe("getProject", () => {
   let mockProjectRepository: MockProjectRepository;
+  let mockSessionRepository: MockSessionRepository;
+  let mockMessageRepository: MockMessageRepository;
+  let mockClaudeService: MockClaudeService;
   let context: Context;
 
   const createTestProject = (
@@ -24,11 +30,14 @@ describe("getProject", () => {
 
   beforeEach(() => {
     mockProjectRepository = new MockProjectRepository();
+    mockSessionRepository = new MockSessionRepository();
+    mockMessageRepository = new MockMessageRepository();
+    mockClaudeService = new MockClaudeService();
     context = {
       projectRepository: mockProjectRepository,
-      sessionRepository: {} as any,
-      messageRepository: {} as any,
-      claudeService: {} as any,
+      sessionRepository: mockSessionRepository,
+      messageRepository: mockMessageRepository,
+      claudeService: mockClaudeService,
     };
   });
 
@@ -36,7 +45,11 @@ describe("getProject", () => {
     describe("正常系", () => {
       it("既存のプロジェクトを取得できる", async () => {
         // Arrange
-        const existingProject = createTestProject("test-id", "Test Project", "/test/path");
+        const existingProject = createTestProject(
+          "test-id",
+          "Test Project",
+          "/test/path",
+        );
         const mockRepo = new MockProjectRepository([existingProject]);
         context.projectRepository = mockRepo;
 
@@ -119,7 +132,11 @@ describe("getProject", () => {
       it("特殊文字を含むプロジェクトIDでプロジェクトを取得できる", async () => {
         // Arrange
         const specialId = "project-with-special-chars_123@example";
-        const project = createTestProject(specialId, "Special Project", "/special/path");
+        const project = createTestProject(
+          specialId,
+          "Special Project",
+          "/special/path",
+        );
         const mockRepo = new MockProjectRepository([project]);
         context.projectRepository = mockRepo;
 
@@ -155,6 +172,7 @@ describe("getProject", () => {
 
       it("idがnullではエラーになる", async () => {
         // Arrange
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
         const input = { id: null } as any;
 
         // Act
@@ -169,6 +187,7 @@ describe("getProject", () => {
 
       it("idが数値型ではエラーになる", async () => {
         // Arrange
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
         const input = { id: 123 } as any;
 
         // Act
@@ -199,6 +218,7 @@ describe("getProject", () => {
 
       it("idがオブジェクトではエラーになる", async () => {
         // Arrange
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
         const input = { id: {} } as any;
 
         // Act
@@ -213,6 +233,7 @@ describe("getProject", () => {
 
       it("idが配列ではエラーになる", async () => {
         // Arrange
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
         const input = { id: [] } as any;
 
         // Act
@@ -229,7 +250,11 @@ describe("getProject", () => {
     describe("境界値テスト", () => {
       it("最小文字数のIDでプロジェクトを取得できる", async () => {
         // Arrange
-        const project = createTestProject("a", "Single Char ID Project", "/single/path");
+        const project = createTestProject(
+          "a",
+          "Single Char ID Project",
+          "/single/path",
+        );
         const mockRepo = new MockProjectRepository([project]);
         context.projectRepository = mockRepo;
 
@@ -250,7 +275,11 @@ describe("getProject", () => {
       it("長いIDでプロジェクトを取得できる", async () => {
         // Arrange
         const longId = "a".repeat(1000);
-        const project = createTestProject(longId, "Long ID Project", "/long/path");
+        const project = createTestProject(
+          longId,
+          "Long ID Project",
+          "/long/path",
+        );
         const mockRepo = new MockProjectRepository([project]);
         context.projectRepository = mockRepo;
 
@@ -274,7 +303,11 @@ describe("getProject", () => {
     describe("正常系", () => {
       it("既存のパスでプロジェクトを取得できる", async () => {
         // Arrange
-        const existingProject = createTestProject("test-id", "Test Project", "/test/path");
+        const existingProject = createTestProject(
+          "test-id",
+          "Test Project",
+          "/test/path",
+        );
         const mockRepo = new MockProjectRepository([existingProject]);
         context.projectRepository = mockRepo;
 
@@ -330,7 +363,11 @@ describe("getProject", () => {
       it("絶対パスでプロジェクトを取得できる", async () => {
         // Arrange
         const absolutePath = "/home/user/projects/my-app";
-        const project = createTestProject("abs-id", "Absolute Path Project", absolutePath);
+        const project = createTestProject(
+          "abs-id",
+          "Absolute Path Project",
+          absolutePath,
+        );
         const mockRepo = new MockProjectRepository([project]);
         context.projectRepository = mockRepo;
 
@@ -347,7 +384,11 @@ describe("getProject", () => {
       it("相対パスでプロジェクトを取得できる", async () => {
         // Arrange
         const relativePath = "./relative/path";
-        const project = createTestProject("rel-id", "Relative Path Project", relativePath);
+        const project = createTestProject(
+          "rel-id",
+          "Relative Path Project",
+          relativePath,
+        );
         const mockRepo = new MockProjectRepository([project]);
         context.projectRepository = mockRepo;
 
@@ -364,7 +405,11 @@ describe("getProject", () => {
       it("特殊文字を含むパスでプロジェクトを取得できる", async () => {
         // Arrange
         const specialPath = "/path/with-special_chars@123/project";
-        const project = createTestProject("special-id", "Special Path Project", specialPath);
+        const project = createTestProject(
+          "special-id",
+          "Special Path Project",
+          specialPath,
+        );
         const mockRepo = new MockProjectRepository([project]);
         context.projectRepository = mockRepo;
 
@@ -381,7 +426,11 @@ describe("getProject", () => {
       it("スペースを含むパスでプロジェクトを取得できる", async () => {
         // Arrange
         const spacePath = "/path/with spaces/project";
-        const project = createTestProject("space-id", "Space Path Project", spacePath);
+        const project = createTestProject(
+          "space-id",
+          "Space Path Project",
+          spacePath,
+        );
         const mockRepo = new MockProjectRepository([project]);
         context.projectRepository = mockRepo;
 
@@ -398,7 +447,11 @@ describe("getProject", () => {
       it("日本語を含むパスでプロジェクトを取得できる", async () => {
         // Arrange
         const japanesePath = "/パス/日本語/プロジェクト";
-        const project = createTestProject("jp-id", "Japanese Path Project", japanesePath);
+        const project = createTestProject(
+          "jp-id",
+          "Japanese Path Project",
+          japanesePath,
+        );
         const mockRepo = new MockProjectRepository([project]);
         context.projectRepository = mockRepo;
 
@@ -433,8 +486,12 @@ describe("getProject", () => {
 
       it("長いパスでプロジェクトを取得できる", async () => {
         // Arrange
-        const longPath = "/" + "very-long-directory-name/".repeat(50) + "project";
-        const project = createTestProject("long-id", "Long Path Project", longPath);
+        const longPath = `/${"very-long-directory-name/".repeat(50)}project`;
+        const project = createTestProject(
+          "long-id",
+          "Long Path Project",
+          longPath,
+        );
         const mockRepo = new MockProjectRepository([project]);
         context.projectRepository = mockRepo;
 

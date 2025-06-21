@@ -1,20 +1,29 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { MockClaudeService } from "@/core/adapters/mock/claudeService";
+import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
 import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
-import { createProject } from "./createProject";
+import { MockSessionRepository } from "@/core/adapters/mock/sessionRepository";
+import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createProject } from "./createProject";
 import type { CreateProjectInput } from "./createProject";
 
 describe("createProject", () => {
   let mockProjectRepository: MockProjectRepository;
+  let mockSessionRepository: MockSessionRepository;
+  let mockMessageRepository: MockMessageRepository;
+  let mockClaudeService: MockClaudeService;
   let context: Context;
 
   beforeEach(() => {
     mockProjectRepository = new MockProjectRepository();
+    mockSessionRepository = new MockSessionRepository();
+    mockMessageRepository = new MockMessageRepository();
+    mockClaudeService = new MockClaudeService();
     context = {
       projectRepository: mockProjectRepository,
-      sessionRepository: {} as any,
-      messageRepository: {} as any,
-      claudeService: {} as any,
+      sessionRepository: mockSessionRepository,
+      messageRepository: mockMessageRepository,
+      claudeService: mockClaudeService,
     };
   });
 
@@ -196,6 +205,7 @@ describe("createProject", () => {
       const input = {
         name: null,
         path: "/path/to/project",
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
 
       // Act
@@ -213,6 +223,7 @@ describe("createProject", () => {
       const input = {
         name: "Test Project",
         path: null,
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
 
       // Act
@@ -230,6 +241,7 @@ describe("createProject", () => {
       const input = {
         name: 123,
         path: "/path/to/project",
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
 
       // Act
@@ -247,6 +259,7 @@ describe("createProject", () => {
       const input = {
         name: "Test Project",
         path: 123,
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
 
       // Act
@@ -265,7 +278,7 @@ describe("createProject", () => {
         name: "Existing Project",
         path: "/duplicate/path",
       };
-      
+
       const duplicateInput: CreateProjectInput = {
         name: "Duplicate Project",
         path: "/duplicate/path",
@@ -341,7 +354,7 @@ describe("createProject", () => {
 
     it("長いパスでプロジェクトを作成できる", async () => {
       // Arrange
-      const longPath = "/very/" + "long/".repeat(100) + "path";
+      const longPath = `/very/${"long/".repeat(100)}path`;
       const input: CreateProjectInput = {
         name: "Long Path Project",
         path: longPath,

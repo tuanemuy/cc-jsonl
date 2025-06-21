@@ -1,21 +1,30 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { MockClaudeService } from "@/core/adapters/mock/claudeService";
+import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
+import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
 import { MockSessionRepository } from "@/core/adapters/mock/sessionRepository";
-import { createSession } from "./createSession";
-import type { Context } from "../context";
-import type { CreateSessionInput } from "./createSession";
 import type { ProjectId, SessionId } from "@/core/domain/session/types";
+import { beforeEach, describe, expect, it } from "vitest";
+import type { Context } from "../context";
+import { createSession } from "./createSession";
+import type { CreateSessionInput } from "./createSession";
 
 describe("createSession", () => {
+  let mockProjectRepository: MockProjectRepository;
   let mockSessionRepository: MockSessionRepository;
+  let mockMessageRepository: MockMessageRepository;
+  let mockClaudeService: MockClaudeService;
   let context: Context;
 
   beforeEach(() => {
+    mockProjectRepository = new MockProjectRepository();
     mockSessionRepository = new MockSessionRepository();
+    mockMessageRepository = new MockMessageRepository();
+    mockClaudeService = new MockClaudeService();
     context = {
-      projectRepository: {} as any,
+      projectRepository: mockProjectRepository,
       sessionRepository: mockSessionRepository,
-      messageRepository: {} as any,
-      claudeService: {} as any,
+      messageRepository: mockMessageRepository,
+      claudeService: mockClaudeService,
     };
   });
 
@@ -200,6 +209,7 @@ describe("createSession", () => {
       // Arrange
       const input = {
         projectId: null,
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
 
       // Act
@@ -216,6 +226,7 @@ describe("createSession", () => {
       // Arrange
       const input = {
         projectId: 123,
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
 
       // Act
@@ -249,6 +260,7 @@ describe("createSession", () => {
       const input = {
         id: null,
         projectId: "test-project-id" as ProjectId,
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
 
       // Act
@@ -266,6 +278,7 @@ describe("createSession", () => {
       const input = {
         id: 123,
         projectId: "test-project-id" as ProjectId,
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
 
       // Act
@@ -324,6 +337,7 @@ describe("createSession", () => {
       // Arrange
       const input = {
         projectId: {},
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
 
       // Act
@@ -341,6 +355,7 @@ describe("createSession", () => {
       const input = {
         id: {},
         projectId: "test-project-id" as ProjectId,
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
 
       // Act

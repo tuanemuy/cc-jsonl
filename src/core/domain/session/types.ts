@@ -2,6 +2,9 @@ import { paginationSchema } from "@/lib/pagination";
 import { z } from "zod/v4";
 import { type ProjectId, projectIdSchema } from "../project/types";
 
+// Re-export types that are commonly used with sessions
+export type { ProjectId };
+
 export const sessionIdSchema = z.string().brand("sessionId");
 export type SessionId = z.infer<typeof sessionIdSchema>;
 

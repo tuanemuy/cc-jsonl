@@ -1,13 +1,19 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { MockClaudeService } from "@/core/adapters/mock/claudeService";
+import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
+import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
 import { MockSessionRepository } from "@/core/adapters/mock/sessionRepository";
-import { getSession } from "./getSession";
-import type { Context } from "../context";
-import type { GetSessionInput } from "./getSession";
-import type { Session, SessionId } from "@/core/domain/session/types";
 import type { ProjectId } from "@/core/domain/project/types";
+import type { Session, SessionId } from "@/core/domain/session/types";
+import { beforeEach, describe, expect, it } from "vitest";
+import type { Context } from "../context";
+import { getSession } from "./getSession";
+import type { GetSessionInput } from "./getSession";
 
 describe("getSession", () => {
+  let mockProjectRepository: MockProjectRepository;
   let mockSessionRepository: MockSessionRepository;
+  let mockMessageRepository: MockMessageRepository;
+  let mockClaudeService: MockClaudeService;
   let context: Context;
 
   const createTestSession = (
@@ -22,19 +28,25 @@ describe("getSession", () => {
   });
 
   beforeEach(() => {
+    mockProjectRepository = new MockProjectRepository();
     mockSessionRepository = new MockSessionRepository();
+    mockMessageRepository = new MockMessageRepository();
+    mockClaudeService = new MockClaudeService();
     context = {
-      projectRepository: {} as any,
+      projectRepository: mockProjectRepository,
       sessionRepository: mockSessionRepository,
-      messageRepository: {} as any,
-      claudeService: {} as any,
+      messageRepository: mockMessageRepository,
+      claudeService: mockClaudeService,
     };
   });
 
   describe("正常系", () => {
     it("既存のセッションを取得できる", async () => {
       // Arrange
-      const existingSession = createTestSession("test-session-id", "test-project-id");
+      const existingSession = createTestSession(
+        "test-session-id",
+        "test-project-id",
+      );
       const mockRepo = new MockSessionRepository([existingSession]);
       context.sessionRepository = mockRepo;
 
@@ -216,6 +228,7 @@ describe("getSession", () => {
 
     it("idがnullではエラーになる", async () => {
       // Arrange
+      // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       const input = { id: null } as any;
 
       // Act
@@ -230,6 +243,7 @@ describe("getSession", () => {
 
     it("idが数値型ではエラーになる", async () => {
       // Arrange
+      // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       const input = { id: 123 } as any;
 
       // Act
@@ -260,6 +274,7 @@ describe("getSession", () => {
 
     it("idがオブジェクトではエラーになる", async () => {
       // Arrange
+      // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       const input = { id: {} } as any;
 
       // Act
@@ -274,6 +289,7 @@ describe("getSession", () => {
 
     it("idが配列ではエラーになる", async () => {
       // Arrange
+      // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       const input = { id: [] } as any;
 
       // Act
@@ -288,6 +304,7 @@ describe("getSession", () => {
 
     it("idがbooleanではエラーになる", async () => {
       // Arrange
+      // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       const input = { id: true } as any;
 
       // Act

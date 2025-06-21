@@ -1,13 +1,19 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { MockClaudeService } from "@/core/adapters/mock/claudeService";
+import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
+import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
 import { MockSessionRepository } from "@/core/adapters/mock/sessionRepository";
-import { listSessions } from "./listSessions";
-import type { Context } from "../context";
-import type { ListSessionQuery } from "./listSessions";
-import type { Session, SessionId } from "@/core/domain/session/types";
 import type { ProjectId } from "@/core/domain/project/types";
+import type { Session, SessionId } from "@/core/domain/session/types";
+import { beforeEach, describe, expect, it } from "vitest";
+import type { Context } from "../context";
+import { listSessions } from "./listSessions";
+import type { ListSessionQuery } from "./listSessions";
 
 describe("listSessions", () => {
+  let mockProjectRepository: MockProjectRepository;
   let mockSessionRepository: MockSessionRepository;
+  let mockMessageRepository: MockMessageRepository;
+  let mockClaudeService: MockClaudeService;
   let context: Context;
 
   const createTestSession = (
@@ -22,12 +28,15 @@ describe("listSessions", () => {
   });
 
   beforeEach(() => {
+    mockProjectRepository = new MockProjectRepository();
     mockSessionRepository = new MockSessionRepository();
+    mockMessageRepository = new MockMessageRepository();
+    mockClaudeService = new MockClaudeService();
     context = {
-      projectRepository: {} as any,
+      projectRepository: mockProjectRepository,
       sessionRepository: mockSessionRepository,
-      messageRepository: {} as any,
-      claudeService: {} as any,
+      messageRepository: mockMessageRepository,
+      claudeService: mockClaudeService,
     };
   });
 
@@ -35,7 +44,7 @@ describe("listSessions", () => {
     it("空のセッション一覧を取得できる", async () => {
       // Arrange
       const query: ListSessionQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
       };
 
       // Act
@@ -61,7 +70,7 @@ describe("listSessions", () => {
       context.sessionRepository = mockRepo;
 
       const query: ListSessionQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
       };
 
       // Act
@@ -94,7 +103,7 @@ describe("listSessions", () => {
 
       // 1ページ目
       const query1: ListSessionQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
       };
 
       // Act
@@ -110,7 +119,7 @@ describe("listSessions", () => {
 
       // 2ページ目
       const query2: ListSessionQuery = {
-        pagination: { page: 2, limit: 10 },
+        pagination: { page: 2, limit: 10, order: "desc", orderBy: "createdAt" },
       };
 
       const result2 = await listSessions(context, query2);
@@ -124,7 +133,7 @@ describe("listSessions", () => {
 
       // 3ページ目（最後のページ）
       const query3: ListSessionQuery = {
-        pagination: { page: 3, limit: 10 },
+        pagination: { page: 3, limit: 10, order: "desc", orderBy: "createdAt" },
       };
 
       const result3 = await listSessions(context, query3);
@@ -150,7 +159,7 @@ describe("listSessions", () => {
       context.sessionRepository = mockRepo;
 
       const query: ListSessionQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
         filter: { projectId: "project-a" as ProjectId },
       };
 
@@ -162,11 +171,13 @@ describe("listSessions", () => {
       if (result.isOk()) {
         expect(result.value.items).toHaveLength(2);
         expect(result.value.count).toBe(2);
-        expect(result.value.items.map(s => s.id)).toEqual([
+        expect(result.value.items.map((s) => s.id)).toEqual([
           "session-3",
           "session-1",
         ]);
-        expect(result.value.items.every(s => s.projectId === "project-a")).toBe(true);
+        expect(
+          result.value.items.every((s) => s.projectId === "project-a"),
+        ).toBe(true);
       }
     });
 
@@ -181,7 +192,7 @@ describe("listSessions", () => {
       context.sessionRepository = mockRepo;
 
       const query: ListSessionQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
         filter: { projectId: "non-existent-project" as ProjectId },
       };
 
@@ -208,7 +219,7 @@ describe("listSessions", () => {
       context.sessionRepository = mockRepo;
 
       const query: ListSessionQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
       };
 
       // Act
@@ -233,7 +244,7 @@ describe("listSessions", () => {
       context.sessionRepository = mockRepo;
 
       const query: ListSessionQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
         filter: {},
       };
 
@@ -260,7 +271,7 @@ describe("listSessions", () => {
       context.sessionRepository = mockRepo;
 
       const query: ListSessionQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
         filter: { projectId: uuidProjectId as ProjectId },
       };
 
@@ -280,7 +291,7 @@ describe("listSessions", () => {
     it("無効なページ番号でエラーになる", async () => {
       // Arrange
       const query: ListSessionQuery = {
-        pagination: { page: 0, limit: 10 },
+        pagination: { page: 0, limit: 10, order: "desc", orderBy: "createdAt" },
       };
 
       // Act
@@ -296,7 +307,7 @@ describe("listSessions", () => {
     it("無効なリミット値でエラーになる", async () => {
       // Arrange
       const query: ListSessionQuery = {
-        pagination: { page: 1, limit: 0 },
+        pagination: { page: 1, limit: 0, order: "desc", orderBy: "createdAt" },
       };
 
       // Act
@@ -312,7 +323,12 @@ describe("listSessions", () => {
     it("負のページ番号でエラーになる", async () => {
       // Arrange
       const query: ListSessionQuery = {
-        pagination: { page: -1, limit: 10 },
+        pagination: {
+          page: -1,
+          limit: 10,
+          order: "desc",
+          orderBy: "createdAt",
+        },
       };
 
       // Act
@@ -328,7 +344,7 @@ describe("listSessions", () => {
     it("負のリミット値でエラーになる", async () => {
       // Arrange
       const query: ListSessionQuery = {
-        pagination: { page: 1, limit: -1 },
+        pagination: { page: 1, limit: -1, order: "desc", orderBy: "createdAt" },
       };
 
       // Act
@@ -358,8 +374,9 @@ describe("listSessions", () => {
     it("不正な型のフィルタでエラーになる", async () => {
       // Arrange
       const query = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
         filter: { projectId: 123 },
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
 
       // Act
@@ -375,7 +392,7 @@ describe("listSessions", () => {
     it("空文字のプロジェクトIDでエラーになる", async () => {
       // Arrange
       const query: ListSessionQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
         filter: { projectId: "" as ProjectId },
       };
 
@@ -392,8 +409,9 @@ describe("listSessions", () => {
     it("nullのプロジェクトIDでエラーになる", async () => {
       // Arrange
       const query = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
         filter: { projectId: null },
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
 
       // Act
@@ -418,7 +436,12 @@ describe("listSessions", () => {
       context.sessionRepository = mockRepo;
 
       const query: ListSessionQuery = {
-        pagination: { page: 1, limit: 100 },
+        pagination: {
+          page: 1,
+          limit: 100,
+          order: "desc",
+          orderBy: "createdAt",
+        },
       };
 
       // Act
@@ -442,7 +465,7 @@ describe("listSessions", () => {
       context.sessionRepository = mockRepo;
 
       const query: ListSessionQuery = {
-        pagination: { page: 1, limit: 1 },
+        pagination: { page: 1, limit: 1, order: "desc", orderBy: "createdAt" },
       };
 
       // Act
@@ -458,15 +481,18 @@ describe("listSessions", () => {
 
     it("存在しないページを指定した場合は空の結果を返す", async () => {
       // Arrange
-      const sessions = [
-        createTestSession("session-1", "project-1"),
-      ];
+      const sessions = [createTestSession("session-1", "project-1")];
 
       const mockRepo = new MockSessionRepository(sessions);
       context.sessionRepository = mockRepo;
 
       const query: ListSessionQuery = {
-        pagination: { page: 999, limit: 10 },
+        pagination: {
+          page: 999,
+          limit: 10,
+          order: "desc",
+          orderBy: "createdAt",
+        },
       };
 
       // Act
@@ -491,7 +517,7 @@ describe("listSessions", () => {
       context.sessionRepository = mockRepo;
 
       const query: ListSessionQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
         filter: { projectId: "a" as ProjectId },
       };
 
@@ -518,7 +544,7 @@ describe("listSessions", () => {
       context.sessionRepository = mockRepo;
 
       const query: ListSessionQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
         filter: { projectId: longProjectId as ProjectId },
       };
 

@@ -1,12 +1,18 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { MockClaudeService } from "@/core/adapters/mock/claudeService";
+import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
 import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
-import { listProjects } from "./listProjects";
-import type { Context } from "../context";
-import type { ListProjectQuery } from "./listProjects";
+import { MockSessionRepository } from "@/core/adapters/mock/sessionRepository";
 import type { Project, ProjectId } from "@/core/domain/project/types";
+import { beforeEach, describe, expect, it } from "vitest";
+import type { Context } from "../context";
+import { listProjects } from "./listProjects";
+import type { ListProjectQuery } from "./listProjects";
 
 describe("listProjects", () => {
   let mockProjectRepository: MockProjectRepository;
+  let mockSessionRepository: MockSessionRepository;
+  let mockMessageRepository: MockMessageRepository;
+  let mockClaudeService: MockClaudeService;
   let context: Context;
 
   const createTestProject = (
@@ -24,11 +30,14 @@ describe("listProjects", () => {
 
   beforeEach(() => {
     mockProjectRepository = new MockProjectRepository();
+    mockSessionRepository = new MockSessionRepository();
+    mockMessageRepository = new MockMessageRepository();
+    mockClaudeService = new MockClaudeService();
     context = {
       projectRepository: mockProjectRepository,
-      sessionRepository: {} as any,
-      messageRepository: {} as any,
-      claudeService: {} as any,
+      sessionRepository: mockSessionRepository,
+      messageRepository: mockMessageRepository,
+      claudeService: mockClaudeService,
     };
   });
 
@@ -36,7 +45,7 @@ describe("listProjects", () => {
     it("空のプロジェクト一覧を取得できる", async () => {
       // Arrange
       const query: ListProjectQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
       };
 
       // Act
@@ -62,7 +71,7 @@ describe("listProjects", () => {
       context.projectRepository = mockRepo;
 
       const query: ListProjectQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
       };
 
       // Act
@@ -96,7 +105,7 @@ describe("listProjects", () => {
 
       // 1ページ目
       const query1: ListProjectQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
       };
 
       // Act
@@ -112,7 +121,7 @@ describe("listProjects", () => {
 
       // 2ページ目
       const query2: ListProjectQuery = {
-        pagination: { page: 2, limit: 10 },
+        pagination: { page: 2, limit: 10, order: "desc", orderBy: "createdAt" },
       };
 
       const result2 = await listProjects(context, query2);
@@ -126,7 +135,7 @@ describe("listProjects", () => {
 
       // 3ページ目（最後のページ）
       const query3: ListProjectQuery = {
-        pagination: { page: 3, limit: 10 },
+        pagination: { page: 3, limit: 10, order: "desc", orderBy: "createdAt" },
       };
 
       const result3 = await listProjects(context, query3);
@@ -152,7 +161,7 @@ describe("listProjects", () => {
       context.projectRepository = mockRepo;
 
       const query: ListProjectQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
         filter: { name: "React" },
       };
 
@@ -164,7 +173,7 @@ describe("listProjects", () => {
       if (result.isOk()) {
         expect(result.value.items).toHaveLength(2);
         expect(result.value.count).toBe(2);
-        expect(result.value.items.map(p => p.name)).toEqual([
+        expect(result.value.items.map((p) => p.name)).toEqual([
           "React Native App",
           "React Project",
         ]);
@@ -184,7 +193,7 @@ describe("listProjects", () => {
       context.projectRepository = mockRepo;
 
       const query: ListProjectQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
         filter: { path: "/home/user" },
       };
 
@@ -196,7 +205,7 @@ describe("listProjects", () => {
       if (result.isOk()) {
         expect(result.value.items).toHaveLength(2);
         expect(result.value.count).toBe(2);
-        expect(result.value.items.map(p => p.name)).toEqual([
+        expect(result.value.items.map((p) => p.name)).toEqual([
           "Project 2",
           "Project 1",
         ]);
@@ -216,7 +225,7 @@ describe("listProjects", () => {
       context.projectRepository = mockRepo;
 
       const query: ListProjectQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
         filter: { name: "Web", path: "/home/user" },
       };
 
@@ -244,7 +253,7 @@ describe("listProjects", () => {
       context.projectRepository = mockRepo;
 
       const query: ListProjectQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
         filter: { name: "NonExistent" },
       };
 
@@ -270,7 +279,7 @@ describe("listProjects", () => {
       context.projectRepository = mockRepo;
 
       const query: ListProjectQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
         filter: { name: "react", path: "path" },
       };
 
@@ -290,7 +299,7 @@ describe("listProjects", () => {
     it("無効なページ番号でエラーになる", async () => {
       // Arrange
       const query: ListProjectQuery = {
-        pagination: { page: 0, limit: 10 },
+        pagination: { page: 0, limit: 10, order: "desc", orderBy: "createdAt" },
       };
 
       // Act
@@ -306,7 +315,7 @@ describe("listProjects", () => {
     it("無効なリミット値でエラーになる", async () => {
       // Arrange
       const query: ListProjectQuery = {
-        pagination: { page: 1, limit: 0 },
+        pagination: { page: 1, limit: 0, order: "desc", orderBy: "createdAt" },
       };
 
       // Act
@@ -322,7 +331,12 @@ describe("listProjects", () => {
     it("負のページ番号でエラーになる", async () => {
       // Arrange
       const query: ListProjectQuery = {
-        pagination: { page: -1, limit: 10 },
+        pagination: {
+          page: -1,
+          limit: 10,
+          order: "desc",
+          orderBy: "createdAt",
+        },
       };
 
       // Act
@@ -338,7 +352,7 @@ describe("listProjects", () => {
     it("負のリミット値でエラーになる", async () => {
       // Arrange
       const query: ListProjectQuery = {
-        pagination: { page: 1, limit: -1 },
+        pagination: { page: 1, limit: -1, order: "desc", orderBy: "createdAt" },
       };
 
       // Act
@@ -368,8 +382,9 @@ describe("listProjects", () => {
     it("不正な型のフィルタでエラーになる", async () => {
       // Arrange
       const query = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
         filter: { name: 123 },
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
 
       // Act
@@ -394,7 +409,12 @@ describe("listProjects", () => {
       context.projectRepository = mockRepo;
 
       const query: ListProjectQuery = {
-        pagination: { page: 1, limit: 100 },
+        pagination: {
+          page: 1,
+          limit: 100,
+          order: "desc",
+          orderBy: "createdAt",
+        },
       };
 
       // Act
@@ -418,7 +438,7 @@ describe("listProjects", () => {
       context.projectRepository = mockRepo;
 
       const query: ListProjectQuery = {
-        pagination: { page: 1, limit: 1 },
+        pagination: { page: 1, limit: 1, order: "desc", orderBy: "createdAt" },
       };
 
       // Act
@@ -434,15 +454,18 @@ describe("listProjects", () => {
 
     it("存在しないページを指定した場合は空の結果を返す", async () => {
       // Arrange
-      const projects = [
-        createTestProject("1", "Project 1", "/path/1"),
-      ];
+      const projects = [createTestProject("1", "Project 1", "/path/1")];
 
       const mockRepo = new MockProjectRepository(projects);
       context.projectRepository = mockRepo;
 
       const query: ListProjectQuery = {
-        pagination: { page: 999, limit: 10 },
+        pagination: {
+          page: 999,
+          limit: 10,
+          order: "desc",
+          orderBy: "createdAt",
+        },
       };
 
       // Act
@@ -467,7 +490,7 @@ describe("listProjects", () => {
       context.projectRepository = mockRepo;
 
       const query: ListProjectQuery = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 1, limit: 10, order: "desc", orderBy: "createdAt" },
         filter: { name: "", path: "" },
       };
 
