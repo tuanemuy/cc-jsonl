@@ -5,46 +5,67 @@ import type {
   SendMessageInput,
 } from "@/core/domain/claude/types";
 import { ClaudeError } from "@/lib/error";
-import Anthropic from "@anthropic-ai/sdk";
+import { type SDKMessage, query } from "@anthropic-ai/claude-code";
 import { type Result, err, ok } from "neverthrow";
 
 export class AnthropicClaudeService implements ClaudeService {
-  private client: Anthropic;
+  private apiKey: string;
 
   constructor(apiKey: string) {
-    this.client = new Anthropic({
-      apiKey,
-    });
+    this.apiKey = apiKey;
   }
 
   async sendMessage(
     input: SendMessageInput,
-    messages: ClaudeMessage[],
+    inputMessages: ClaudeMessage[],
   ): Promise<Result<ClaudeResponse, ClaudeError>> {
     try {
       const allMessages = [
-        ...messages,
+        ...inputMessages,
         { role: "user" as const, content: input.message },
       ];
 
-      const response = await this.client.messages.create({
-        model: "claude-3-sonnet-20241022",
-        max_tokens: 4000,
-        messages: allMessages,
-      });
+      const options: { resume?: string; cwd?: string } = {};
+      if (input.sessionId || input.cwd) {
+        options.resume = input.sessionId;
+        options.cwd = input.cwd;
+      }
+
+      const messages: SDKMessage[] = [];
+      const prompt = allMessages
+        .map((msg) => `${msg.role}: ${msg.content}`)
+        .join("\n");
+
+      for await (const message of query({
+        prompt,
+        ...(Object.keys(options).length > 0 && { options }),
+      })) {
+        messages.push(message);
+      }
+
+      const lastMessage = messages[messages.length - 1];
+      if (!lastMessage) {
+        throw new Error("No response received");
+      }
 
       const claudeResponse: ClaudeResponse = {
-        id: response.id,
-        content: response.content.map((item) => ({
-          type: item.type,
-          text: item.type === "text" ? item.text : "",
-        })),
-        role: response.role,
-        model: response.model,
-        stop_reason: response.stop_reason,
+        id: "claude-code-response",
+        content: [
+          {
+            type: "text",
+            text:
+              lastMessage.type === "assistant" &&
+              lastMessage.message?.content?.[0]?.type === "text"
+                ? lastMessage.message.content[0].text
+                : "",
+          },
+        ],
+        role: "assistant",
+        model: "claude-code",
+        stop_reason: "stop",
         usage: {
-          input_tokens: response.usage.input_tokens,
-          output_tokens: response.usage.output_tokens,
+          input_tokens: 0,
+          output_tokens: 0,
         },
       };
 
@@ -56,55 +77,62 @@ export class AnthropicClaudeService implements ClaudeService {
 
   async sendMessageStream(
     input: SendMessageInput,
-    messages: ClaudeMessage[],
+    inputMessages: ClaudeMessage[],
     onChunk: (chunk: string) => void,
   ): Promise<Result<ClaudeResponse, ClaudeError>> {
     try {
       const allMessages = [
-        ...messages,
+        ...inputMessages,
         { role: "user" as const, content: input.message },
       ];
 
-      const stream = await this.client.messages.create({
-        model: "claude-3-sonnet-20241022",
-        max_tokens: 4000,
-        messages: allMessages,
-        stream: true,
-      });
+      const options: { resume?: string; cwd?: string } = {};
+      if (input.sessionId || input.cwd) {
+        options.resume = input.sessionId;
+        options.cwd = input.cwd;
+      }
 
-      let responseContent = "";
-      let responseId = "";
-      let responseModel = "";
-      let stopReason: string | null = null;
-      let inputTokens = 0;
-      let outputTokens = 0;
+      const messages: SDKMessage[] = [];
+      const prompt = allMessages
+        .map((msg) => `${msg.role}: ${msg.content}`)
+        .join("\n");
 
-      for await (const chunk of stream) {
-        if (chunk.type === "message_start") {
-          responseId = chunk.message.id;
-          responseModel = chunk.message.model;
-          inputTokens = chunk.message.usage.input_tokens;
-        } else if (chunk.type === "content_block_delta") {
-          if (chunk.delta.type === "text_delta") {
-            const text = chunk.delta.text;
-            responseContent += text;
-            onChunk(text);
-          }
-        } else if (chunk.type === "message_delta") {
-          stopReason = chunk.delta.stop_reason;
-          outputTokens = chunk.usage?.output_tokens || 0;
+      for await (const message of query({
+        prompt,
+        ...(Object.keys(options).length > 0 && { options }),
+      })) {
+        messages.push(message);
+        if (
+          message.type === "assistant" &&
+          message.message?.content?.[0]?.type === "text"
+        ) {
+          onChunk(message.message.content[0].text);
         }
       }
 
+      const lastMessage = messages[messages.length - 1];
+      if (!lastMessage) {
+        throw new Error("No response received");
+      }
+
       const claudeResponse: ClaudeResponse = {
-        id: responseId,
-        content: [{ type: "text", text: responseContent }],
+        id: "claude-code-response",
+        content: [
+          {
+            type: "text",
+            text:
+              lastMessage.type === "assistant" &&
+              lastMessage.message?.content?.[0]?.type === "text"
+                ? lastMessage.message.content[0].text
+                : "",
+          },
+        ],
         role: "assistant",
-        model: responseModel,
-        stop_reason: stopReason,
+        model: "claude-code",
+        stop_reason: "stop",
         usage: {
-          input_tokens: inputTokens,
-          output_tokens: outputTokens,
+          input_tokens: 0,
+          output_tokens: 0,
         },
       };
 
