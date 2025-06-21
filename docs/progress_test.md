@@ -62,6 +62,16 @@ Record the implementation status of application service tests.
   - Error cases: Empty message, null message, no projects, session not found, Claude streaming errors, invalid types
   - Boundary values: Single char streaming, long message streaming, whitespace streaming, multiline streaming, special chars
 
+### Watcher Services ✅
+- [x] `processLogFile.test.ts` - Log file processing tests
+  - Normal cases: New project/session creation, existing entities, real sample data processing, log entry parsing, message creation
+  - Error cases: Invalid file paths, parsing errors, repository failures, missing required fields
+  - Boundary values: Empty files, large files, complex log structures, Unicode content, timing constraints
+- [x] `startWatcher.test.ts` - File watcher initialization tests
+  - Normal cases: Watcher startup, configuration validation, callback registration
+  - Error cases: Invalid configurations, file system errors, callback failures
+  - Boundary values: Multiple watchers, resource limits, concurrent operations
+
 ## Mock Implementation
 
 ### Implemented ✅
@@ -82,6 +92,16 @@ Record the implementation status of application service tests.
   - Configurable mock responses and errors
   - Response delay simulation
   - Test utility methods (setMockResponse, setShouldFailNext, reset)
+- [x] `MockLogParser` - Log parser mock implementation
+  - Configurable log parsing behavior
+  - Support for various log formats and structures
+  - Error scenario simulation
+  - Test utility methods for controlling parse results
+- [x] `MockFileWatcher` - File watcher mock implementation
+  - File system event simulation
+  - Configurable watch behavior
+  - Error condition testing
+  - Resource management testing
 
 ### Not Implemented 🔲
 - None - All mock implementations completed
@@ -95,6 +115,9 @@ Record the implementation status of application service tests.
 - **Pagination**: Boundary values, non-existent pages
 - **Filtering**: Partial match, case sensitivity, multiple conditions
 - **Error Handling**: Repository error wrapping, appropriate error messages
+- **File Processing**: Real sample data, large files, Unicode content, parsing errors
+- **Streaming Operations**: Chunk ordering, concurrent processing, resource management
+- **System Integration**: File watching, log processing, performance constraints
 
 ### Common Test Patterns
 1. **Normal Case Tests**
@@ -118,8 +141,10 @@ Record the implementation status of application service tests.
 2. ✅ Claude service test implementation - Completed  
 3. ✅ MockMessageRepository implementation - Completed
 4. ✅ MockClaudeService implementation - Completed
-5. Integration test consideration - Future work
-6. Test execution and validation - Future work
+5. ✅ Watcher service test implementation - Completed
+6. ✅ MockLogParser and MockFileWatcher implementation - Completed
+7. Integration test consideration - Future work
+8. Test execution and validation - Future work
 
 ## Summary
 All planned application service tests have been successfully implemented with comprehensive coverage including:
@@ -127,5 +152,7 @@ All planned application service tests have been successfully implemented with co
 - **Error case testing**: Invalid inputs and error handling
 - **Boundary value testing**: Edge cases and limits
 - **Mock implementations**: Complete mock services for testing isolation
+- **Real data integration**: Sample file processing and realistic test scenarios
+- **Performance testing**: Timing constraints and resource management
 
-The test suite covers all core application services (Project, Session, Message, Claude) with thorough validation of input handling, business logic, and error scenarios.
+The test suite covers all core application services (Project, Session, Message, Claude, Watcher) with thorough validation of input handling, business logic, error scenarios, and system integration. The watcher services add sophisticated file processing and monitoring capabilities with comprehensive testing of log parsing, file watching, and real-time processing scenarios.
