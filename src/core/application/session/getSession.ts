@@ -14,13 +14,27 @@ export async function getSession(
   context: Context,
   input: GetSessionInput,
 ): Promise<Result<Session | null, ApplicationError>> {
+  console.log("[getSession] Starting session retrieval", { id: input.id });
+
   try {
     const sessionId = sessionIdSchema.parse(input.id);
     const result = await context.sessionRepository.findById(sessionId);
-    return result.mapErr(
-      (error) => new ApplicationError("Failed to get session", error),
-    );
+    return result.mapErr((error) => {
+      const appError = new ApplicationError("Failed to get session", error);
+      console.error("[getSession] Repository operation failed", {
+        sessionId,
+        error: appError.message,
+        cause: appError.cause,
+      });
+      return appError;
+    });
   } catch (error) {
-    return err(new ApplicationError("Invalid session input", error));
+    const appError = new ApplicationError("Invalid session input", error);
+    console.error("[getSession] Invalid session input or unexpected error", {
+      id: input.id,
+      error: appError.message,
+      cause: appError.cause,
+    });
+    return err(appError);
   }
 }

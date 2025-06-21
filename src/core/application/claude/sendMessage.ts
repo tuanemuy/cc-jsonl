@@ -22,9 +22,19 @@ export async function sendMessage(
     ApplicationError
   >
 > {
+  console.log("[sendMessage] Starting message processing", {
+    sessionId: input.sessionId,
+    messageLength: input.message.length,
+  });
+
   const parseResult = validate(sendMessageInputSchema, input);
   if (parseResult.isErr()) {
-    return err(new ApplicationError("Invalid input", parseResult.error));
+    const error = new ApplicationError("Invalid input", parseResult.error);
+    console.error("[sendMessage] Input validation failed", {
+      error: error.message,
+      cause: error.cause,
+    });
+    return err(error);
   }
 
   const params = parseResult.value;
@@ -36,12 +46,24 @@ export async function sendMessage(
       const sessionId = sessionIdSchema.parse(params.sessionId);
       const sessionResult = await context.sessionRepository.findById(sessionId);
       if (sessionResult.isErr()) {
-        return err(
-          new ApplicationError("Failed to get session", sessionResult.error),
+        const error = new ApplicationError(
+          "Failed to get session",
+          sessionResult.error,
         );
+        console.error("[sendMessage] Session retrieval failed", {
+          sessionId,
+          error: error.message,
+          cause: error.cause,
+        });
+        return err(error);
       }
       if (!sessionResult.value) {
-        return err(new ApplicationError("Session not found"));
+        const error = new ApplicationError("Session not found");
+        console.error("[sendMessage] Session not found", {
+          sessionId,
+          error: error.message,
+        });
+        return err(error);
       }
       session = sessionResult.value;
     } else {
@@ -50,7 +72,15 @@ export async function sendMessage(
         pagination: { page: 1, limit: 1, order: "desc", orderBy: "createdAt" },
       });
       if (projectsResult.isErr() || projectsResult.value.items.length === 0) {
-        return err(new ApplicationError("No projects found"));
+        const error = new ApplicationError(
+          "No projects found",
+          projectsResult.isErr() ? projectsResult.error : undefined,
+        );
+        console.error(
+          "[sendMessage] No projects available for session creation",
+          { error: error.message, cause: error.cause },
+        );
+        return err(error);
       }
 
       const createSessionResult = await context.sessionRepository.create({
@@ -58,12 +88,15 @@ export async function sendMessage(
         cwd: "/tmp",
       });
       if (createSessionResult.isErr()) {
-        return err(
-          new ApplicationError(
-            "Failed to create session",
-            createSessionResult.error,
-          ),
+        const error = new ApplicationError(
+          "Failed to create session",
+          createSessionResult.error,
         );
+        console.error("[sendMessage] Session creation failed", {
+          error: error.message,
+          cause: error.cause,
+        });
+        return err(error);
       }
       session = createSessionResult.value;
     }
@@ -74,9 +107,16 @@ export async function sendMessage(
       filter: { sessionId: session.id },
     });
     if (messagesResult.isErr()) {
-      return err(
-        new ApplicationError("Failed to get messages", messagesResult.error),
+      const error = new ApplicationError(
+        "Failed to get messages",
+        messagesResult.error,
       );
+      console.error("[sendMessage] Failed to retrieve previous messages", {
+        sessionId: session.id,
+        error: error.message,
+        cause: error.cause,
+      });
+      return err(error);
     }
 
     const previousMessages = messagesResult.value.items
@@ -98,12 +138,16 @@ export async function sendMessage(
       cwd: session.cwd,
     });
     if (userMessageResult.isErr()) {
-      return err(
-        new ApplicationError(
-          "Failed to create user message",
-          userMessageResult.error,
-        ),
+      const error = new ApplicationError(
+        "Failed to create user message",
+        userMessageResult.error,
       );
+      console.error("[sendMessage] User message creation failed", {
+        sessionId: session.id,
+        error: error.message,
+        cause: error.cause,
+      });
+      return err(error);
     }
 
     // Send to Claude
@@ -112,12 +156,16 @@ export async function sendMessage(
       previousMessages,
     );
     if (claudeResult.isErr()) {
-      return err(
-        new ApplicationError(
-          "Failed to send message to Claude",
-          claudeResult.error,
-        ),
+      const error = new ApplicationError(
+        "Failed to send message to Claude",
+        claudeResult.error,
       );
+      console.error("[sendMessage] Claude API call failed", {
+        sessionId: session.id,
+        error: error.message,
+        cause: error.cause,
+      });
+      return err(error);
     }
 
     const claudeResponse = claudeResult.value;
@@ -138,12 +186,16 @@ export async function sendMessage(
       cwd: session.cwd,
     });
     if (assistantMessageResult.isErr()) {
-      return err(
-        new ApplicationError(
-          "Failed to create assistant message",
-          assistantMessageResult.error,
-        ),
+      const error = new ApplicationError(
+        "Failed to create assistant message",
+        assistantMessageResult.error,
       );
+      console.error("[sendMessage] Assistant message creation failed", {
+        sessionId: session.id,
+        error: error.message,
+        cause: error.cause,
+      });
+      return err(error);
     }
 
     return ok({
@@ -152,6 +204,14 @@ export async function sendMessage(
       assistantMessage: assistantMessageResult.value,
     });
   } catch (error) {
-    return err(new ApplicationError("Unexpected error in sendMessage", error));
+    const appError = new ApplicationError(
+      "Unexpected error in sendMessage",
+      error,
+    );
+    console.error("[sendMessage] Unexpected error occurred", {
+      error: appError.message,
+      cause: appError.cause,
+    });
+    return err(appError);
   }
 }

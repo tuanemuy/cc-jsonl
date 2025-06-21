@@ -42,11 +42,17 @@ export async function processLogFile(
 
     const parsedResult = await context.logParser.parseFile(input.filePath);
     if (parsedResult.isErr()) {
-      return err({
-        type: "PROCESS_LOG_FILE_ERROR",
+      const error = {
+        type: "PROCESS_LOG_FILE_ERROR" as const,
         message: "Failed to parse log file",
         cause: parsedResult.error,
+      };
+      console.error("[processLogFile] Log file parsing failed", {
+        filePath: input.filePath,
+        error: error.message,
+        cause: error.cause,
       });
+      return err(error);
     }
 
     const { projectName, sessionId, entries } = parsedResult.value;
@@ -86,11 +92,17 @@ export async function processLogFile(
 
     return ok({ entriesProcessed: entries.length });
   } catch (error) {
-    return err({
-      type: "PROCESS_LOG_FILE_ERROR",
+    const processError = {
+      type: "PROCESS_LOG_FILE_ERROR" as const,
       message: `Error processing log file ${input.filePath}`,
       cause: error,
+    };
+    console.error("[processLogFile] Unexpected error occurred", {
+      filePath: input.filePath,
+      error: processError.message,
+      cause: processError.cause,
     });
+    return err(processError);
   }
 }
 
@@ -103,11 +115,16 @@ async function ensureProjectExists(
   });
 
   if (existingProjects.isErr()) {
-    return err({
-      type: "PROCESS_LOG_FILE_ERROR",
+    const error = {
+      type: "PROCESS_LOG_FILE_ERROR" as const,
       message: `Failed to list projects: ${existingProjects.error.message}`,
       cause: existingProjects.error,
+    };
+    console.error("[ensureProjectExists] Failed to list projects", {
+      error: error.message,
+      cause: error.cause,
     });
+    return err(error);
   }
 
   const projectExists = existingProjects.value.items.some(
@@ -120,11 +137,17 @@ async function ensureProjectExists(
       path: projectName,
     });
     if (result.isErr()) {
-      return err({
-        type: "PROCESS_LOG_FILE_ERROR",
+      const error = {
+        type: "PROCESS_LOG_FILE_ERROR" as const,
         message: `Failed to create project: ${result.error.message}`,
         cause: result.error,
+      };
+      console.error("[ensureProjectExists] Project creation failed", {
+        projectName,
+        error: error.message,
+        cause: error.cause,
       });
+      return err(error);
     }
     console.log(`Created project: ${projectName}`);
   }
@@ -143,11 +166,16 @@ async function ensureSessionExists(
   });
 
   if (projectsResult.isErr()) {
-    return err({
-      type: "PROCESS_LOG_FILE_ERROR",
+    const error = {
+      type: "PROCESS_LOG_FILE_ERROR" as const,
       message: `Failed to list projects: ${projectsResult.error.message}`,
       cause: projectsResult.error,
+    };
+    console.error("[ensureSessionExists] Failed to list projects", {
+      error: error.message,
+      cause: error.cause,
     });
+    return err(error);
   }
 
   const project = projectsResult.value.items.find(
@@ -166,11 +194,17 @@ async function ensureSessionExists(
   });
 
   if (sessionsResult.isErr()) {
-    return err({
-      type: "PROCESS_LOG_FILE_ERROR",
+    const error = {
+      type: "PROCESS_LOG_FILE_ERROR" as const,
       message: `Failed to list sessions: ${sessionsResult.error.message}`,
       cause: sessionsResult.error,
+    };
+    console.error("[ensureSessionExists] Failed to list sessions", {
+      projectId: project.id,
+      error: error.message,
+      cause: error.cause,
     });
+    return err(error);
   }
 
   const brandedSessionId = sessionIdSchema.parse(sessionId);
@@ -194,11 +228,18 @@ async function ensureSessionExists(
       cwd,
     });
     if (result.isErr()) {
-      return err({
-        type: "PROCESS_LOG_FILE_ERROR",
+      const error = {
+        type: "PROCESS_LOG_FILE_ERROR" as const,
         message: `Failed to create session: ${result.error.message}`,
         cause: result.error,
+      };
+      console.error("[ensureSessionExists] Session creation failed", {
+        sessionId,
+        projectName,
+        error: error.message,
+        cause: error.cause,
       });
+      return err(error);
     }
     console.log(
       `Created session: ${sessionId} for project: ${projectName} with cwd: ${cwd}`,
@@ -223,7 +264,12 @@ async function processLogEntries(
           entry as UserLog | AssistantLog,
         );
         if (result.isErr()) {
-          console.warn("Failed to process message entry:", result.error);
+          console.warn("[processLogEntries] Failed to process message entry", {
+            entryType: entry.type,
+            uuid: entry.uuid,
+            error: result.error.message,
+            cause: result.error.cause,
+          });
         }
       } else if (entry.type === "system") {
         const result = await processSystemEntry(
@@ -232,11 +278,21 @@ async function processLogEntries(
           entry as SystemLog,
         );
         if (result.isErr()) {
-          console.warn("Failed to process system entry:", result.error);
+          console.warn("[processLogEntries] Failed to process system entry", {
+            entryType: entry.type,
+            uuid: entry.uuid,
+            error: result.error.message,
+            cause: result.error.cause,
+          });
         }
       }
     } catch (error) {
-      console.warn("Failed to process log entry:", error);
+      console.warn("[processLogEntries] Failed to process log entry", {
+        entryType: entry.type,
+        uuid: "uuid" in entry ? entry.uuid : "summary",
+        error: error instanceof Error ? error.message : String(error),
+        cause: error,
+      });
     }
   }
 
@@ -278,11 +334,19 @@ async function processMessageEntry(
   });
 
   if (result.isErr()) {
-    return err({
-      type: "PROCESS_LOG_FILE_ERROR",
+    const error = {
+      type: "PROCESS_LOG_FILE_ERROR" as const,
       message: `Failed to upsert message: ${result.error.message}`,
       cause: result.error,
+    };
+    console.error("[processMessageEntry] Message upsert failed", {
+      sessionId,
+      role: entry.message?.role,
+      uuid: entry.uuid,
+      error: error.message,
+      cause: error.cause,
     });
+    return err(error);
   }
 
   // Update session cwd to match the latest message's cwd
@@ -292,9 +356,12 @@ async function processMessageEntry(
   );
 
   if (sessionUpdateResult.isErr()) {
-    console.warn(
-      `Failed to update session cwd: ${sessionUpdateResult.error.message}`,
-    );
+    console.warn("[processMessageEntry] Failed to update session cwd", {
+      sessionId,
+      cwd: entry.cwd,
+      error: sessionUpdateResult.error.message,
+      cause: sessionUpdateResult.error.cause,
+    });
   }
 
   return ok(undefined);
@@ -317,11 +384,18 @@ async function processSystemEntry(
   });
 
   if (result.isErr()) {
-    return err({
-      type: "PROCESS_LOG_FILE_ERROR",
+    const error = {
+      type: "PROCESS_LOG_FILE_ERROR" as const,
       message: `Failed to upsert system message: ${result.error.message}`,
       cause: result.error,
+    };
+    console.error("[processSystemEntry] System message upsert failed", {
+      sessionId,
+      uuid: entry.uuid,
+      error: error.message,
+      cause: error.cause,
     });
+    return err(error);
   }
 
   // Update session cwd to match the latest message's cwd
@@ -331,9 +405,12 @@ async function processSystemEntry(
   );
 
   if (sessionUpdateResult.isErr()) {
-    console.warn(
-      `Failed to update session cwd: ${sessionUpdateResult.error.message}`,
-    );
+    console.warn("[processSystemEntry] Failed to update session cwd", {
+      sessionId,
+      cwd: entry.cwd,
+      error: sessionUpdateResult.error.message,
+      cause: sessionUpdateResult.error.cause,
+    });
   }
 
   return ok(undefined);
