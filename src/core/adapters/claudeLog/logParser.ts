@@ -1,3 +1,4 @@
+import { err, ok, type Result } from "neverthrow";
 import type { FileReader } from "@/core/domain/watcher/ports/fileReader";
 import type {
   LogParser,
@@ -5,10 +6,9 @@ import type {
 } from "@/core/domain/watcher/ports/logParser";
 import {
   type ClaudeLogEntry,
-  type ParsedLogFile,
   claudeLogEntrySchema,
+  type ParsedLogFile,
 } from "@/core/domain/watcher/types";
-import { type Result, err, ok } from "neverthrow";
 
 export class ClaudeLogParser implements LogParser {
   constructor(private readonly fileReader: FileReader) {}

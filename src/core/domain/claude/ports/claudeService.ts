@@ -1,5 +1,5 @@
-import type { ClaudeError } from "@/lib/error";
 import type { Result } from "neverthrow";
+import type { ClaudeError } from "@/lib/error";
 import type { ClaudeMessage, ClaudeResponse, SendMessageInput } from "../types";
 
 export interface ClaudeService {

@@ -1,11 +1,11 @@
+import { err, type Result } from "neverthrow";
 import {
   type ListMessageQuery,
-  type Message,
   listMessageQuerySchema,
+  type Message,
 } from "@/core/domain/message/types";
 import { ApplicationError } from "@/lib/error";
 import { validate } from "@/lib/validation";
-import { type Result, err } from "neverthrow";
 import type { Context } from "../context";
 
 export type { ListMessageQuery };

@@ -1,10 +1,10 @@
+import { err, ok, type Result } from "neverthrow";
 import type {
   FileChangeHandler,
   FileWatcher,
   FileWatcherError,
 } from "@/core/domain/watcher/ports/fileWatcher";
 import type { WatcherConfig } from "@/core/domain/watcher/types";
-import { type Result, err, ok } from "neverthrow";
 
 export class MockFileWatcher implements FileWatcher {
   private watching = false;

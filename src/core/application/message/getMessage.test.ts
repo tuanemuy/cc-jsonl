@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import { MockClaudeService } from "@/core/adapters/mock/claudeService";
 import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
 import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
@@ -5,9 +6,8 @@ import { MockSessionRepository } from "@/core/adapters/mock/sessionRepository";
 import type { Context } from "@/core/application/context";
 import type { Message, MessageId } from "@/core/domain/message/types";
 import type { SessionId } from "@/core/domain/session/types";
-import { beforeEach, describe, expect, it } from "vitest";
-import { getMessage } from "./getMessage";
 import type { GetMessageInput } from "./getMessage";
+import { getMessage } from "./getMessage";
 
 describe("getMessage", () => {
   let mockProjectRepository: MockProjectRepository;

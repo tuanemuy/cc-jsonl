@@ -1,3 +1,5 @@
+import { err, ok, type Result } from "neverthrow";
+import { v7 as uuidv7 } from "uuid";
 import type { ProjectId } from "@/core/domain/project/types";
 import type { SessionRepository } from "@/core/domain/session/ports/sessionRepository";
 import type {
@@ -7,8 +9,6 @@ import type {
   SessionId,
 } from "@/core/domain/session/types";
 import { RepositoryError } from "@/lib/error";
-import { type Result, err, ok } from "neverthrow";
-import { v7 as uuidv7 } from "uuid";
 
 export class MockSessionRepository implements SessionRepository {
   private sessions: Map<SessionId, Session> = new Map();

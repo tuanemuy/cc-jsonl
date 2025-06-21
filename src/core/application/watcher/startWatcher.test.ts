@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MockClaudeService } from "@/core/adapters/mock/claudeService";
 import { MockFileWatcher } from "@/core/adapters/mock/fileWatcher";
 import { MockLogParser } from "@/core/adapters/mock/logParser";
@@ -7,7 +8,6 @@ import { MockSessionRepository } from "@/core/adapters/mock/sessionRepository";
 import type { FileWatcher } from "@/core/domain/watcher/ports/fileWatcher";
 import type { LogParser } from "@/core/domain/watcher/ports/logParser";
 import type { ParsedLogFile, UserLog } from "@/core/domain/watcher/types";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Context } from "../context";
 import { startWatcher, stopWatcher } from "./startWatcher";
 

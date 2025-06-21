@@ -1,18 +1,18 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getServerContext } from "@/actions/context";
+import type {
+  CreateProjectInput,
+  ListProjectQuery,
+} from "@/core/application/project";
 import {
   createProject,
   getProject,
   listProjects,
 } from "@/core/application/project";
-import type {
-  CreateProjectInput,
-  ListProjectQuery,
-} from "@/core/application/project";
 import { projectIdSchema } from "@/core/domain/project/types";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 export async function createProjectAction(input: CreateProjectInput) {
   const context = getServerContext();

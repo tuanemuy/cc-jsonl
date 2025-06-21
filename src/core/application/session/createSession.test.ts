@@ -1,12 +1,12 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import { MockClaudeService } from "@/core/adapters/mock/claudeService";
 import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
 import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
 import { MockSessionRepository } from "@/core/adapters/mock/sessionRepository";
 import type { ProjectId, SessionId } from "@/core/domain/session/types";
-import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
-import { createSession } from "./createSession";
 import type { CreateSessionInput } from "./createSession";
+import { createSession } from "./createSession";
 
 describe("createSession", () => {
   let mockProjectRepository: MockProjectRepository;

@@ -1,5 +1,5 @@
-import { listProjectsAction } from "@/actions/project";
 import Link from "next/link";
+import { listProjectsAction } from "@/actions/project";
 
 export default async function Home() {
   const result = await listProjectsAction({

@@ -1,12 +1,12 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import { MockClaudeService } from "@/core/adapters/mock/claudeService";
 import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
 import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
 import { MockSessionRepository } from "@/core/adapters/mock/sessionRepository";
 import type { Project, ProjectId } from "@/core/domain/project/types";
-import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
-import { getProject, getProjectByPath } from "./getProject";
 import type { GetProjectInput } from "./getProject";
+import { getProject, getProjectByPath } from "./getProject";
 
 describe("getProject", () => {
   let mockProjectRepository: MockProjectRepository;

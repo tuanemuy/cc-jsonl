@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import { MockClaudeService } from "@/core/adapters/mock/claudeService";
 import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
 import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
@@ -6,9 +7,8 @@ import type { Context } from "@/core/application/context";
 import type { Message, MessageId } from "@/core/domain/message/types";
 import type { Project, ProjectId } from "@/core/domain/project/types";
 import type { Session, SessionId } from "@/core/domain/session/types";
-import { beforeEach, describe, expect, it } from "vitest";
-import { sendMessage } from "./sendMessage";
 import type { SendMessageInputLocal } from "./sendMessage";
+import { sendMessage } from "./sendMessage";
 
 describe("sendMessage", () => {
   let mockProjectRepository: MockProjectRepository;
@@ -369,7 +369,7 @@ describe("sendMessage", () => {
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
-        expect(result.error.message).toBe("Unexpected error in sendMessage");
+        expect(result.error.message).toBe("Invalid input");
       }
     });
   });

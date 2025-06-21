@@ -1,10 +1,10 @@
 "use client";
 
+import { Plus } from "lucide-react";
+import { useTransition } from "react";
 import { createSessionAction } from "@/actions/session";
 import { Button } from "@/components/ui/button";
 import type { ProjectId } from "@/core/domain/project/types";
-import { Plus } from "lucide-react";
-import { useTransition } from "react";
 
 interface NewChatButtonProps {
   projectId: ProjectId;

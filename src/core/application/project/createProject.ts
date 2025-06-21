@@ -1,11 +1,11 @@
+import { err, type Result } from "neverthrow";
 import {
   type CreateProjectParams,
-  type Project,
   createProjectParamsSchema,
+  type Project,
 } from "@/core/domain/project/types";
 import { ApplicationError } from "@/lib/error";
 import { validate } from "@/lib/validation";
-import { type Result, err } from "neverthrow";
 import type { Context } from "../context";
 
 export type CreateProjectInput = CreateProjectParams;

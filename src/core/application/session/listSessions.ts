@@ -1,11 +1,11 @@
+import { err, type Result } from "neverthrow";
 import {
   type ListSessionQuery,
-  type Session,
   listSessionQuerySchema,
+  type Session,
 } from "@/core/domain/session/types";
 import { ApplicationError } from "@/lib/error";
 import { validate } from "@/lib/validation";
-import { type Result, err } from "neverthrow";
 import type { Context } from "../context";
 
 export type { ListSessionQuery };

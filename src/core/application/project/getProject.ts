@@ -1,12 +1,8 @@
-import {
-  type Project,
-  type ProjectId,
-  projectIdSchema,
-} from "@/core/domain/project/types";
+import { err, type Result } from "neverthrow";
+import { z } from "zod/v4";
+import { type Project, projectIdSchema } from "@/core/domain/project/types";
 import { ApplicationError } from "@/lib/error";
 import { validate } from "@/lib/validation";
-import { type Result, err } from "neverthrow";
-import { z } from "zod/v4";
 import type { Context } from "../context";
 
 export const getProjectInputSchema = z.object({

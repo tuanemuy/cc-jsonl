@@ -1,12 +1,12 @@
 import { join } from "node:path";
+import { type FSWatcher, watch } from "chokidar";
+import { err, ok, type Result } from "neverthrow";
 import type {
   FileChangeHandler,
   FileWatcher,
   FileWatcherError,
 } from "@/core/domain/watcher/ports/fileWatcher";
 import type { WatcherConfig } from "@/core/domain/watcher/types";
-import { type FSWatcher, watch } from "chokidar";
-import { type Result, err, ok } from "neverthrow";
 
 export class ChokidarFileWatcher implements FileWatcher {
   private watcher: FSWatcher | null = null;

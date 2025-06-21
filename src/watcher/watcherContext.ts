@@ -1,3 +1,6 @@
+import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/libsql";
+import { z } from "zod";
 import { ChokidarFileWatcher } from "@/core/adapters/chokidar/fileWatcher";
 import { ClaudeLogParser } from "@/core/adapters/claudeLog/logParser";
 import type { Database } from "@/core/adapters/drizzleSqlite/client";
@@ -10,9 +13,6 @@ import { NodeFsFileReader } from "@/core/adapters/nodeFs/fileReader";
 import type { Context } from "@/core/application/context";
 import type { FileWatcher } from "@/core/domain/watcher/ports/fileWatcher";
 import type { LogParser } from "@/core/domain/watcher/ports/logParser";
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
-import { z } from "zod";
 
 export const watcherEnvSchema = z.object({
   WATCH_TARGET_DIR: z.string().min(1),

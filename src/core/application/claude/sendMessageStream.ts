@@ -1,15 +1,15 @@
+import { err, ok, type Result } from "neverthrow";
+import { z } from "zod/v4";
 import type { Message } from "@/core/domain/message/types";
 import type { Session } from "@/core/domain/session/types";
 import { sessionIdSchema } from "@/core/domain/session/types";
 import { ApplicationError } from "@/lib/error";
 import { validate } from "@/lib/validation";
-import { type Result, err, ok } from "neverthrow";
-import { z } from "zod/v4";
 import type { Context } from "../context";
 
 export const sendMessageStreamInputSchema = z.object({
   message: z.string().min(1),
-  sessionId: z.string().optional(),
+  sessionId: z.string().min(1).optional(),
 });
 export type SendMessageStreamInput = z.infer<
   typeof sendMessageStreamInputSchema

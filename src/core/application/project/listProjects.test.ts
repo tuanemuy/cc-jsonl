@@ -1,12 +1,12 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import { MockClaudeService } from "@/core/adapters/mock/claudeService";
 import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
 import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
 import { MockSessionRepository } from "@/core/adapters/mock/sessionRepository";
 import type { Project, ProjectId } from "@/core/domain/project/types";
-import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
-import { listProjects } from "./listProjects";
 import type { ListProjectQuery } from "./listProjects";
+import { listProjects } from "./listProjects";
 
 describe("listProjects", () => {
   let mockProjectRepository: MockProjectRepository;
@@ -151,10 +151,30 @@ describe("listProjects", () => {
     it("名前でフィルタリングできる", async () => {
       // Arrange
       const projects = [
-        createTestProject("1", "React Project", "/path/react"),
-        createTestProject("2", "Vue Project", "/path/vue"),
-        createTestProject("3", "Angular Project", "/path/angular"),
-        createTestProject("4", "React Native App", "/path/react-native"),
+        createTestProject(
+          "1",
+          "React Project",
+          "/path/react",
+          new Date("2024-01-01"),
+        ),
+        createTestProject(
+          "2",
+          "Vue Project",
+          "/path/vue",
+          new Date("2024-01-02"),
+        ),
+        createTestProject(
+          "3",
+          "Angular Project",
+          "/path/angular",
+          new Date("2024-01-03"),
+        ),
+        createTestProject(
+          "4",
+          "React Native App",
+          "/path/react-native",
+          new Date("2024-01-04"),
+        ),
       ];
 
       const mockRepo = new MockProjectRepository(projects);
@@ -183,10 +203,30 @@ describe("listProjects", () => {
     it("パスでフィルタリングできる", async () => {
       // Arrange
       const projects = [
-        createTestProject("1", "Project 1", "/home/user/projects/web"),
-        createTestProject("2", "Project 2", "/home/user/projects/mobile"),
-        createTestProject("3", "Project 3", "/home/admin/projects/web"),
-        createTestProject("4", "Project 4", "/var/www/html"),
+        createTestProject(
+          "1",
+          "Project 1",
+          "/home/user/projects/web",
+          new Date("2024-01-01"),
+        ),
+        createTestProject(
+          "2",
+          "Project 2",
+          "/home/user/projects/mobile",
+          new Date("2024-01-02"),
+        ),
+        createTestProject(
+          "3",
+          "Project 3",
+          "/home/admin/projects/web",
+          new Date("2024-01-03"),
+        ),
+        createTestProject(
+          "4",
+          "Project 4",
+          "/var/www/html",
+          new Date("2024-01-04"),
+        ),
       ];
 
       const mockRepo = new MockProjectRepository(projects);

@@ -1,3 +1,4 @@
+import { err, ok, type Result } from "neverthrow";
 import type {
   LogParser,
   LogParserError,
@@ -6,7 +7,6 @@ import type {
   ClaudeLogEntry,
   ParsedLogFile,
 } from "@/core/domain/watcher/types";
-import { type Result, err, ok } from "neverthrow";
 
 export class MockLogParser implements LogParser {
   private parsedFiles = new Map<string, ParsedLogFile>();
@@ -52,7 +52,7 @@ export class MockLogParser implements LogParser {
     return ok(parsedFile);
   }
 
-  parseJsonLines(content: string): Result<ClaudeLogEntry[], LogParserError> {
+  parseJsonLines(_content: string): Result<ClaudeLogEntry[], LogParserError> {
     if (this.shouldFail) {
       return err({
         type: "PARSER_ERROR",

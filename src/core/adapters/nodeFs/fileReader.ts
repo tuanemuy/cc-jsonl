@@ -1,10 +1,10 @@
 import { constants } from "node:fs";
 import { access, readFile } from "node:fs/promises";
+import { err, ok, type Result } from "neverthrow";
 import type {
   FileReader,
   FileReaderError,
 } from "@/core/domain/watcher/ports/fileReader";
-import { type Result, err, ok } from "neverthrow";
 
 export class NodeFsFileReader implements FileReader {
   async readFile(

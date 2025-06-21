@@ -1,5 +1,5 @@
-import type { RepositoryError } from "@/lib/error";
 import type { Result } from "neverthrow";
+import type { RepositoryError } from "@/lib/error";
 import type {
   CreateProjectParams,
   ListProjectQuery,

@@ -1,16 +1,16 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { getServerContext } from "@/actions/context";
+import type {
+  CreateMessageInput,
+  ListMessageQuery,
+} from "@/core/application/message";
 import {
   createMessage,
   getMessage,
   listMessages,
 } from "@/core/application/message";
-import type {
-  CreateMessageInput,
-  ListMessageQuery,
-} from "@/core/application/message";
-import { revalidatePath } from "next/cache";
 
 export async function createMessageAction(input: CreateMessageInput) {
   const context = getServerContext();

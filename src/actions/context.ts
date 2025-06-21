@@ -1,3 +1,6 @@
+import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/libsql";
+import { z } from "zod";
 import { AnthropicClaudeService } from "@/core/adapters/anthropic/claudeService";
 import type { Database } from "@/core/adapters/drizzleSqlite/client";
 import { DrizzleSqliteMessageRepository } from "@/core/adapters/drizzleSqlite/messageRepository";
@@ -5,9 +8,6 @@ import { DrizzleSqliteProjectRepository } from "@/core/adapters/drizzleSqlite/pr
 import * as schema from "@/core/adapters/drizzleSqlite/schema";
 import { DrizzleSqliteSessionRepository } from "@/core/adapters/drizzleSqlite/sessionRepository";
 import type { Context } from "@/core/application/context";
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
-import { z } from "zod";
 
 export const envSchema = z.object({
   DATABASE_FILE_NAME: z.string().optional(),

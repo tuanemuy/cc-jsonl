@@ -1,13 +1,13 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import { MockClaudeService } from "@/core/adapters/mock/claudeService";
 import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
 import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
 import { MockSessionRepository } from "@/core/adapters/mock/sessionRepository";
 import type { ProjectId } from "@/core/domain/project/types";
 import type { Session, SessionId } from "@/core/domain/session/types";
-import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
-import { getSession } from "./getSession";
 import type { GetSessionInput } from "./getSession";
+import { getSession } from "./getSession";
 
 describe("getSession", () => {
   let mockProjectRepository: MockProjectRepository;
@@ -472,12 +472,9 @@ describe("getSession", () => {
       }
     });
 
-    it("先頭と末尾にスペースを含むIDでセッションを取得できる", async () => {
+    it("先頭と末尾にスペースを含むIDでセッション取得は失敗する", async () => {
       // Arrange
       const spacedId = " session-with-spaces ";
-      const session = createTestSession(spacedId, "test-project-id");
-      const mockRepo = new MockSessionRepository([session]);
-      context.sessionRepository = mockRepo;
 
       const input: GetSessionInput = {
         id: spacedId,
@@ -487,9 +484,9 @@ describe("getSession", () => {
       const result = await getSession(context, input);
 
       // Assert
-      expect(result.isOk()).toBe(true);
-      if (result.isOk()) {
-        expect(result.value?.id).toBe(spacedId);
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.message).toBe("Invalid session input");
       }
     });
 

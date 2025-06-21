@@ -1,17 +1,17 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getServerContext } from "@/actions/context";
+import type {
+  CreateSessionInput,
+  ListSessionQuery,
+} from "@/core/application/session";
 import {
   createSession,
   getSession,
   listSessions,
 } from "@/core/application/session";
-import type {
-  CreateSessionInput,
-  ListSessionQuery,
-} from "@/core/application/session";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 export async function createSessionAction(input: CreateSessionInput) {
   const context = getServerContext();

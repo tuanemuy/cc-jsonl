@@ -1,3 +1,5 @@
+import { err, ok, type Result } from "neverthrow";
+import { v7 as uuidv7 } from "uuid";
 import type { MessageRepository } from "@/core/domain/message/ports/messageRepository";
 import type {
   CreateMessageParams,
@@ -6,8 +8,6 @@ import type {
   MessageId,
 } from "@/core/domain/message/types";
 import { RepositoryError } from "@/lib/error";
-import { type Result, err, ok } from "neverthrow";
-import { v7 as uuidv7 } from "uuid";
 
 export class MockMessageRepository implements MessageRepository {
   private messages: Map<MessageId, Message> = new Map();

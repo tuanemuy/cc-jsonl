@@ -1,8 +1,8 @@
+import { err, ok, type Result } from "neverthrow";
 import type {
   FileReader,
   FileReaderError,
 } from "@/core/domain/watcher/ports/fileReader";
-import { type Result, err, ok } from "neverthrow";
 
 export class MockFileReader implements FileReader {
   private files = new Map<string, string>();
@@ -29,7 +29,7 @@ export class MockFileReader implements FileReader {
 
   async readFile(
     filePath: string,
-    encoding?: string,
+    _encoding?: string,
   ): Promise<Result<string, FileReaderError>> {
     const content = this.files.get(filePath);
 
