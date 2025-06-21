@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises";
 import type { Context } from "@/core/application/context";
-import { createMessage } from "@/core/application/message";
 import { createProject } from "@/core/application/project";
 import { createSession } from "@/core/application/session";
 import { type SessionId, sessionIdSchema } from "@/core/domain/session/types";
@@ -33,7 +32,7 @@ export async function processLogFile(
     }
 
     await ensureProjectExists(context, projectName);
-    await ensureSessionExists(context, projectName, sessionId);
+    await ensureSessionExists(context, projectName, sessionId, logEntries);
     await processLogEntries(context, sessionId, logEntries);
 
     console.log(
@@ -78,6 +77,7 @@ async function ensureSessionExists(
   context: Context,
   projectName: string,
   sessionId: string,
+  logEntries: ClaudeLogEntry[],
 ): Promise<void> {
   const projectsResult = await context.projectRepository.list({
     pagination: { page: 1, limit: 100, order: "asc", orderBy: "createdAt" },
@@ -109,14 +109,26 @@ async function ensureSessionExists(
   );
 
   if (!sessionExists) {
+    // Get cwd from the first log entry that has it
+    const firstEntryWithCwd = logEntries.find(
+      (entry) => entry.type !== "summary" && "cwd" in entry,
+    );
+    const cwd =
+      firstEntryWithCwd && "cwd" in firstEntryWithCwd
+        ? firstEntryWithCwd.cwd
+        : "/tmp";
+
     const result = await createSession(context, {
       id: brandedSessionId,
       projectId: project.id,
+      cwd,
     });
     if (result.isErr()) {
       throw new Error(`Failed to create session: ${result.error.message}`);
     }
-    console.log(`Created session: ${sessionId} for project: ${projectName}`);
+    console.log(
+      `Created session: ${sessionId} for project: ${projectName} with cwd: ${cwd}`,
+    );
   }
 }
 
@@ -148,26 +160,6 @@ async function processMessageEntry(
   sessionId: SessionId,
   entry: UserLog | AssistantLog,
 ): Promise<void> {
-  const existingMessages = await context.messageRepository.list({
-    pagination: { page: 1, limit: 1000, order: "asc", orderBy: "createdAt" },
-    filter: { sessionId },
-  });
-
-  if (existingMessages.isErr()) {
-    console.warn(
-      `Failed to list existing messages: ${existingMessages.error.message}`,
-    );
-    return;
-  }
-
-  const messageExists = existingMessages.value.items.some(
-    (m) => (m.rawData as { uuid?: string })?.uuid === entry.uuid,
-  );
-
-  if (messageExists) {
-    return;
-  }
-
   let content: string | null = null;
 
   if (entry.type === "user") {
@@ -179,16 +171,32 @@ async function processMessageEntry(
     content = JSON.stringify(entry.message.content);
   }
 
-  const result = await createMessage(context, {
+  const result = await context.messageRepository.upsert({
     sessionId,
     role: entry.message.role,
     content,
     timestamp: new Date(entry.timestamp),
     rawData: JSON.stringify(entry),
+    uuid: entry.uuid,
+    parentUuid: entry.parentUuid,
+    cwd: entry.cwd,
   });
 
   if (result.isErr()) {
-    console.warn(`Failed to create message: ${result.error.message}`);
+    console.warn(`Failed to upsert message: ${result.error.message}`);
+    return;
+  }
+
+  // Update session cwd to match the latest message's cwd
+  const sessionUpdateResult = await context.sessionRepository.updateCwd(
+    sessionId,
+    entry.cwd,
+  );
+
+  if (sessionUpdateResult.isErr()) {
+    console.warn(
+      `Failed to update session cwd: ${sessionUpdateResult.error.message}`,
+    );
   }
 }
 
@@ -197,35 +205,31 @@ async function processSystemEntry(
   sessionId: SessionId,
   entry: SystemLog,
 ): Promise<void> {
-  const existingMessages = await context.messageRepository.list({
-    pagination: { page: 1, limit: 1000, order: "asc", orderBy: "createdAt" },
-    filter: { sessionId },
-  });
-
-  if (existingMessages.isErr()) {
-    console.warn(
-      `Failed to list existing messages: ${existingMessages.error.message}`,
-    );
-    return;
-  }
-
-  const messageExists = existingMessages.value.items.some(
-    (m) => (m.rawData as { uuid?: string })?.uuid === entry.uuid,
-  );
-
-  if (messageExists) {
-    return;
-  }
-
-  const result = await createMessage(context, {
+  const result = await context.messageRepository.upsert({
     sessionId,
     role: "assistant",
     content: `[SYSTEM] ${entry.content}`,
     timestamp: new Date(entry.timestamp),
     rawData: JSON.stringify(entry),
+    uuid: entry.uuid,
+    parentUuid: entry.parentUuid,
+    cwd: entry.cwd,
   });
 
   if (result.isErr()) {
-    console.warn(`Failed to create system message: ${result.error.message}`);
+    console.warn(`Failed to upsert system message: ${result.error.message}`);
+    return;
+  }
+
+  // Update session cwd to match the latest message's cwd
+  const sessionUpdateResult = await context.sessionRepository.updateCwd(
+    sessionId,
+    entry.cwd,
+  );
+
+  if (sessionUpdateResult.isErr()) {
+    console.warn(
+      `Failed to update session cwd: ${sessionUpdateResult.error.message}`,
+    );
   }
 }
