@@ -72,7 +72,7 @@ export const fileChangeEventSchema = z.object({
 export type FileChangeEvent = z.infer<typeof fileChangeEventSchema>;
 
 export const watcherConfigSchema = z.object({
-  targetDirectory: z.string(),
+  targetDirectory: z.string().min(1),
   pattern: z.string().default("**/*.jsonl"),
   ignoreInitial: z.boolean().default(false),
   persistent: z.boolean().default(true),
