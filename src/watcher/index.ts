@@ -1,55 +1,36 @@
 #!/usr/bin/env node
 
-import { join } from "node:path";
-import { watch } from "chokidar";
-import { getWatcherContext } from "./context";
-import { processLogFile } from "./processor";
+import { startWatcher, stopWatcher } from "@/core/application/watcher";
+import { getWatcherContext } from "./watcherContext";
 
 async function main() {
-  console.log("Starting Claude Code Log Watcher...");
-
   try {
     const { context, targetDir } = getWatcherContext();
 
-    console.log(`Watching directory: ${targetDir}`);
-    console.log("Pattern: **/*.jsonl");
-
-    const watchPattern = join(targetDir, "**/*.jsonl");
-
-    const watcher = watch(watchPattern, {
-      persistent: true,
+    const watcherConfig = {
+      targetDirectory: targetDir,
+      pattern: "**/*.jsonl",
       ignoreInitial: false,
-      followSymlinks: false,
-      awaitWriteFinish: {
-        stabilityThreshold: 1000,
-        pollInterval: 100,
-      },
-    });
+      persistent: true,
+      stabilityThreshold: 1000,
+      pollInterval: 100,
+    };
 
-    watcher.on("add", async (filePath) => {
-      console.log(`File added: ${filePath}`);
-      await processLogFile(context, filePath);
-    });
+    const result = await startWatcher(context, { config: watcherConfig });
 
-    watcher.on("change", async (filePath) => {
-      console.log(`File changed: ${filePath}`);
-      await processLogFile(context, filePath);
-    });
+    if (result.isErr()) {
+      console.error("Failed to start file watcher:", result.error);
+      process.exit(1);
+    }
 
-    watcher.on("error", (error) => {
-      console.error("Watcher error:", error);
-    });
-
-    watcher.on("ready", () => {
-      console.log("File watcher is ready and watching for changes...");
-    });
-
-    process.on("SIGINT", () => {
-      console.log("\nShutting down file watcher...");
-      watcher.close().then(() => {
-        console.log("File watcher closed.");
-        process.exit(0);
-      });
+    process.on("SIGINT", async () => {
+      console.log("\nShutting down...");
+      const stopResult = await stopWatcher(context);
+      if (stopResult.isErr()) {
+        console.error("Failed to stop watcher:", stopResult.error);
+        process.exit(1);
+      }
+      process.exit(0);
     });
   } catch (error) {
     console.error("Failed to start file watcher:", error);
