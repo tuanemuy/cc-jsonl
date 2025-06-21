@@ -23,6 +23,7 @@ describe("getSession", () => {
   ): Session => ({
     id: id as SessionId,
     projectId: projectId as ProjectId,
+    cwd: "/tmp",
     createdAt,
     updatedAt: createdAt,
   });

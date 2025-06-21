@@ -58,6 +58,7 @@ export async function sendMessageStream(
 
       const createSessionResult = await context.sessionRepository.create({
         projectId: projectsResult.value.items[0].id,
+        cwd: "/tmp",
       });
       if (createSessionResult.isErr()) {
         return err(
@@ -95,6 +96,9 @@ export async function sendMessageStream(
       content: params.message,
       timestamp: new Date(),
       rawData: JSON.stringify({ content: params.message, role: "user" }),
+      uuid: crypto.randomUUID(),
+      parentUuid: null,
+      cwd: session.cwd,
     });
     if (userMessageResult.isErr()) {
       return err(
@@ -133,6 +137,9 @@ export async function sendMessageStream(
       content: assistantContent,
       timestamp: new Date(),
       rawData: JSON.stringify(claudeResponse),
+      uuid: crypto.randomUUID(),
+      parentUuid: userMessageResult.value.uuid,
+      cwd: session.cwd,
     });
     if (assistantMessageResult.isErr()) {
       return err(

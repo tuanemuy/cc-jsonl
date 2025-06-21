@@ -40,6 +40,9 @@ describe("getMessage", () => {
         content: "Hello, world!",
         timestamp: new Date("2024-01-01T10:00:00Z"),
         rawData: JSON.stringify({ text: "Hello, world!" }),
+        uuid: "test-uuid-1",
+        parentUuid: null,
+        cwd: "/tmp",
         createdAt: new Date("2024-01-01T10:00:00Z"),
         updatedAt: new Date("2024-01-01T10:00:00Z"),
       };
@@ -82,6 +85,9 @@ describe("getMessage", () => {
         content: "UUID message",
         timestamp: new Date("2024-01-01T10:01:00Z"),
         rawData: JSON.stringify({ text: "UUID message" }),
+        uuid: "test-uuid-2",
+        parentUuid: null,
+        cwd: "/tmp",
         createdAt: new Date("2024-01-01T10:01:00Z"),
         updatedAt: new Date("2024-01-01T10:01:00Z"),
       };
@@ -115,6 +121,9 @@ describe("getMessage", () => {
         content: "Special ID message",
         timestamp: new Date("2024-01-01T10:02:00Z"),
         rawData: JSON.stringify({ text: "Special ID message" }),
+        uuid: "test-uuid-3",
+        parentUuid: null,
+        cwd: "/tmp",
         createdAt: new Date("2024-01-01T10:02:00Z"),
         updatedAt: new Date("2024-01-01T10:02:00Z"),
       };
@@ -146,6 +155,9 @@ describe("getMessage", () => {
         content: "Japanese ID message",
         timestamp: new Date("2024-01-01T10:03:00Z"),
         rawData: JSON.stringify({ text: "Japanese ID message" }),
+        uuid: "test-uuid-4",
+        parentUuid: null,
+        cwd: "/tmp",
         createdAt: new Date("2024-01-01T10:03:00Z"),
         updatedAt: new Date("2024-01-01T10:03:00Z"),
       };
@@ -177,6 +189,9 @@ describe("getMessage", () => {
         content: "Numeric ID message",
         timestamp: new Date("2024-01-01T10:04:00Z"),
         rawData: JSON.stringify({ text: "Numeric ID message" }),
+        uuid: "test-uuid-5",
+        parentUuid: null,
+        cwd: "/tmp",
         createdAt: new Date("2024-01-01T10:04:00Z"),
         updatedAt: new Date("2024-01-01T10:04:00Z"),
       };
@@ -208,6 +223,9 @@ describe("getMessage", () => {
         content: null,
         timestamp: new Date("2024-01-01T10:05:00Z"),
         rawData: JSON.stringify({ type: "file_upload" }),
+        uuid: "test-uuid-6",
+        parentUuid: null,
+        cwd: "/tmp",
         createdAt: new Date("2024-01-01T10:05:00Z"),
         updatedAt: new Date("2024-01-01T10:05:00Z"),
       };
@@ -324,6 +342,9 @@ describe("getMessage", () => {
         content: "Short ID message",
         timestamp: new Date("2024-01-01T10:06:00Z"),
         rawData: JSON.stringify({ text: "Short ID message" }),
+        uuid: "test-uuid-7",
+        parentUuid: null,
+        cwd: "/tmp",
         createdAt: new Date("2024-01-01T10:06:00Z"),
         updatedAt: new Date("2024-01-01T10:06:00Z"),
       };
@@ -356,6 +377,9 @@ describe("getMessage", () => {
         content: "Long ID message",
         timestamp: new Date("2024-01-01T10:07:00Z"),
         rawData: JSON.stringify({ text: "Long ID message" }),
+        uuid: "test-uuid-8",
+        parentUuid: null,
+        cwd: "/tmp",
         createdAt: new Date("2024-01-01T10:07:00Z"),
         updatedAt: new Date("2024-01-01T10:07:00Z"),
       };
@@ -388,6 +412,9 @@ describe("getMessage", () => {
         content: "Symbol ID message",
         timestamp: new Date("2024-01-01T10:08:00Z"),
         rawData: JSON.stringify({ text: "Symbol ID message" }),
+        uuid: "test-uuid-9",
+        parentUuid: null,
+        cwd: "/tmp",
         createdAt: new Date("2024-01-01T10:08:00Z"),
         updatedAt: new Date("2024-01-01T10:08:00Z"),
       };
@@ -419,6 +446,9 @@ describe("getMessage", () => {
         content: "Case sensitive ID message",
         timestamp: new Date("2024-01-01T10:09:00Z"),
         rawData: JSON.stringify({ text: "Case sensitive ID message" }),
+        uuid: "test-uuid-10",
+        parentUuid: null,
+        cwd: "/tmp",
         createdAt: new Date("2024-01-01T10:09:00Z"),
         updatedAt: new Date("2024-01-01T10:09:00Z"),
       };

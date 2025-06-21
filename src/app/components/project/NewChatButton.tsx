@@ -15,7 +15,7 @@ export function NewChatButton({ projectId }: NewChatButtonProps) {
 
   const handleCreateSession = () => {
     startTransition(async () => {
-      await createSessionAction({ projectId });
+      await createSessionAction({ projectId, cwd: "/tmp" });
     });
   };
 

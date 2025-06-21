@@ -80,6 +80,7 @@ describe("sendMessage", () => {
       const session: Session = {
         id: "session-123" as SessionId,
         projectId: project.id,
+        cwd: "/tmp",
         createdAt: new Date("2024-01-01T10:00:00Z"),
         updatedAt: new Date("2024-01-01T10:00:00Z"),
       };
@@ -116,6 +117,7 @@ describe("sendMessage", () => {
       const session: Session = {
         id: "session-123" as SessionId,
         projectId: project.id,
+        cwd: "/tmp",
         createdAt: new Date("2024-01-01T10:00:00Z"),
         updatedAt: new Date("2024-01-01T10:00:00Z"),
       };
@@ -127,6 +129,9 @@ describe("sendMessage", () => {
           content: "Previous user message",
           timestamp: new Date("2024-01-01T10:00:00Z"),
           rawData: "{}",
+          uuid: "test-uuid-1",
+          parentUuid: null,
+          cwd: "/tmp",
           createdAt: new Date("2024-01-01T10:00:00Z"),
           updatedAt: new Date("2024-01-01T10:00:00Z"),
         },
@@ -137,6 +142,9 @@ describe("sendMessage", () => {
           content: "Previous assistant message",
           timestamp: new Date("2024-01-01T10:01:00Z"),
           rawData: "{}",
+          uuid: "test-uuid-2",
+          parentUuid: "test-uuid-1",
+          cwd: "/tmp",
           createdAt: new Date("2024-01-01T10:01:00Z"),
           updatedAt: new Date("2024-01-01T10:01:00Z"),
         },

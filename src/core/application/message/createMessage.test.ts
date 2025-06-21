@@ -38,6 +38,9 @@ describe("createMessage", () => {
         content: "Hello, world!",
         timestamp: new Date("2024-01-01T10:00:00Z"),
         rawData: JSON.stringify({ text: "Hello, world!" }),
+        uuid: "test-uuid-1",
+        parentUuid: null,
+        cwd: "/tmp",
       };
 
       const result = await createMessage(context, input);
@@ -67,6 +70,9 @@ describe("createMessage", () => {
         content: "How can I help you?",
         timestamp: new Date("2024-01-01T10:01:00Z"),
         rawData: JSON.stringify({ text: "How can I help you?" }),
+        uuid: "test-uuid-2",
+        parentUuid: null,
+        cwd: "/tmp",
       };
 
       const result = await createMessage(context, input);
@@ -85,6 +91,9 @@ describe("createMessage", () => {
         content: null,
         timestamp: new Date("2024-01-01T10:02:00Z"),
         rawData: JSON.stringify({ type: "file_upload" }),
+        uuid: "test-uuid-3",
+        parentUuid: null,
+        cwd: "/tmp",
       };
 
       const result = await createMessage(context, input);
@@ -103,6 +112,9 @@ describe("createMessage", () => {
         content: "こんにちは、世界！",
         timestamp: new Date("2024-01-01T10:03:00Z"),
         rawData: JSON.stringify({ text: "こんにちは、世界！" }),
+        uuid: "test-uuid-4",
+        parentUuid: null,
+        cwd: "/tmp",
       };
 
       const result = await createMessage(context, input);
@@ -123,6 +135,9 @@ describe("createMessage", () => {
         rawData: JSON.stringify({
           text: "Special chars: !@#$%^&*()_+-=[]{}|;':\",./<>?",
         }),
+        uuid: "test-uuid-5",
+        parentUuid: null,
+        cwd: "/tmp",
       };
 
       const result = await createMessage(context, input);
@@ -143,6 +158,9 @@ describe("createMessage", () => {
         content: "First message",
         timestamp: new Date("2024-01-01T10:00:00Z"),
         rawData: JSON.stringify({ text: "First message" }),
+        uuid: "test-uuid-6",
+        parentUuid: null,
+        cwd: "/tmp",
       };
       const input2: CreateMessageInput = {
         sessionId,
@@ -150,6 +168,9 @@ describe("createMessage", () => {
         content: "Second message",
         timestamp: new Date("2024-01-01T10:01:00Z"),
         rawData: JSON.stringify({ text: "Second message" }),
+        uuid: "test-uuid-7",
+        parentUuid: "test-uuid-6",
+        cwd: "/tmp",
       };
 
       const result1 = await createMessage(context, input1);
@@ -172,6 +193,9 @@ describe("createMessage", () => {
         content: "Hello",
         timestamp: new Date(),
         rawData: "{}",
+        uuid: "test-uuid-error",
+        parentUuid: null,
+        cwd: "/tmp",
       };
 
       const result = await createMessage(context, input);
@@ -190,6 +214,9 @@ describe("createMessage", () => {
         content: "Hello",
         timestamp: new Date(),
         rawData: "{}",
+        uuid: "test-uuid-error",
+        parentUuid: null,
+        cwd: "/tmp",
       };
 
       const result = await createMessage(context, input);
@@ -208,6 +235,9 @@ describe("createMessage", () => {
         content: "Hello",
         timestamp: new Date(),
         rawData: "{}",
+        uuid: "test-uuid-error",
+        parentUuid: null,
+        cwd: "/tmp",
       };
 
       const result = await createMessage(context, input);
@@ -242,6 +272,9 @@ describe("createMessage", () => {
         // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
         timestamp: "invalid-date" as any,
         rawData: "{}",
+        uuid: "test-uuid-error",
+        parentUuid: null,
+        cwd: "/tmp",
       };
 
       const result = await createMessage(context, input);
@@ -258,6 +291,9 @@ describe("createMessage", () => {
         role: "user" as const,
         content: "Hello",
         timestamp: new Date(),
+        uuid: crypto.randomUUID(),
+        parentUuid: null,
+        cwd: "/tmp",
         // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
         rawData: 123 as any,
       };
@@ -279,6 +315,9 @@ describe("createMessage", () => {
         role: "user",
         content: "",
         timestamp: new Date(),
+        uuid: crypto.randomUUID(),
+        parentUuid: null,
+        cwd: "/tmp",
         rawData: JSON.stringify({ text: "" }),
       };
 
@@ -298,6 +337,9 @@ describe("createMessage", () => {
         role: "user",
         content: longContent,
         timestamp: new Date(),
+        uuid: crypto.randomUUID(),
+        parentUuid: null,
+        cwd: "/tmp",
         rawData: JSON.stringify({ text: longContent }),
       };
 
@@ -317,6 +359,9 @@ describe("createMessage", () => {
         role: "user",
         content: multilineContent,
         timestamp: new Date(),
+        uuid: crypto.randomUUID(),
+        parentUuid: null,
+        cwd: "/tmp",
         rawData: JSON.stringify({ text: multilineContent }),
       };
 
@@ -336,6 +381,9 @@ describe("createMessage", () => {
         role: "user",
         content: whitespaceContent,
         timestamp: new Date(),
+        uuid: crypto.randomUUID(),
+        parentUuid: null,
+        cwd: "/tmp",
         rawData: JSON.stringify({ text: whitespaceContent }),
       };
 
@@ -363,6 +411,9 @@ describe("createMessage", () => {
         role: "user",
         content: "Hello",
         timestamp: new Date(),
+        uuid: crypto.randomUUID(),
+        parentUuid: null,
+        cwd: "/tmp",
         rawData: complexRawData,
       };
 
