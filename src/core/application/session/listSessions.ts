@@ -16,8 +16,8 @@ export async function listSessions(
 ): Promise<Result<{ items: Session[]; count: number }, ApplicationError>> {
   console.log("[listSessions] Starting session list query", {
     projectId: query.filter?.projectId,
-    page: query.pagination.page,
-    limit: query.pagination.limit,
+    page: query.pagination?.page,
+    limit: query.pagination?.limit,
   });
 
   const parseResult = validate(listSessionQuerySchema, query);

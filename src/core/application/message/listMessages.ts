@@ -16,8 +16,8 @@ export async function listMessages(
 ): Promise<Result<{ items: Message[]; count: number }, ApplicationError>> {
   console.log("[listMessages] Starting message list query", {
     sessionId: query.filter?.sessionId,
-    page: query.pagination.page,
-    limit: query.pagination.limit,
+    page: query.pagination?.page,
+    limit: query.pagination?.limit,
   });
 
   const parseResult = validate(listMessageQuerySchema, query);

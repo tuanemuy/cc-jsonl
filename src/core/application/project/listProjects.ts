@@ -15,8 +15,8 @@ export async function listProjects(
   query: ListProjectQuery,
 ): Promise<Result<{ items: Project[]; count: number }, ApplicationError>> {
   console.log("[listProjects] Starting project list query", {
-    page: query.pagination.page,
-    limit: query.pagination.limit,
+    page: query.pagination?.page,
+    limit: query.pagination?.limit,
   });
 
   const parseResult = validate(listProjectQuerySchema, query);
