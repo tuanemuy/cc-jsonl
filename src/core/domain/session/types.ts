@@ -1,11 +1,18 @@
-import { paginationSchema } from "@/lib/pagination";
 import { z } from "zod/v4";
+import { paginationSchema } from "@/lib/pagination";
 import { type ProjectId, projectIdSchema } from "../project/types";
 
 // Re-export types that are commonly used with sessions
 export type { ProjectId };
 
-export const sessionIdSchema = z.string().brand("sessionId");
+export const sessionIdSchema = z
+  .string()
+  .min(1)
+  .refine((val) => val.trim().length > 0 && val === val.trim(), {
+    message:
+      "ID cannot be empty, whitespace only, or have leading/trailing whitespace",
+  })
+  .brand("sessionId");
 export type SessionId = z.infer<typeof sessionIdSchema>;
 
 export const sessionSchema = z.object({

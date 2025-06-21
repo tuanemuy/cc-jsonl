@@ -1,7 +1,14 @@
-import { paginationSchema } from "@/lib/pagination";
 import { z } from "zod/v4";
+import { paginationSchema } from "@/lib/pagination";
 
-export const projectIdSchema = z.string().brand("projectId");
+export const projectIdSchema = z
+  .string()
+  .min(1)
+  .refine((val) => val.trim().length > 0 && val === val.trim(), {
+    message:
+      "ID cannot be empty, whitespace only, or have leading/trailing whitespace",
+  })
+  .brand("projectId");
 export type ProjectId = z.infer<typeof projectIdSchema>;
 
 export const projectSchema = z.object({
@@ -14,8 +21,18 @@ export const projectSchema = z.object({
 export type Project = z.infer<typeof projectSchema>;
 
 export const createProjectParamsSchema = z.object({
-  name: z.string(),
-  path: z.string(),
+  name: z
+    .string()
+    .min(1)
+    .refine((val) => val.trim().length > 0, {
+      message: "Name cannot be empty or whitespace only",
+    }),
+  path: z
+    .string()
+    .min(1)
+    .refine((val) => val.trim().length > 0, {
+      message: "Path cannot be empty or whitespace only",
+    }),
 });
 export type CreateProjectParams = z.infer<typeof createProjectParamsSchema>;
 
