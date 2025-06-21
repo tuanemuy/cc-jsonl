@@ -12,6 +12,7 @@ import { type Result, err, ok } from "neverthrow";
 export class MockProjectRepository implements ProjectRepository {
   private projects: Map<ProjectId, Project> = new Map();
   private nextId = 1;
+  private shouldFailList = false;
 
   constructor(initialProjects: Project[] = []) {
     for (const project of initialProjects) {
@@ -104,6 +105,10 @@ export class MockProjectRepository implements ProjectRepository {
   async list(
     query: ListProjectQuery,
   ): Promise<Result<{ items: Project[]; count: number }, RepositoryError>> {
+    if (this.shouldFailList) {
+      return err(new RepositoryError("Mock repository list failure"));
+    }
+
     let filteredProjects = Array.from(this.projects.values());
 
     // Apply filters
@@ -138,9 +143,21 @@ export class MockProjectRepository implements ProjectRepository {
   clear(): void {
     this.projects.clear();
     this.nextId = 1;
+    this.shouldFailList = false;
   }
 
   getAll(): Project[] {
     return Array.from(this.projects.values());
+  }
+
+  setProjects(projects: Project[]): void {
+    this.projects.clear();
+    for (const project of projects) {
+      this.projects.set(project.id, project);
+    }
+  }
+
+  setShouldFailList(shouldFail: boolean): void {
+    this.shouldFailList = shouldFail;
   }
 }

@@ -12,6 +12,7 @@ import { v7 as uuidv7 } from "uuid";
 
 export class MockSessionRepository implements SessionRepository {
   private sessions: Map<SessionId, Session> = new Map();
+  private shouldFailList = false;
 
   constructor(initialSessions: Session[] = []) {
     for (const session of initialSessions) {
@@ -78,6 +79,10 @@ export class MockSessionRepository implements SessionRepository {
   async list(
     query: ListSessionQuery,
   ): Promise<Result<{ items: Session[]; count: number }, RepositoryError>> {
+    if (this.shouldFailList) {
+      return err(new RepositoryError("Mock repository list failure"));
+    }
+
     let filteredSessions = Array.from(this.sessions.values());
 
     // Apply filters
@@ -116,9 +121,21 @@ export class MockSessionRepository implements SessionRepository {
   // Test utility methods
   clear(): void {
     this.sessions.clear();
+    this.shouldFailList = false;
   }
 
   getAll(): Session[] {
     return Array.from(this.sessions.values());
+  }
+
+  setSessions(sessions: Session[]): void {
+    this.sessions.clear();
+    for (const session of sessions) {
+      this.sessions.set(session.id, session);
+    }
+  }
+
+  setShouldFailList(shouldFail: boolean): void {
+    this.shouldFailList = shouldFail;
   }
 }
