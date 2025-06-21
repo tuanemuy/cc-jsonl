@@ -24,6 +24,7 @@ export const sessions = sqliteTable("sessions", {
   projectId: text("project_id")
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
+  cwd: text("cwd").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -44,6 +45,9 @@ export const messages = sqliteTable("messages", {
   content: text("content"),
   timestamp: integer("timestamp", { mode: "timestamp" }).notNull(),
   rawData: text("raw_data").notNull(),
+  uuid: text("uuid").notNull().unique(),
+  parentUuid: text("parent_uuid"),
+  cwd: text("cwd").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
