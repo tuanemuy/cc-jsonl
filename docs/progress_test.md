@@ -38,14 +38,29 @@ Record the implementation status of application service tests.
   - Error cases: Empty strings, null, type errors, spaces only
   - Boundary values: Shortest ID, longest ID, IDs with symbols
 
-### Message Services 🔲
-- [ ] `createMessage.test.ts` - Message creation tests
-- [ ] `listMessages.test.ts` - Message list retrieval tests
-- [ ] `getMessage.test.ts` - Message retrieval tests
+### Message Services ✅
+- [x] `createMessage.test.ts` - Message creation tests
+  - Normal cases: User/assistant roles, null content, Japanese text, special characters, multiple messages
+  - Error cases: Empty sessionId, null values, invalid role, missing fields, invalid types
+  - Boundary values: Empty content, long content, newlines, whitespace, complex JSON rawData
+- [x] `listMessages.test.ts` - Message list retrieval tests
+  - Normal cases: Empty list, no filter, sessionId filter, role filter, combined filters, pagination
+  - Error cases: Invalid page/limit numbers, invalid types, missing pagination
+  - Boundary values: Non-existent pages, max limit, no filter matches, empty sessionId
+- [x] `getMessage.test.ts` - Message retrieval tests
+  - Normal cases: Valid ID formats (UUID, special chars, Japanese, numeric), null content
+  - Error cases: Empty/null/undefined ID, non-string ID, missing ID, whitespace-only ID
+  - Boundary values: Single char ID, very long ID, symbol ID, case sensitivity, leading/trailing spaces
 
-### Claude Services 🔲
-- [ ] `sendMessage.test.ts` - Message sending tests
-- [ ] `sendMessageStream.test.ts` - Streaming message sending tests
+### Claude Services ✅
+- [x] `sendMessage.test.ts` - Message sending tests
+  - Normal cases: New session creation, existing session, previous messages context, Japanese/multiline/special chars
+  - Error cases: Empty message, null/non-string message, no projects, session not found, Claude service errors, invalid types
+  - Boundary values: Single char, very long message, whitespace-only, line breaks, complex mixed content
+- [x] `sendMessageStream.test.ts` - Streaming message sending tests
+  - Normal cases: New session streaming, existing session, chunk order, context inclusion, Japanese text, chunk capturing
+  - Error cases: Empty message, null message, no projects, session not found, Claude streaming errors, invalid types
+  - Boundary values: Single char streaming, long message streaming, whitespace streaming, multiline streaming, special chars
 
 ## Mock Implementation
 
@@ -57,8 +72,19 @@ Record the implementation status of application service tests.
   - Auto UUID generation feature
   - Filtering by project ID
 
+- [x] `MockMessageRepository` - Message repository mock implementation
+  - All CRUD methods implemented
+  - Auto UUID generation feature
+  - Filtering by sessionId and role
+  - Test utility methods (clear, getAll)
+- [x] `MockClaudeService` - Claude service mock implementation
+  - sendMessage and sendMessageStream methods
+  - Configurable mock responses and errors
+  - Response delay simulation
+  - Test utility methods (setMockResponse, setShouldFailNext, reset)
+
 ### Not Implemented 🔲
-- [ ] `MockMessageRepository` - Message repository mock implementation
+- None - All mock implementations completed
 
 ## Test Coverage
 
@@ -88,7 +114,18 @@ Record the implementation status of application service tests.
    - Special string patterns
 
 ## Next Steps
-1. Message service test implementation
-2. Claude service test implementation
-3. MockMessageRepository implementation
-4. Integration test consideration
+1. ✅ Message service test implementation - Completed
+2. ✅ Claude service test implementation - Completed  
+3. ✅ MockMessageRepository implementation - Completed
+4. ✅ MockClaudeService implementation - Completed
+5. Integration test consideration - Future work
+6. Test execution and validation - Future work
+
+## Summary
+All planned application service tests have been successfully implemented with comprehensive coverage including:
+- **Normal case testing**: Valid inputs and expected behaviors
+- **Error case testing**: Invalid inputs and error handling
+- **Boundary value testing**: Edge cases and limits
+- **Mock implementations**: Complete mock services for testing isolation
+
+The test suite covers all core application services (Project, Session, Message, Claude) with thorough validation of input handling, business logic, and error scenarios.
