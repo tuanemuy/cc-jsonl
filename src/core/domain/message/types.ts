@@ -15,6 +15,9 @@ export const messageSchema = z.object({
   content: z.string().nullable(),
   timestamp: z.date(),
   rawData: z.string(),
+  uuid: z.string(),
+  parentUuid: z.string().nullable(),
+  cwd: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -26,6 +29,9 @@ export const createMessageParamsSchema = z.object({
   content: z.string().nullable(),
   timestamp: z.date(),
   rawData: z.string(),
+  uuid: z.string(),
+  parentUuid: z.string().nullable(),
+  cwd: z.string(),
 });
 export type CreateMessageParams = z.infer<typeof createMessageParamsSchema>;
 
