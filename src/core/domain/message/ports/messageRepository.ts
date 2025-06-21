@@ -12,6 +12,10 @@ export interface MessageRepository {
     params: CreateMessageParams,
   ): Promise<Result<Message, RepositoryError>>;
   findById(id: MessageId): Promise<Result<Message | null, RepositoryError>>;
+  findByUuid(uuid: string): Promise<Result<Message | null, RepositoryError>>;
+  upsert(
+    params: CreateMessageParams,
+  ): Promise<Result<Message, RepositoryError>>;
   delete(id: MessageId): Promise<Result<void, RepositoryError>>;
   list(
     query: ListMessageQuery,
