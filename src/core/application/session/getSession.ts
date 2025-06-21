@@ -1,8 +1,8 @@
-import type { Session, SessionId } from "@/core/domain/session/types";
+import { err, type Result } from "neverthrow";
+import { z } from "zod/v4";
+import type { Session } from "@/core/domain/session/types";
 import { sessionIdSchema } from "@/core/domain/session/types";
 import { ApplicationError } from "@/lib/error";
-import { type Result, err } from "neverthrow";
-import { z } from "zod/v4";
 import type { Context } from "../context";
 
 export const getSessionInputSchema = z.object({

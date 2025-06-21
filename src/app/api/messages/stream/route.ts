@@ -1,6 +1,6 @@
+import type { NextRequest } from "next/server";
 import { getServerContext } from "@/actions/context";
 import { sendMessageStream } from "@/core/application/claude/sendMessageStream";
-import type { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
           }
 
           controller.close();
-        } catch (error) {
+        } catch (_error) {
           const errorData = `data: ${JSON.stringify({ type: "error", error: "Internal server error" })}\n\n`;
           controller.enqueue(encoder.encode(errorData));
           controller.close();
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         Connection: "keep-alive",
       },
     });
-  } catch (error) {
+  } catch (_error) {
     return new Response("Internal server error", { status: 500 });
   }
 }

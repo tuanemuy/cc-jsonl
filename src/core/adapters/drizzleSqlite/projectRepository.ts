@@ -1,16 +1,16 @@
+import { and, eq, like, type SQL, sql } from "drizzle-orm";
+import { err, ok, type Result } from "neverthrow";
 import type { ProjectRepository } from "@/core/domain/project/ports/projectRepository";
 import {
   type CreateProjectParams,
   type ListProjectQuery,
   type Project,
   type ProjectId,
-  type UpdateProjectParams,
   projectSchema,
+  type UpdateProjectParams,
 } from "@/core/domain/project/types";
 import { RepositoryError } from "@/lib/error";
 import { validate } from "@/lib/validation";
-import { and, eq, like, sql } from "drizzle-orm";
-import { type Result, err, ok } from "neverthrow";
 import type { Database } from "./client";
 import { projects } from "./schema";
 
@@ -134,7 +134,7 @@ export class DrizzleSqliteProjectRepository implements ProjectRepository {
     }
 
     try {
-      let whereClause = undefined;
+      let whereClause: SQL | undefined;
       if (conditions.length === 1) {
         whereClause = conditions[0];
       } else if (conditions.length > 1) {

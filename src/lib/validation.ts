@@ -1,4 +1,4 @@
-import { type Result, ResultAsync, err, ok } from "neverthrow";
+import { err, ok, type Result } from "neverthrow";
 import type { z } from "zod/v4";
 import { AnyError } from "./error";
 

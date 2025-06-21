@@ -1,3 +1,5 @@
+import { and, eq, type SQL, sql } from "drizzle-orm";
+import { err, ok, type Result } from "neverthrow";
 import type { MessageRepository } from "@/core/domain/message/ports/messageRepository";
 import {
   type CreateMessageParams,
@@ -8,8 +10,6 @@ import {
 } from "@/core/domain/message/types";
 import { RepositoryError } from "@/lib/error";
 import { validate } from "@/lib/validation";
-import { and, eq, sql } from "drizzle-orm";
-import { type Result, err, ok } from "neverthrow";
 import type { Database } from "./client";
 import { messages } from "./schema";
 
@@ -150,7 +150,7 @@ export class DrizzleSqliteMessageRepository implements MessageRepository {
     }
 
     try {
-      let whereClause = undefined;
+      let whereClause: SQL | undefined;
       if (conditions.length === 1) {
         whereClause = conditions[0];
       } else if (conditions.length > 1) {

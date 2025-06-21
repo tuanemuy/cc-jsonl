@@ -1,10 +1,10 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
 import { listMessagesAction } from "@/actions/message";
 import { getProjectAction } from "@/actions/project";
 import { getSessionAction } from "@/actions/session";
 import { ChatInterface } from "@/app/components/chat/ChatInterface";
 import { sessionIdSchema } from "@/core/domain/session/types";
-import Link from "next/link";
-import { notFound } from "next/navigation";
 
 interface SessionPageProps {
   params: {
@@ -59,7 +59,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
         </div>
       </main>
     );
-  } catch (error) {
+  } catch (_error) {
     notFound();
   }
 }

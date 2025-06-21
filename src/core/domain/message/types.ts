@@ -1,8 +1,15 @@
-import { paginationSchema } from "@/lib/pagination";
 import { z } from "zod/v4";
-import { type SessionId, sessionIdSchema } from "../session/types";
+import { paginationSchema } from "@/lib/pagination";
+import { sessionIdSchema } from "../session/types";
 
-export const messageIdSchema = z.string().brand("messageId");
+export const messageIdSchema = z
+  .string()
+  .min(1)
+  .refine((val) => val.trim().length > 0 && val === val.trim(), {
+    message:
+      "ID cannot be empty, whitespace only, or have leading/trailing whitespace",
+  })
+  .brand("messageId");
 export type MessageId = z.infer<typeof messageIdSchema>;
 
 export const messageRoleSchema = z.enum(["user", "assistant"]);

@@ -1,9 +1,9 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
 import { getProjectAction } from "@/actions/project";
 import { listSessionsAction } from "@/actions/session";
 import { NewChatButton } from "@/app/components/project/NewChatButton";
 import { projectIdSchema } from "@/core/domain/project/types";
-import Link from "next/link";
-import { notFound } from "next/navigation";
 
 interface ProjectPageProps {
   params: {
@@ -82,7 +82,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         </div>
       </main>
     );
-  } catch (error) {
+  } catch (_error) {
     notFound();
   }
 }

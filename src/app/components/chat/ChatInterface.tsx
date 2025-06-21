@@ -1,12 +1,12 @@
 "use client";
 
+import { Bot, Loader2, Send, User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import type { Message } from "@/core/domain/message/types";
-import { Bot, Loader2, Send, User } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
 
 interface ChatInterfaceProps {
   sessionId: string;
@@ -24,7 +24,7 @@ interface ChatMessage {
 
 export function ChatInterface({
   sessionId,
-  projectId,
+  projectId: _projectId,
   initialMessages,
 }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(

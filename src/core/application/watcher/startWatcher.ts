@@ -1,11 +1,8 @@
+import { err, ok, type Result } from "neverthrow";
+import { z } from "zod";
 import type { FileWatcher } from "@/core/domain/watcher/ports/fileWatcher";
 import type { LogParser } from "@/core/domain/watcher/ports/logParser";
-import {
-  type WatcherConfig,
-  watcherConfigSchema,
-} from "@/core/domain/watcher/types";
-import { type Result, err, ok } from "neverthrow";
-import { z } from "zod";
+import { watcherConfigSchema } from "@/core/domain/watcher/types";
 import type { Context } from "../context";
 import { processLogFile } from "./processLogFile";
 

@@ -1,3 +1,4 @@
+import { err, ok, type Result } from "neverthrow";
 import type { ClaudeService } from "@/core/domain/claude/ports/claudeService";
 import type {
   ClaudeMessage,
@@ -5,7 +6,6 @@ import type {
   SendMessageInput,
 } from "@/core/domain/claude/types";
 import { ClaudeError } from "@/lib/error";
-import { type Result, err, ok } from "neverthrow";
 
 export class MockClaudeService implements ClaudeService {
   private shouldFailNext = false;
@@ -14,7 +14,7 @@ export class MockClaudeService implements ClaudeService {
 
   async sendMessage(
     input: SendMessageInput,
-    messages: ClaudeMessage[],
+    _messages: ClaudeMessage[],
   ): Promise<Result<ClaudeResponse, ClaudeError>> {
     if (this.responseDelay > 0) {
       await new Promise((resolve) => setTimeout(resolve, this.responseDelay));
@@ -47,7 +47,7 @@ export class MockClaudeService implements ClaudeService {
 
   async sendMessageStream(
     input: SendMessageInput,
-    messages: ClaudeMessage[],
+    _messages: ClaudeMessage[],
     onChunk: (chunk: string) => void,
   ): Promise<Result<ClaudeResponse, ClaudeError>> {
     if (this.shouldFailNext) {
