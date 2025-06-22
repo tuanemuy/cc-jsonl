@@ -3,10 +3,9 @@
 import { Bot, Loader2, Send, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import type { Message } from "@/core/domain/message/types";
+import { MessageContent } from "./MessageContent";
 
 interface ChatInterfaceProps {
   sessionId: string;
@@ -39,11 +38,13 @@ export function ChatInterface({
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // TODO: Fix linter warning about exhaustive-deps
+  // biome-ignore lint: react-hooks/exhaustive-deps
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }); // Remove dependency array as we want to scroll on every message update
+  }, [messages]); // Scroll when messages change
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,62 +151,66 @@ export function ChatInterface({
   };
 
   return (
-    <Card className="h-[600px] flex flex-col">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <div className="h-[600px] border rounded-lg bg-card text-card-foreground shadow-sm flex flex-col">
+      {/* Header */}
+      <div className="p-6 pb-2 border-b">
+        <h3 className="text-lg font-semibold leading-none tracking-tight flex items-center gap-2">
           <Bot className="h-5 w-5" />
           Chat with Claude
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col gap-4">
-        <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
-          <div className="space-y-4">
-            {messages.map((message) => (
+        </h3>
+      </div>
+
+      {/* Messages Area */}
+      <div className="flex-1 overflow-hidden p-6 pb-4">
+        <div className="h-full overflow-y-auto space-y-4 pr-2" ref={scrollRef}>
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex gap-3 ${
+                message.role === "user" ? "justify-end" : "justify-start"
+              }`}
+            >
               <div
-                key={message.id}
-                className={`flex gap-3 ${
-                  message.role === "user" ? "justify-end" : "justify-start"
+                className={`flex gap-3 max-w-[80%] ${
+                  message.role === "user" ? "flex-row-reverse" : "flex-row"
                 }`}
               >
+                <div className="flex-shrink-0">
+                  {message.role === "user" ? (
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                      <User className="h-4 w-4 text-primary-foreground" />
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 bg-muted-foreground rounded-full flex items-center justify-center">
+                      <Bot className="h-4 w-4 text-muted" />
+                    </div>
+                  )}
+                </div>
                 <div
-                  className={`flex gap-3 max-w-[80%] ${
-                    message.role === "user" ? "flex-row-reverse" : "flex-row"
+                  className={`rounded-lg px-4 py-2 min-w-0 ${
+                    message.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
                   }`}
                 >
-                  <div className="flex-shrink-0">
-                    {message.role === "user" ? (
-                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                        <User className="h-4 w-4 text-white" />
-                      </div>
-                    ) : (
-                      <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center">
-                        <Bot className="h-4 w-4 text-white" />
-                      </div>
+                  <div className="break-words">
+                    <MessageContent content={message.content} />
+                    {message.isStreaming && (
+                      <span className="inline-block w-2 h-4 bg-current opacity-50 animate-pulse ml-1" />
                     )}
                   </div>
-                  <div
-                    className={`rounded-lg px-4 py-2 ${
-                      message.role === "user"
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-100 text-gray-900"
-                    }`}
-                  >
-                    <div className="whitespace-pre-wrap">
-                      {message.content}
-                      {message.isStreaming && (
-                        <span className="inline-block w-2 h-4 bg-current opacity-50 animate-pulse ml-1" />
-                      )}
-                    </div>
-                    <div className="text-xs opacity-75 mt-1">
-                      {message.timestamp.toLocaleTimeString()}
-                    </div>
+                  <div className="text-xs opacity-75 mt-1">
+                    {message.timestamp.toLocaleTimeString()}
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </ScrollArea>
+            </div>
+          ))}
+        </div>
+      </div>
 
+      {/* Input Form */}
+      <div className="p-6 pt-2 border-t">
         <form onSubmit={handleSubmit} className="flex gap-2">
           <Textarea
             value={input}
@@ -232,7 +237,7 @@ export function ChatInterface({
             )}
           </Button>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
