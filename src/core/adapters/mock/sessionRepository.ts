@@ -25,9 +25,23 @@ export class MockSessionRepository implements SessionRepository {
   ): Promise<Result<Session, RepositoryError>> {
     // Check if session with same ID already exists (if ID is provided)
     if (params.id && this.sessions.has(params.id)) {
-      return err(new RepositoryError("Session with this ID already exists"));
+      // Update existing session
+      const existingSession = this.sessions.get(params.id);
+      if (!existingSession) {
+        return err(new RepositoryError("Session not found"));
+      }
+      const updatedSession: Session = {
+        ...existingSession,
+        projectId: params.projectId,
+        cwd: params.cwd,
+        updatedAt: new Date(),
+      };
+
+      this.sessions.set(params.id, updatedSession);
+      return ok(updatedSession);
     }
 
+    // Create new session
     const now = new Date();
     const session: Session = {
       id: params.id || (uuidv7() as SessionId),

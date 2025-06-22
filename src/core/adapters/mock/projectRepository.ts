@@ -24,14 +24,23 @@ export class MockProjectRepository implements ProjectRepository {
     params: CreateProjectParams,
   ): Promise<Result<Project, RepositoryError>> {
     // Check if project with same path already exists
-    for (const project of this.projects.values()) {
-      if (project.path === params.path) {
-        return err(
-          new RepositoryError("Project with this path already exists"),
-        );
-      }
+    const existingProject = Array.from(this.projects.values()).find(
+      (project) => project.path === params.path,
+    );
+
+    if (existingProject) {
+      // Update existing project
+      const updatedProject: Project = {
+        ...existingProject,
+        name: params.name,
+        updatedAt: new Date(),
+      };
+
+      this.projects.set(existingProject.id, updatedProject);
+      return ok(updatedProject);
     }
 
+    // Create new project
     const now = new Date();
     const project: Project = {
       id: `project-${this.nextId++}` as ProjectId,
