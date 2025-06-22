@@ -137,19 +137,37 @@ async function ensureProjectExists(
       path: projectName,
     });
     if (result.isErr()) {
-      const error = {
-        type: "PROCESS_LOG_FILE_ERROR" as const,
-        message: `Failed to create project: ${result.error.message}`,
-        cause: result.error,
-      };
-      console.error("[ensureProjectExists] Project creation failed", {
-        projectName,
-        error: error.message,
-        cause: error.cause,
-      });
-      return err(error);
+      // Check if the error is due to project already existing (race condition)
+      const errorCause = result.error.cause;
+      const isAlreadyExistsError =
+        result.error.message.includes("already exists") ||
+        (errorCause &&
+          typeof errorCause === "object" &&
+          "message" in errorCause &&
+          typeof errorCause.message === "string" &&
+          errorCause.message.includes("already exists"));
+
+      if (isAlreadyExistsError) {
+        // Project was created by another concurrent operation, this is fine
+        console.log(
+          `Project already exists (created concurrently): ${projectName}`,
+        );
+      } else {
+        const error = {
+          type: "PROCESS_LOG_FILE_ERROR" as const,
+          message: `Failed to create project: ${result.error.message}`,
+          cause: result.error,
+        };
+        console.error("[ensureProjectExists] Project creation failed", {
+          projectName,
+          error: error.message,
+          cause: error.cause,
+        });
+        return err(error);
+      }
+    } else {
+      console.log(`Created project: ${projectName}`);
     }
-    console.log(`Created project: ${projectName}`);
   }
 
   return ok(undefined);
@@ -228,22 +246,40 @@ async function ensureSessionExists(
       cwd,
     });
     if (result.isErr()) {
-      const error = {
-        type: "PROCESS_LOG_FILE_ERROR" as const,
-        message: `Failed to create session: ${result.error.message}`,
-        cause: result.error,
-      };
-      console.error("[ensureSessionExists] Session creation failed", {
-        sessionId,
-        projectName,
-        error: error.message,
-        cause: error.cause,
-      });
-      return err(error);
+      // Check if the error is due to session already existing (race condition)
+      const errorCause = result.error.cause;
+      const isAlreadyExistsError =
+        result.error.message.includes("already exists") ||
+        (errorCause &&
+          typeof errorCause === "object" &&
+          "message" in errorCause &&
+          typeof errorCause.message === "string" &&
+          errorCause.message.includes("already exists"));
+
+      if (isAlreadyExistsError) {
+        // Session was created by another concurrent operation, this is fine
+        console.log(
+          `Session already exists (created concurrently): ${sessionId}`,
+        );
+      } else {
+        const error = {
+          type: "PROCESS_LOG_FILE_ERROR" as const,
+          message: `Failed to create session: ${result.error.message}`,
+          cause: result.error,
+        };
+        console.error("[ensureSessionExists] Session creation failed", {
+          sessionId,
+          projectName,
+          error: error.message,
+          cause: error.cause,
+        });
+        return err(error);
+      }
+    } else {
+      console.log(
+        `Created session: ${sessionId} for project: ${projectName} with cwd: ${cwd}`,
+      );
     }
-    console.log(
-      `Created session: ${sessionId} for project: ${projectName} with cwd: ${cwd}`,
-    );
   }
 
   return ok(undefined);
