@@ -7,18 +7,20 @@ import { ChatInterface } from "@/app/components/chat/ChatInterface";
 import { sessionIdSchema } from "@/core/domain/session/types";
 
 interface SessionPageProps {
-  params: {
+  params: Promise<{
     projectId: string;
     sessionId: string;
-  };
+  }>;
 }
 
 export default async function SessionPage({ params }: SessionPageProps) {
   try {
-    const sessionId = sessionIdSchema.parse(params.sessionId);
+    const { projectId: projectIdParam, sessionId: sessionIdParam } =
+      await params;
+    const sessionId = sessionIdSchema.parse(sessionIdParam);
     const [project, session, messages] = await Promise.all([
-      getProjectAction(params.projectId),
-      getSessionAction(params.sessionId),
+      getProjectAction(projectIdParam),
+      getSessionAction(sessionIdParam),
       listMessagesAction({
         pagination: {
           page: 1,
@@ -39,7 +41,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
             <Link
-              href={`/projects/${params.projectId}`}
+              href={`/projects/${projectIdParam}`}
               className="text-blue-600 hover:text-blue-800 mb-4 inline-block"
             >
               ← Back to {project?.name}

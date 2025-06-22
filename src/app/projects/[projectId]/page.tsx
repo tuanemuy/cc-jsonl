@@ -6,16 +6,17 @@ import { NewChatButton } from "@/app/components/project/NewChatButton";
 import { projectIdSchema } from "@/core/domain/project/types";
 
 interface ProjectPageProps {
-  params: {
+  params: Promise<{
     projectId: string;
-  };
+  }>;
 }
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
   try {
-    const projectId = projectIdSchema.parse(params.projectId);
+    const { projectId: projectIdParam } = await params;
+    const projectId = projectIdSchema.parse(projectIdParam);
     const [project, sessions] = await Promise.all([
-      getProjectAction(params.projectId),
+      getProjectAction(projectIdParam),
       listSessionsAction({
         pagination: {
           page: 1,
@@ -64,7 +65,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                 {sessions.items.map((session) => (
                   <Link
                     key={session.id}
-                    href={`/projects/${params.projectId}/sessions/${session.id}`}
+                    href={`/projects/${projectIdParam}/sessions/${session.id}`}
                     className="block p-4 border rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     <h3 className="font-medium">Session {session.id}</h3>
