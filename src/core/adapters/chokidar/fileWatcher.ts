@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { glob } from "node:fs/promises";
 import { type FSWatcher, watch } from "chokidar";
 import { err, ok, type Result } from "neverthrow";
 import type {
@@ -26,7 +27,7 @@ export class ChokidarFileWatcher implements FileWatcher {
 
       const watchPattern = join(config.targetDirectory, config.pattern);
 
-      this.watcher = watch(watchPattern, {
+      this.watcher = watch(await Array.fromAsync(glob(watchPattern)), {
         persistent: config.persistent,
         ignoreInitial: config.ignoreInitial,
         followSymlinks: false,

@@ -24,7 +24,8 @@ export async function sendMessage(
 > {
   console.log("[sendMessage] Starting message processing", {
     sessionId: input.sessionId,
-    messageLength: typeof input.message === "string" ? input.message.length : undefined,
+    messageLength:
+      typeof input.message === "string" ? input.message.length : undefined,
   });
 
   const parseResult = validate(sendMessageInputSchema, input);

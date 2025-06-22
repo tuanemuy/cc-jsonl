@@ -27,7 +27,8 @@ export async function sendMessageStream(
 > {
   console.log("[sendMessageStream] Starting streaming message processing", {
     sessionId: input.sessionId,
-    messageLength: typeof input.message === "string" ? input.message.length : undefined,
+    messageLength:
+      typeof input.message === "string" ? input.message.length : undefined,
   });
 
   const parseResult = validate(sendMessageStreamInputSchema, input);

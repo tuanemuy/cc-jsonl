@@ -9,11 +9,7 @@ import type {
 import { ClaudeError } from "@/lib/error";
 
 export class AnthropicClaudeService implements ClaudeService {
-  private apiKey: string;
-
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
-  }
+  constructor(private readonly pathToClaudeCodeExecutable?: string) {}
 
   async sendMessage(
     input: SendMessageInput,
@@ -25,11 +21,11 @@ export class AnthropicClaudeService implements ClaudeService {
         { role: "user" as const, content: input.message },
       ];
 
-      const options: { resume?: string; cwd?: string } = {};
-      if (input.sessionId || input.cwd) {
-        options.resume = input.sessionId;
-        options.cwd = input.cwd;
-      }
+      const options = {
+        pathToClaudeCodeExecutable: this.pathToClaudeCodeExecutable,
+        resume: input.sessionId,
+        cwd: input.cwd,
+      };
 
       const messages: SDKMessage[] = [];
       const prompt = allMessages
@@ -38,7 +34,7 @@ export class AnthropicClaudeService implements ClaudeService {
 
       for await (const message of query({
         prompt,
-        ...(Object.keys(options).length > 0 && { options }),
+        options,
       })) {
         messages.push(message);
       }
@@ -86,11 +82,11 @@ export class AnthropicClaudeService implements ClaudeService {
         { role: "user" as const, content: input.message },
       ];
 
-      const options: { resume?: string; cwd?: string } = {};
-      if (input.sessionId || input.cwd) {
-        options.resume = input.sessionId;
-        options.cwd = input.cwd;
-      }
+      const options = {
+        pathToClaudeCodeExecutable: this.pathToClaudeCodeExecutable,
+        resume: input.sessionId,
+        cwd: input.cwd,
+      };
 
       const messages: SDKMessage[] = [];
       const prompt = allMessages
@@ -99,7 +95,7 @@ export class AnthropicClaudeService implements ClaudeService {
 
       for await (const message of query({
         prompt,
-        ...(Object.keys(options).length > 0 && { options }),
+        options,
       })) {
         messages.push(message);
         if (

@@ -12,6 +12,7 @@ export class MockLogParser implements LogParser {
   private parsedFiles = new Map<string, ParsedLogFile>();
   private shouldFail = false;
   private failureMessage = "Mock parser error";
+  private mockParseResult: Result<ParsedLogFile, LogParserError> | null = null;
 
   // Mock methods for testing
   public setParsedFile(filePath: string, parsedFile: ParsedLogFile): void {
@@ -25,10 +26,17 @@ export class MockLogParser implements LogParser {
     }
   }
 
+  public setMockParseResult(
+    result: Result<ParsedLogFile, LogParserError>,
+  ): void {
+    this.mockParseResult = result;
+  }
+
   public clear(): void {
     this.parsedFiles.clear();
     this.shouldFail = false;
     this.failureMessage = "Mock parser error";
+    this.mockParseResult = null;
   }
 
   async parseFile(
@@ -39,6 +47,10 @@ export class MockLogParser implements LogParser {
         type: "PARSER_ERROR",
         message: this.failureMessage,
       });
+    }
+
+    if (this.mockParseResult) {
+      return this.mockParseResult;
     }
 
     const parsedFile = this.parsedFiles.get(filePath);
