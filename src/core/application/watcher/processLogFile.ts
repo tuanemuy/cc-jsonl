@@ -358,7 +358,7 @@ async function processMessageEntry(
     });
   }
 
-  const result = await context.messageRepository.upsert({
+  const result = await context.messageRepository.create({
     sessionId,
     role: entry.message.role,
     content,
@@ -372,10 +372,10 @@ async function processMessageEntry(
   if (result.isErr()) {
     const error = {
       type: "PROCESS_LOG_FILE_ERROR" as const,
-      message: `Failed to upsert message: ${result.error.message}`,
+      message: `Failed to create message: ${result.error.message}`,
       cause: result.error,
     };
-    console.error("[processMessageEntry] Message upsert failed", {
+    console.error("[processMessageEntry] Message create failed", {
       sessionId,
       role: entry.message?.role,
       uuid: entry.uuid,
@@ -408,7 +408,7 @@ async function processSystemEntry(
   sessionId: SessionId,
   entry: SystemLog,
 ): Promise<Result<void, ProcessLogFileError>> {
-  const result = await context.messageRepository.upsert({
+  const result = await context.messageRepository.create({
     sessionId,
     role: "assistant",
     content: `[SYSTEM] ${entry.content}`,
@@ -422,10 +422,10 @@ async function processSystemEntry(
   if (result.isErr()) {
     const error = {
       type: "PROCESS_LOG_FILE_ERROR" as const,
-      message: `Failed to upsert system message: ${result.error.message}`,
+      message: `Failed to create system message: ${result.error.message}`,
       cause: result.error,
     };
-    console.error("[processSystemEntry] System message upsert failed", {
+    console.error("[processSystemEntry] System message create failed", {
       sessionId,
       uuid: entry.uuid,
       error: error.message,
