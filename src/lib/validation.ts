@@ -24,13 +24,7 @@ export function validate<T extends z.ZodType>(
   const result = schema.safeParse(data);
 
   if (!result.success) {
-    return err(
-      new ValidationError(
-        result.error,
-        "Validation error occurred",
-        result.error,
-      ),
-    );
+    return err(new ValidationError(result.error, "Validation error occurred"));
   }
 
   return ok(result.data);

@@ -180,7 +180,6 @@ export const posts = sqliteTable(
 
 import { z } from "zod/v4";
 import { Result } from "neverthrow";
-import { validate } from "@/lib/validation.ts";
 import type { PostRepository } from "@/domain/post/ports/postRepository";
 import type { Context } from "../context";
 
@@ -193,19 +192,10 @@ export async function createPost(
   context: Context,
   input: CreatePostInput
 ): Promise<Result<Post, RepositoryError>> {
-  const parseResult = validate(createPostInputSchema, input).mapErr(
-    (error) => new ApplicationError("Invalid post input", error)
-  );
-
-  return parseResult.match({
-    ok: (params) => {
-      return context.postRepository.create(params).mapErr(
-        (error) => new ApplicationError("Failed to create post", error)
-      );
-    },
-    err: (error) => {
-      return err(new ApplicationError("Invalid post input", error));
-    },
+  return context.postRepository.create({
+    content: input.content
+  }).mapErr((error) => {
+    return new ApplicationError("Failed to create post", error);
   });
 }
 ```
@@ -214,11 +204,11 @@ export async function createPost(
 
 ```typescript
 // Context object for specific environment
-// ex: src/actions/context.ts
+// ex: src/context.ts
 
 export const envSchema = z.object({
-  TURSO_DATABASE_URL: z.string(),
-  TURSO_AUTH_TOKEN: z.string(),
+  DATABASE_URL: z.string(),
+  DATABASE_AUTH_TOKEN: z.string(),
   // Other environment variables...
 });
 
@@ -229,11 +219,11 @@ if (!env.success) {
   throw new Error(/* Zod errors */);
 }
 
-const db = getDatabase(env.data.TURSO_DATABASE_URL, env.data.TURSO_AUTH_TOKEN);
+const db = getDatabase(env.data.DATABASE_URL, env.data.DATABASE_AUTH_TOKEN);
 
 export const context = {
-  userRepository: new DrizzleTursoUserRepository(db),
-  passwordHasher: new BcryptPasswordHasher(),
+  userRepository: new DrizzleSqliteUserRepository(db),
+  storageManager: new S3StorageManager(/* ...args */),
   // Ohter adapters...
 };
 ```
@@ -257,6 +247,23 @@ Next.js 15.2.1 application code using:
     - `src/app/styles/index.css`: Entry point for global styles
 - Server Actions
     - `src/actions/${domain}.ts`: Server actions for handling application services
+
+### Server Actions example
+
+```typescript
+// src/actions/post.ts
+import { createPost } from "@/core/application/post/createPost";
+import { context } from "@/context";
+import { z } from "zod/v4";
+
+export const createPostActionSchema = z.object({
+  content: z.string().min(1).max(500),
+});
+export type CreatePostActionParams = z.infer<typeof createPostActionSchema>;
+export async function createPostAction(params: CreatePostActionParams) {
+  //
+}
+```
 
 ## Tech Stack
 
