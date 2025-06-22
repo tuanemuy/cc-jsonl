@@ -23,7 +23,18 @@ export class DrizzleSqliteSessionRepository implements SessionRepository {
       const values = params.id
         ? params
         : { projectId: params.projectId, cwd: params.cwd };
-      const result = await this.db.insert(sessions).values(values).returning();
+      const result = await this.db
+        .insert(sessions)
+        .values(values)
+        .onConflictDoUpdate({
+          target: sessions.id,
+          set: {
+            projectId: params.projectId,
+            cwd: params.cwd,
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
 
       const session = result[0];
       if (!session) {

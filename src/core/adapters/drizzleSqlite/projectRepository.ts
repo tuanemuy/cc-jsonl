@@ -21,7 +21,17 @@ export class DrizzleSqliteProjectRepository implements ProjectRepository {
     params: CreateProjectParams,
   ): Promise<Result<Project, RepositoryError>> {
     try {
-      const result = await this.db.insert(projects).values(params).returning();
+      const result = await this.db
+        .insert(projects)
+        .values(params)
+        .onConflictDoUpdate({
+          target: projects.path,
+          set: {
+            name: params.name,
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
 
       const project = result[0];
       if (!project) {

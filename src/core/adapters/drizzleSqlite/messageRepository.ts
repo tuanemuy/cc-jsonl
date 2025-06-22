@@ -20,7 +20,23 @@ export class DrizzleSqliteMessageRepository implements MessageRepository {
     params: CreateMessageParams,
   ): Promise<Result<Message, RepositoryError>> {
     try {
-      const result = await this.db.insert(messages).values(params).returning();
+      const result = await this.db
+        .insert(messages)
+        .values(params)
+        .onConflictDoUpdate({
+          target: messages.uuid,
+          set: {
+            sessionId: params.sessionId,
+            role: params.role,
+            content: params.content,
+            timestamp: params.timestamp,
+            rawData: params.rawData,
+            parentUuid: params.parentUuid,
+            cwd: params.cwd,
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
 
       const message = result[0];
       if (!message) {
@@ -78,50 +94,6 @@ export class DrizzleSqliteMessageRepository implements MessageRepository {
         .mapErr((error) => new RepositoryError("Invalid message data", error));
     } catch (error) {
       return err(new RepositoryError("Failed to find message by UUID", error));
-    }
-  }
-
-  async upsert(
-    params: CreateMessageParams,
-  ): Promise<Result<Message, RepositoryError>> {
-    try {
-      const existing = await this.findByUuid(params.uuid);
-
-      if (existing.isErr()) {
-        return err(existing.error);
-      }
-
-      if (existing.value) {
-        const result = await this.db
-          .update(messages)
-          .set({
-            sessionId: params.sessionId,
-            role: params.role,
-            content: params.content,
-            timestamp: params.timestamp,
-            rawData: params.rawData,
-            parentUuid: params.parentUuid,
-            cwd: params.cwd,
-            updatedAt: new Date(),
-          })
-          .where(eq(messages.uuid, params.uuid))
-          .returning();
-
-        const message = result[0];
-        if (!message) {
-          return err(new RepositoryError("Failed to update message"));
-        }
-
-        return validate(messageSchema, message).mapErr((error) => {
-          return new RepositoryError(
-            "Invalid message data after update",
-            error,
-          );
-        });
-      }
-      return this.create(params);
-    } catch (error) {
-      return err(new RepositoryError("Failed to upsert message", error));
     }
   }
 
