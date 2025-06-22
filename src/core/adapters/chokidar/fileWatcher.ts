@@ -1,5 +1,6 @@
-import { join } from "node:path";
+// @ts-ignore
 import { glob } from "node:fs/promises";
+import { join } from "node:path";
 import { type FSWatcher, watch } from "chokidar";
 import { err, ok, type Result } from "neverthrow";
 import type {
