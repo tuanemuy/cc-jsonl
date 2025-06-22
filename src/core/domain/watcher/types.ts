@@ -90,3 +90,40 @@ export const parsedLogFileSchema = z.object({
 });
 
 export type ParsedLogFile = z.infer<typeof parsedLogFileSchema>;
+
+export const batchProcessInputSchema = z.object({
+  targetDirectory: z.string().min(1),
+  pattern: z.string().default("**/*.jsonl"),
+  maxConcurrency: z.number().default(5),
+  skipExisting: z.boolean().default(false),
+});
+
+export type BatchProcessInput = z.infer<typeof batchProcessInputSchema>;
+
+export const batchProcessFileResultSchema = z.object({
+  filePath: z.string(),
+  status: z.enum(["success", "skipped", "failed"]),
+  error: z.string().optional(),
+  entriesProcessed: z.number().default(0),
+});
+
+export type BatchProcessFileResult = z.infer<
+  typeof batchProcessFileResultSchema
+>;
+
+export const batchProcessResultSchema = z.object({
+  totalFiles: z.number(),
+  processedFiles: z.number(),
+  skippedFiles: z.number(),
+  failedFiles: z.number(),
+  totalEntries: z.number(),
+  fileResults: z.array(batchProcessFileResultSchema),
+  errors: z.array(
+    z.object({
+      filePath: z.string(),
+      error: z.string(),
+    }),
+  ),
+});
+
+export type BatchProcessResult = z.infer<typeof batchProcessResultSchema>;
