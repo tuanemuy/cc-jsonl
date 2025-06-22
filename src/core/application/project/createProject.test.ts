@@ -1,8 +1,10 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { err } from "neverthrow";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MockClaudeService } from "@/core/adapters/mock/claudeService";
 import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
 import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
 import { MockSessionRepository } from "@/core/adapters/mock/sessionRepository";
+import { RepositoryError } from "@/lib/error";
 import type { Context } from "../context";
 import type { CreateProjectInput } from "./createProject";
 import { createProject } from "./createProject";
@@ -272,7 +274,7 @@ describe("createProject", () => {
       }
     });
 
-    it("同一パスのプロジェクトが既に存在する場合は作成できない", async () => {
+    it("同一パスのプロジェクトが既に存在する場合は更新される", async () => {
       // Arrange
       const existingInput: CreateProjectInput = {
         name: "Existing Project",
@@ -280,20 +282,23 @@ describe("createProject", () => {
       };
 
       const duplicateInput: CreateProjectInput = {
-        name: "Duplicate Project",
+        name: "Updated Project",
         path: "/duplicate/path",
       };
 
       // 既存プロジェクトを作成
-      await createProject(context, existingInput);
+      const existingResult = await createProject(context, existingInput);
+      expect(existingResult.isOk()).toBe(true);
 
       // Act
       const result = await createProject(context, duplicateInput);
 
       // Assert
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error.message).toBe("Failed to create project");
+      expect(result.isOk()).toBe(true);
+      if (result.isOk() && existingResult.isOk()) {
+        expect(result.value.name).toBe("Updated Project");
+        expect(result.value.path).toBe("/duplicate/path");
+        expect(result.value.id).toBe(existingResult.value.id); // Same ID, updated content
       }
     });
 
@@ -304,8 +309,11 @@ describe("createProject", () => {
         path: "/path/to/project",
       };
 
-      // リポジトリでエラーを発生させるために既存プロジェクトと同じパスを指定
-      await createProject(context, input);
+      // Mock the repository to throw an error
+      const originalCreate = context.projectRepository.create;
+      context.projectRepository.create = vi
+        .fn()
+        .mockResolvedValue(err(new RepositoryError("Mock repository error")));
 
       // Act
       const result = await createProject(context, input);
@@ -316,6 +324,9 @@ describe("createProject", () => {
         expect(result.error.message).toBe("Failed to create project");
         expect(result.error.cause).toBeDefined();
       }
+
+      // Restore original method
+      context.projectRepository.create = originalCreate;
     });
   });
 

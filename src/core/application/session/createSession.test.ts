@@ -1,9 +1,11 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { err } from "neverthrow";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MockClaudeService } from "@/core/adapters/mock/claudeService";
 import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
 import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
 import { MockSessionRepository } from "@/core/adapters/mock/sessionRepository";
 import type { ProjectId, SessionId } from "@/core/domain/session/types";
+import { RepositoryError } from "@/lib/error";
 import type { Context } from "../context";
 import type { CreateSessionInput } from "./createSession";
 import { createSession } from "./createSession";
@@ -322,7 +324,7 @@ describe("createSession", () => {
       }
     });
 
-    it("同一のセッションIDが既に存在する場合はセッションを作成できない", async () => {
+    it("同一のセッションIDが既に存在する場合は更新される", async () => {
       // Arrange
       const duplicateId = "duplicate-session-id" as SessionId;
       const input1: CreateSessionInput = {
@@ -333,19 +335,23 @@ describe("createSession", () => {
       const input2: CreateSessionInput = {
         id: duplicateId,
         projectId: "project-2" as ProjectId,
-        cwd: "/tmp",
+        cwd: "/updated/path",
       };
 
       // 最初のセッションを作成
-      await createSession(context, input1);
+      const firstResult = await createSession(context, input1);
+      expect(firstResult.isOk()).toBe(true);
 
       // Act
       const result = await createSession(context, input2);
 
       // Assert
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error.message).toBe("Failed to create session");
+      expect(result.isOk()).toBe(true);
+      if (result.isOk() && firstResult.isOk()) {
+        expect(result.value.id).toBe(duplicateId);
+        expect(result.value.projectId).toBe("project-2");
+        expect(result.value.cwd).toBe("/updated/path");
+        expect(result.value.id).toBe(firstResult.value.id); // Same ID, updated content
       }
     });
 
@@ -387,15 +393,16 @@ describe("createSession", () => {
 
     it("リポジトリエラーが発生した場合はアプリケーションエラーでラップされる", async () => {
       // Arrange
-      const duplicateId = "duplicate-session-id" as SessionId;
       const input: CreateSessionInput = {
-        id: duplicateId,
         projectId: "test-project-id" as ProjectId,
         cwd: "/tmp",
       };
 
-      // 重複するセッションを作成してエラーを発生させる
-      await createSession(context, input);
+      // Mock the repository to throw an error
+      const originalCreate = context.sessionRepository.create;
+      context.sessionRepository.create = vi
+        .fn()
+        .mockResolvedValue(err(new RepositoryError("Mock repository error")));
 
       // Act
       const result = await createSession(context, input);
@@ -406,6 +413,9 @@ describe("createSession", () => {
         expect(result.error.message).toBe("Failed to create session");
         expect(result.error.cause).toBeDefined();
       }
+
+      // Restore original method
+      context.sessionRepository.create = originalCreate;
     });
   });
 
