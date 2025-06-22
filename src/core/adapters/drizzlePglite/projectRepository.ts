@@ -177,6 +177,7 @@ export class DrizzlePgliteProjectRepository implements ProjectRepository {
         count: Number(countResult[0]?.count || 0),
       });
     } catch (error) {
+      console.error("Failed to list projects:", error);
       return err(new RepositoryError("Failed to list projects", error));
     }
   }
