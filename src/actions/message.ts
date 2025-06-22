@@ -11,17 +11,51 @@ import {
   getMessage,
   listMessages,
 } from "@/core/application/message";
+import { createMessageParamsSchema } from "@/core/domain/message/types";
+import type { FormState } from "@/lib/formState";
+import { validate } from "@/lib/validation";
 
-export async function createMessageAction(input: CreateMessageInput) {
-  const context = getServerContext();
-  const result = await createMessage(context, input);
+type CreateMessageFormInput = {
+  sessionId: unknown;
+  role: unknown;
+  content: unknown;
+};
 
-  if (result.isErr()) {
-    throw new Error(result.error.message);
+export async function createMessageAction(
+  _prevState: FormState<CreateMessageFormInput, CreateMessageInput>,
+  formData: FormData,
+): Promise<FormState<CreateMessageFormInput, CreateMessageInput>> {
+  const rawData = {
+    sessionId: formData.get("sessionId"),
+    role: formData.get("role"),
+    content: formData.get("content"),
+  };
+
+  const validation = validate(createMessageParamsSchema, rawData);
+  if (validation.isErr()) {
+    return {
+      input: rawData,
+      error: validation.error,
+    };
   }
 
-  revalidatePath(`/projects/${input.sessionId}`);
-  return result.value;
+  const context = getServerContext();
+  const result = await createMessage(context, validation.value);
+
+  if (result.isErr()) {
+    return {
+      input: rawData,
+      error: result.error,
+    };
+  }
+
+  revalidatePath(`/projects/${validation.value.sessionId}`);
+
+  return {
+    input: rawData,
+    result: result.value,
+    error: null,
+  };
 }
 
 export async function listMessagesAction(query: ListMessageQuery) {

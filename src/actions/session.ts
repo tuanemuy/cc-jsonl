@@ -12,17 +12,46 @@ import {
   getSession,
   listSessions,
 } from "@/core/application/session";
+import { createSessionParamsSchema } from "@/core/domain/session/types";
+import type { FormState } from "@/lib/formState";
+import { validate } from "@/lib/validation";
 
-export async function createSessionAction(input: CreateSessionInput) {
-  const context = getServerContext();
-  const result = await createSession(context, input);
+type CreateSessionFormInput = {
+  projectId: unknown;
+  cwd: unknown;
+};
 
-  if (result.isErr()) {
-    throw new Error(result.error.message);
+export async function createSessionAction(
+  _prevState: FormState<CreateSessionFormInput, CreateSessionInput>,
+  formData: FormData,
+): Promise<FormState<CreateSessionFormInput, CreateSessionInput>> {
+  const rawData = {
+    projectId: formData.get("projectId"),
+    cwd: formData.get("cwd"),
+  };
+
+  const validation = validate(createSessionParamsSchema, rawData);
+  if (validation.isErr()) {
+    return {
+      input: rawData,
+      error: validation.error,
+    };
   }
 
-  revalidatePath(`/projects/${input.projectId}`);
-  redirect(`/projects/${input.projectId}/sessions/${result.value.id}`);
+  const context = getServerContext();
+  const result = await createSession(context, validation.value);
+
+  if (result.isErr()) {
+    return {
+      input: rawData,
+      error: result.error,
+    };
+  }
+
+  revalidatePath(`/projects/${validation.value.projectId}`);
+  redirect(
+    `/projects/${validation.value.projectId}/sessions/${result.value.id}`,
+  );
 }
 
 export async function listSessionsAction(query?: ListSessionQuery) {

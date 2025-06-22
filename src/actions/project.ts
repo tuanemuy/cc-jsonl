@@ -12,14 +12,43 @@ import {
   getProject,
   listProjects,
 } from "@/core/application/project";
-import { projectIdSchema } from "@/core/domain/project/types";
+import {
+  createProjectParamsSchema,
+  projectIdSchema,
+} from "@/core/domain/project/types";
+import type { FormState } from "@/lib/formState";
+import { validate } from "@/lib/validation";
 
-export async function createProjectAction(input: CreateProjectInput) {
+type CreateProjectFormInput = {
+  name: unknown;
+  path: unknown;
+};
+
+export async function createProjectAction(
+  _prevState: FormState<CreateProjectFormInput, CreateProjectInput>,
+  formData: FormData,
+): Promise<FormState<CreateProjectFormInput, CreateProjectInput>> {
+  const rawData = {
+    name: formData.get("name"),
+    path: formData.get("path"),
+  };
+
+  const validation = validate(createProjectParamsSchema, rawData);
+  if (validation.isErr()) {
+    return {
+      input: rawData,
+      error: validation.error,
+    };
+  }
+
   const context = getServerContext();
-  const result = await createProject(context, input);
+  const result = await createProject(context, validation.value);
 
   if (result.isErr()) {
-    throw new Error(result.error.message);
+    return {
+      input: rawData,
+      error: result.error,
+    };
   }
 
   revalidatePath("/");
