@@ -1,5 +1,5 @@
-import type { RepositoryError } from "@/lib/error";
 import type { Result } from "neverthrow";
+import type { RepositoryError } from "@/lib/error";
 import type {
   CreateSessionParams,
   ListSessionQuery,
@@ -12,6 +12,10 @@ export interface SessionRepository {
     params: CreateSessionParams,
   ): Promise<Result<Session, RepositoryError>>;
   findById(id: SessionId): Promise<Result<Session | null, RepositoryError>>;
+  updateCwd(
+    id: SessionId,
+    cwd: string,
+  ): Promise<Result<Session, RepositoryError>>;
   delete(id: SessionId): Promise<Result<void, RepositoryError>>;
   list(
     query: ListSessionQuery,

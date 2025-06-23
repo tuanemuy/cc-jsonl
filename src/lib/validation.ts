@@ -1,4 +1,4 @@
-import { type Result, ResultAsync, err, ok } from "neverthrow";
+import { err, ok, type Result } from "neverthrow";
 import type { z } from "zod/v4";
 import { AnyError } from "./error";
 
@@ -24,13 +24,7 @@ export function validate<T extends z.ZodType>(
   const result = schema.safeParse(data);
 
   if (!result.success) {
-    return err(
-      new ValidationError(
-        result.error,
-        "Validation error occurred",
-        result.error,
-      ),
-    );
+    return err(new ValidationError(result.error, "Validation error occurred"));
   }
 
   return ok(result.data);

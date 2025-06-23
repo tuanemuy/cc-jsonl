@@ -1,3 +1,5 @@
+import { and, eq, type SQL, sql } from "drizzle-orm";
+import { err, ok, type Result } from "neverthrow";
 import type { MessageRepository } from "@/core/domain/message/ports/messageRepository";
 import {
   type CreateMessageParams,
@@ -8,8 +10,6 @@ import {
 } from "@/core/domain/message/types";
 import { RepositoryError } from "@/lib/error";
 import { validate } from "@/lib/validation";
-import { and, eq, sql } from "drizzle-orm";
-import { type Result, err, ok } from "neverthrow";
 import type { Database } from "./client";
 import { messages } from "./schema";
 
@@ -20,7 +20,23 @@ export class DrizzleSqliteMessageRepository implements MessageRepository {
     params: CreateMessageParams,
   ): Promise<Result<Message, RepositoryError>> {
     try {
-      const result = await this.db.insert(messages).values(params).returning();
+      const result = await this.db
+        .insert(messages)
+        .values(params)
+        .onConflictDoUpdate({
+          target: messages.uuid,
+          set: {
+            sessionId: params.sessionId,
+            role: params.role,
+            content: params.content,
+            timestamp: params.timestamp,
+            rawData: params.rawData,
+            parentUuid: params.parentUuid,
+            cwd: params.cwd,
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
 
       const message = result[0];
       if (!message) {
@@ -58,6 +74,29 @@ export class DrizzleSqliteMessageRepository implements MessageRepository {
     }
   }
 
+  async findByUuid(
+    uuid: string,
+  ): Promise<Result<Message | null, RepositoryError>> {
+    try {
+      const result = await this.db
+        .select()
+        .from(messages)
+        .where(eq(messages.uuid, uuid))
+        .limit(1);
+
+      const message = result[0];
+      if (!message) {
+        return ok(null);
+      }
+
+      return validate(messageSchema, message)
+        .map((validMessage) => validMessage)
+        .mapErr((error) => new RepositoryError("Invalid message data", error));
+    } catch (error) {
+      return err(new RepositoryError("Failed to find message by UUID", error));
+    }
+  }
+
   async delete(id: MessageId): Promise<Result<void, RepositoryError>> {
     try {
       await this.db.delete(messages).where(eq(messages.id, id));
@@ -74,23 +113,37 @@ export class DrizzleSqliteMessageRepository implements MessageRepository {
     const limit = pagination.limit;
     const offset = (pagination.page - 1) * pagination.limit;
 
-    const filters = [
-      filter?.sessionId ? eq(messages.sessionId, filter.sessionId) : undefined,
-      filter?.role ? eq(messages.role, filter.role) : undefined,
-    ].filter((filter) => filter !== undefined);
+    const conditions = [];
+    if (filter?.sessionId) {
+      conditions.push(eq(messages.sessionId, filter.sessionId));
+    }
+    if (filter?.role) {
+      conditions.push(eq(messages.role, filter.role));
+    }
 
     try {
+      let whereClause: SQL | undefined;
+      if (conditions.length === 1) {
+        whereClause = conditions[0];
+      } else if (conditions.length > 1) {
+        whereClause = and(...conditions);
+      }
+
       const [items, countResult] = await Promise.all([
-        this.db
-          .select()
-          .from(messages)
-          .where(and(...filters))
-          .limit(limit)
-          .offset(offset),
-        this.db
-          .select({ count: sql`count(*)` })
-          .from(messages)
-          .where(and(...filters)),
+        whereClause
+          ? this.db
+              .select()
+              .from(messages)
+              .where(whereClause)
+              .limit(limit)
+              .offset(offset)
+          : this.db.select().from(messages).limit(limit).offset(offset),
+        whereClause
+          ? this.db
+              .select({ count: sql<number>`count(*)` })
+              .from(messages)
+              .where(whereClause)
+          : this.db.select({ count: sql<number>`count(*)` }).from(messages),
       ]);
 
       const validItems = items

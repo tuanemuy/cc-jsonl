@@ -1,16 +1,16 @@
+import { and, eq, like, type SQL, sql } from "drizzle-orm";
+import { err, ok, type Result } from "neverthrow";
 import type { ProjectRepository } from "@/core/domain/project/ports/projectRepository";
 import {
   type CreateProjectParams,
   type ListProjectQuery,
   type Project,
   type ProjectId,
-  type UpdateProjectParams,
   projectSchema,
+  type UpdateProjectParams,
 } from "@/core/domain/project/types";
 import { RepositoryError } from "@/lib/error";
 import { validate } from "@/lib/validation";
-import { and, eq, like, sql } from "drizzle-orm";
-import { type Result, err, ok } from "neverthrow";
 import type { Database } from "./client";
 import { projects } from "./schema";
 
@@ -21,7 +21,17 @@ export class DrizzleSqliteProjectRepository implements ProjectRepository {
     params: CreateProjectParams,
   ): Promise<Result<Project, RepositoryError>> {
     try {
-      const result = await this.db.insert(projects).values(params).returning();
+      const result = await this.db
+        .insert(projects)
+        .values(params)
+        .onConflictDoUpdate({
+          target: projects.path,
+          set: {
+            name: params.name,
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
 
       const project = result[0];
       if (!project) {
@@ -125,23 +135,37 @@ export class DrizzleSqliteProjectRepository implements ProjectRepository {
     const limit = pagination.limit;
     const offset = (pagination.page - 1) * pagination.limit;
 
-    const filters = [
-      filter?.name ? like(projects.name, `%${filter.name}%`) : undefined,
-      filter?.path ? like(projects.path, `%${filter.path}%`) : undefined,
-    ].filter((filter) => filter !== undefined);
+    const conditions = [];
+    if (filter?.name) {
+      conditions.push(like(projects.name, `%${filter.name}%`));
+    }
+    if (filter?.path) {
+      conditions.push(like(projects.path, `%${filter.path}%`));
+    }
 
     try {
+      let whereClause: SQL | undefined;
+      if (conditions.length === 1) {
+        whereClause = conditions[0];
+      } else if (conditions.length > 1) {
+        whereClause = and(...conditions);
+      }
+
       const [items, countResult] = await Promise.all([
-        this.db
-          .select()
-          .from(projects)
-          .where(and(...filters))
-          .limit(limit)
-          .offset(offset),
-        this.db
-          .select({ count: sql`count(*)` })
-          .from(projects)
-          .where(and(...filters)),
+        whereClause
+          ? this.db
+              .select()
+              .from(projects)
+              .where(whereClause)
+              .limit(limit)
+              .offset(offset)
+          : this.db.select().from(projects).limit(limit).offset(offset),
+        whereClause
+          ? this.db
+              .select({ count: sql<number>`count(*)` })
+              .from(projects)
+              .where(whereClause)
+          : this.db.select({ count: sql<number>`count(*)` }).from(projects),
       ]);
 
       const validItems = items

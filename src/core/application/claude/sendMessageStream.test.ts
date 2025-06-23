@@ -1,0 +1,534 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MockClaudeService } from "@/core/adapters/mock/claudeService";
+import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
+import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
+import { MockSessionRepository } from "@/core/adapters/mock/sessionRepository";
+import type { Context } from "@/core/application/context";
+import type { Message, MessageId } from "@/core/domain/message/types";
+import type { Project, ProjectId } from "@/core/domain/project/types";
+import type { Session, SessionId } from "@/core/domain/session/types";
+import type { SendMessageStreamInput } from "./sendMessageStream";
+import { sendMessageStream } from "./sendMessageStream";
+
+describe("sendMessageStream", () => {
+  let mockProjectRepository: MockProjectRepository;
+  let mockSessionRepository: MockSessionRepository;
+  let mockMessageRepository: MockMessageRepository;
+  let mockClaudeService: MockClaudeService;
+  let context: Context;
+  let onChunkSpy: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    mockProjectRepository = new MockProjectRepository();
+    mockSessionRepository = new MockSessionRepository();
+    mockMessageRepository = new MockMessageRepository();
+    mockClaudeService = new MockClaudeService();
+    context = {
+      projectRepository: mockProjectRepository,
+      sessionRepository: mockSessionRepository,
+      messageRepository: mockMessageRepository,
+      claudeService: mockClaudeService,
+    };
+    onChunkSpy = vi.fn();
+  });
+
+  describe("Normal Cases", () => {
+    it("should create new session and stream message when no sessionId provided", async () => {
+      const project: Project = {
+        id: "project-1" as ProjectId,
+        name: "Test Project",
+        path: "/test/path",
+        createdAt: new Date("2024-01-01T10:00:00Z"),
+        updatedAt: new Date("2024-01-01T10:00:00Z"),
+      };
+      mockProjectRepository = new MockProjectRepository([project]);
+      context.projectRepository = mockProjectRepository;
+
+      const input: SendMessageStreamInput = {
+        message: "Hello, streaming Claude!",
+      };
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.session).toBeDefined();
+        expect(result.value.session.projectId).toBe(project.id);
+        expect(result.value.userMessage.content).toBe(
+          "Hello, streaming Claude!",
+        );
+        expect(result.value.userMessage.role).toBe("user");
+        expect(result.value.assistantMessage.content).toBe(
+          "You said: Hello, streaming Claude!",
+        );
+        expect(result.value.assistantMessage.role).toBe("assistant");
+
+        // Check that onChunk was called with streaming data
+        expect(onChunkSpy).toHaveBeenCalled();
+        expect(onChunkSpy.mock.calls.length).toBeGreaterThan(0);
+      }
+    });
+
+    it("should use existing session when sessionId provided", async () => {
+      const project: Project = {
+        id: "project-1" as ProjectId,
+        name: "Test Project",
+        path: "/test/path",
+        createdAt: new Date("2024-01-01T10:00:00Z"),
+        updatedAt: new Date("2024-01-01T10:00:00Z"),
+      };
+      const session: Session = {
+        id: "session-123" as SessionId,
+        projectId: project.id,
+        cwd: "/tmp",
+        createdAt: new Date("2024-01-01T10:00:00Z"),
+        updatedAt: new Date("2024-01-01T10:00:00Z"),
+      };
+
+      mockProjectRepository = new MockProjectRepository([project]);
+      mockSessionRepository = new MockSessionRepository([session]);
+      context.projectRepository = mockProjectRepository;
+      context.sessionRepository = mockSessionRepository;
+
+      const input: SendMessageStreamInput = {
+        message: "Hello with existing session!",
+        sessionId: "session-123",
+      };
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.session.id).toBe("session-123");
+        expect(result.value.userMessage.sessionId).toBe("session-123");
+        expect(result.value.assistantMessage.sessionId).toBe("session-123");
+        expect(onChunkSpy).toHaveBeenCalled();
+      }
+    });
+
+    it("should stream chunks in correct order", async () => {
+      const project: Project = {
+        id: "project-1" as ProjectId,
+        name: "Test Project",
+        path: "/test/path",
+        createdAt: new Date("2024-01-01T10:00:00Z"),
+        updatedAt: new Date("2024-01-01T10:00:00Z"),
+      };
+      mockProjectRepository = new MockProjectRepository([project]);
+      context.projectRepository = mockProjectRepository;
+
+      const input: SendMessageStreamInput = {
+        message: "Multi word message",
+      };
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // Mock streams "You said: Multi word message" as separate chunks
+        const chunks = onChunkSpy.mock.calls.map((call) => call[0]);
+        expect(chunks.some((chunk) => chunk.includes("You"))).toBe(true);
+        expect(chunks.some((chunk) => chunk.includes("said:"))).toBe(true);
+        expect(chunks.some((chunk) => chunk.includes("Multi"))).toBe(true);
+        expect(chunks.some((chunk) => chunk.includes("word"))).toBe(true);
+        expect(chunks.some((chunk) => chunk.includes("message"))).toBe(true);
+      }
+    });
+
+    it("should include previous messages as context for streaming", async () => {
+      const project: Project = {
+        id: "project-1" as ProjectId,
+        name: "Test Project",
+        path: "/test/path",
+        createdAt: new Date("2024-01-01T10:00:00Z"),
+        updatedAt: new Date("2024-01-01T10:00:00Z"),
+      };
+      const session: Session = {
+        id: "session-123" as SessionId,
+        projectId: project.id,
+        cwd: "/tmp",
+        createdAt: new Date("2024-01-01T10:00:00Z"),
+        updatedAt: new Date("2024-01-01T10:00:00Z"),
+      };
+      const existingMessages: Message[] = [
+        {
+          id: "msg-1" as MessageId,
+          sessionId: session.id,
+          role: "user",
+          content: "Previous user message",
+          timestamp: new Date("2024-01-01T10:00:00Z"),
+          rawData: "{}",
+          uuid: "test-uuid-1",
+          parentUuid: null,
+          cwd: "/tmp",
+          createdAt: new Date("2024-01-01T10:00:00Z"),
+          updatedAt: new Date("2024-01-01T10:00:00Z"),
+        },
+        {
+          id: "msg-2" as MessageId,
+          sessionId: session.id,
+          role: "assistant",
+          content: "Previous assistant message",
+          timestamp: new Date("2024-01-01T10:01:00Z"),
+          rawData: "{}",
+          uuid: "test-uuid-2",
+          parentUuid: "test-uuid-1",
+          cwd: "/tmp",
+          createdAt: new Date("2024-01-01T10:01:00Z"),
+          updatedAt: new Date("2024-01-01T10:01:00Z"),
+        },
+      ];
+
+      mockProjectRepository = new MockProjectRepository([project]);
+      mockSessionRepository = new MockSessionRepository([session]);
+      mockMessageRepository = new MockMessageRepository(existingMessages);
+      context.projectRepository = mockProjectRepository;
+      context.sessionRepository = mockSessionRepository;
+      context.messageRepository = mockMessageRepository;
+
+      const input: SendMessageStreamInput = {
+        message: "New streaming message with context",
+        sessionId: "session-123",
+      };
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        const allMessages = mockMessageRepository.getAll();
+        expect(allMessages).toHaveLength(4);
+        expect(onChunkSpy).toHaveBeenCalled();
+      }
+    });
+
+    it("should handle Japanese text streaming", async () => {
+      const project: Project = {
+        id: "project-1" as ProjectId,
+        name: "Test Project",
+        path: "/test/path",
+        createdAt: new Date("2024-01-01T10:00:00Z"),
+        updatedAt: new Date("2024-01-01T10:00:00Z"),
+      };
+      mockProjectRepository = new MockProjectRepository([project]);
+      context.projectRepository = mockProjectRepository;
+
+      const input: SendMessageStreamInput = {
+        message: "こんにちは、Claude！",
+      };
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.userMessage.content).toBe("こんにちは、Claude！");
+        expect(result.value.assistantMessage.content).toBe(
+          "You said: こんにちは、Claude！",
+        );
+        expect(onChunkSpy).toHaveBeenCalled();
+      }
+    });
+
+    it("should capture all streamed chunks", async () => {
+      const project: Project = {
+        id: "project-1" as ProjectId,
+        name: "Test Project",
+        path: "/test/path",
+        createdAt: new Date("2024-01-01T10:00:00Z"),
+        updatedAt: new Date("2024-01-01T10:00:00Z"),
+      };
+      mockProjectRepository = new MockProjectRepository([project]);
+      context.projectRepository = mockProjectRepository;
+
+      const input: SendMessageStreamInput = {
+        message: "Test streaming",
+      };
+
+      const chunks: string[] = [];
+      const chunkCollector = (chunk: string) => {
+        chunks.push(chunk);
+      };
+
+      const result = await sendMessageStream(context, input, chunkCollector);
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(chunks.length).toBeGreaterThan(0);
+        const fullStreamedText = chunks.join("");
+        expect(fullStreamedText.trim()).toBe("You said: Test streaming");
+      }
+    });
+  });
+
+  describe("Error Cases", () => {
+    it("should fail with empty message", async () => {
+      const input: SendMessageStreamInput = {
+        message: "",
+      };
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.message).toBe("Invalid input");
+      }
+    });
+
+    it("should fail with null message", async () => {
+      const input = {
+        message: null,
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
+      } as any;
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.message).toBe("Invalid input");
+      }
+    });
+
+    it("should fail when no projects exist and no sessionId provided", async () => {
+      const input: SendMessageStreamInput = {
+        message: "Hello, streaming Claude!",
+      };
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.message).toBe("No projects found");
+      }
+    });
+
+    it("should fail when sessionId provided but session not found", async () => {
+      const input: SendMessageStreamInput = {
+        message: "Hello, streaming Claude!",
+        sessionId: "non-existent-session",
+      };
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.message).toBe("Session not found");
+      }
+    });
+
+    it("should fail when Claude service streaming returns error", async () => {
+      const project: Project = {
+        id: "project-1" as ProjectId,
+        name: "Test Project",
+        path: "/test/path",
+        createdAt: new Date("2024-01-01T10:00:00Z"),
+        updatedAt: new Date("2024-01-01T10:00:00Z"),
+      };
+      mockProjectRepository = new MockProjectRepository([project]);
+      context.projectRepository = mockProjectRepository;
+
+      mockClaudeService.setShouldFailNext(true);
+
+      const input: SendMessageStreamInput = {
+        message: "Hello, streaming Claude!",
+      };
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.message).toBe("Failed to send message to Claude");
+      }
+    });
+
+    it("should fail with non-string message", async () => {
+      const input = {
+        message: 123,
+        // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
+      } as any;
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.message).toBe("Invalid input");
+      }
+    });
+
+    it("should fail with empty sessionId", async () => {
+      const input: SendMessageStreamInput = {
+        message: "Hello, streaming Claude!",
+        sessionId: "",
+      };
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.message).toBe("Invalid input");
+      }
+    });
+  });
+
+  describe("Boundary Cases", () => {
+    it("should handle single character message streaming", async () => {
+      const project: Project = {
+        id: "project-1" as ProjectId,
+        name: "Test Project",
+        path: "/test/path",
+        createdAt: new Date("2024-01-01T10:00:00Z"),
+        updatedAt: new Date("2024-01-01T10:00:00Z"),
+      };
+      mockProjectRepository = new MockProjectRepository([project]);
+      context.projectRepository = mockProjectRepository;
+
+      const input: SendMessageStreamInput = {
+        message: "A",
+      };
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.userMessage.content).toBe("A");
+        expect(result.value.assistantMessage.content).toBe("You said: A");
+        expect(onChunkSpy).toHaveBeenCalled();
+      }
+    });
+
+    it("should handle very long message streaming", async () => {
+      const project: Project = {
+        id: "project-1" as ProjectId,
+        name: "Test Project",
+        path: "/test/path",
+        createdAt: new Date("2024-01-01T10:00:00Z"),
+        updatedAt: new Date("2024-01-01T10:00:00Z"),
+      };
+      mockProjectRepository = new MockProjectRepository([project]);
+      context.projectRepository = mockProjectRepository;
+
+      const longMessage = "A".repeat(1000);
+      const input: SendMessageStreamInput = {
+        message: longMessage,
+      };
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.userMessage.content).toBe(longMessage);
+        expect(result.value.assistantMessage.content).toBe(
+          `You said: ${longMessage}`,
+        );
+        expect(onChunkSpy).toHaveBeenCalled();
+      }
+    });
+
+    it("should handle whitespace-only message streaming", async () => {
+      const project: Project = {
+        id: "project-1" as ProjectId,
+        name: "Test Project",
+        path: "/test/path",
+        createdAt: new Date("2024-01-01T10:00:00Z"),
+        updatedAt: new Date("2024-01-01T10:00:00Z"),
+      };
+      mockProjectRepository = new MockProjectRepository([project]);
+      context.projectRepository = mockProjectRepository;
+
+      const whitespaceMessage = "   \t   ";
+      const input: SendMessageStreamInput = {
+        message: whitespaceMessage,
+      };
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.userMessage.content).toBe(whitespaceMessage);
+        expect(onChunkSpy).toHaveBeenCalled();
+      }
+    });
+
+    it("should handle multiline message streaming", async () => {
+      const project: Project = {
+        id: "project-1" as ProjectId,
+        name: "Test Project",
+        path: "/test/path",
+        createdAt: new Date("2024-01-01T10:00:00Z"),
+        updatedAt: new Date("2024-01-01T10:00:00Z"),
+      };
+      mockProjectRepository = new MockProjectRepository([project]);
+      context.projectRepository = mockProjectRepository;
+
+      const multilineMessage = "Line 1\nLine 2\nLine 3";
+      const input: SendMessageStreamInput = {
+        message: multilineMessage,
+      };
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.userMessage.content).toBe(multilineMessage);
+        expect(result.value.assistantMessage.content).toBe(
+          `You said: ${multilineMessage}`,
+        );
+        expect(onChunkSpy).toHaveBeenCalled();
+      }
+    });
+
+    it("should handle streaming with no chunk callback invocations on fast responses", async () => {
+      const project: Project = {
+        id: "project-1" as ProjectId,
+        name: "Test Project",
+        path: "/test/path",
+        createdAt: new Date("2024-01-01T10:00:00Z"),
+        updatedAt: new Date("2024-01-01T10:00:00Z"),
+      };
+      mockProjectRepository = new MockProjectRepository([project]);
+      context.projectRepository = mockProjectRepository;
+
+      const noOpCallback = () => {};
+
+      const input: SendMessageStreamInput = {
+        message: "Fast response test",
+      };
+
+      const result = await sendMessageStream(context, input, noOpCallback);
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.userMessage.content).toBe("Fast response test");
+        expect(result.value.assistantMessage.content).toBe(
+          "You said: Fast response test",
+        );
+      }
+    });
+
+    it("should handle special characters in streaming message", async () => {
+      const project: Project = {
+        id: "project-1" as ProjectId,
+        name: "Test Project",
+        path: "/test/path",
+        createdAt: new Date("2024-01-01T10:00:00Z"),
+        updatedAt: new Date("2024-01-01T10:00:00Z"),
+      };
+      mockProjectRepository = new MockProjectRepository([project]);
+      context.projectRepository = mockProjectRepository;
+
+      const specialMessage = "Special chars: !@#$%^&*()_+-=[]{}|;':\",./<>?";
+      const input: SendMessageStreamInput = {
+        message: specialMessage,
+      };
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.userMessage.content).toBe(specialMessage);
+        expect(result.value.assistantMessage.content).toBe(
+          `You said: ${specialMessage}`,
+        );
+        expect(onChunkSpy).toHaveBeenCalled();
+      }
+    });
+  });
+});
