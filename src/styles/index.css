@@ -11,6 +11,8 @@
     line-height: 1.75;
     font-feature-settings: "pkna";
     font-size: 16px;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
 
     @media (width < 48rem) {
       font-size: 14px;
@@ -24,5 +26,36 @@
     overflow-wrap: anywhere;
     word-break: normal;
     line-break: strict;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Improve touch targets */
+  button,
+  a,
+  input,
+  textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Prevent text selection on UI elements */
+  button,
+  nav {
+    user-select: none;
+  }
+
+  /* Optimize animations */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
