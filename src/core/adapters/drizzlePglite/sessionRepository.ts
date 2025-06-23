@@ -22,14 +22,19 @@ export class DrizzlePgliteSessionRepository implements SessionRepository {
     try {
       const values = params.id
         ? params
-        : { projectId: params.projectId, cwd: params.cwd };
+        : {
+            projectId: params.projectId || null,
+            name: params.name,
+            cwd: params.cwd,
+          };
       const result = await this.db
         .insert(sessions)
         .values(values)
         .onConflictDoUpdate({
           target: sessions.id,
           set: {
-            projectId: params.projectId,
+            projectId: params.projectId || null,
+            name: params.name,
             cwd: params.cwd,
             updatedAt: new Date(),
           },
@@ -96,6 +101,35 @@ export class DrizzlePgliteSessionRepository implements SessionRepository {
       });
     } catch (error) {
       return err(new RepositoryError("Failed to update session cwd", error));
+    }
+  }
+
+  async updateLastMessageAt(
+    id: SessionId,
+    timestamp: Date,
+  ): Promise<Result<Session, RepositoryError>> {
+    try {
+      const result = await this.db
+        .update(sessions)
+        .set({
+          lastMessageAt: timestamp,
+          updatedAt: new Date(),
+        })
+        .where(eq(sessions.id, id))
+        .returning();
+
+      const session = result[0];
+      if (!session) {
+        return err(new RepositoryError("Session not found"));
+      }
+
+      return validate(sessionSchema, session).mapErr((error) => {
+        return new RepositoryError("Invalid session data after update", error);
+      });
+    } catch (error) {
+      return err(
+        new RepositoryError("Failed to update session lastMessageAt", error),
+      );
     }
   }
 

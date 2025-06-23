@@ -32,7 +32,8 @@ export class MockSessionRepository implements SessionRepository {
       }
       const updatedSession: Session = {
         ...existingSession,
-        projectId: params.projectId,
+        projectId: params.projectId || null,
+        name: params.name,
         cwd: params.cwd,
         updatedAt: new Date(),
       };
@@ -45,8 +46,10 @@ export class MockSessionRepository implements SessionRepository {
     const now = new Date();
     const session: Session = {
       id: params.id || (uuidv7() as SessionId),
-      projectId: params.projectId,
+      projectId: params.projectId || null,
+      name: params.name,
       cwd: params.cwd,
+      lastMessageAt: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -74,6 +77,25 @@ export class MockSessionRepository implements SessionRepository {
     const updatedSession: Session = {
       ...session,
       cwd,
+      updatedAt: new Date(),
+    };
+
+    this.sessions.set(id, updatedSession);
+    return ok(updatedSession);
+  }
+
+  async updateLastMessageAt(
+    id: SessionId,
+    timestamp: Date,
+  ): Promise<Result<Session, RepositoryError>> {
+    const session = this.sessions.get(id);
+    if (!session) {
+      return err(new RepositoryError("Session not found"));
+    }
+
+    const updatedSession: Session = {
+      ...session,
+      lastMessageAt: timestamp,
       updatedAt: new Date(),
     };
 

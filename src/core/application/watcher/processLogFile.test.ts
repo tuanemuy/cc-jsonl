@@ -157,7 +157,9 @@ describe("processLogFile", () => {
       const existingSession = {
         id: sessionIdSchema.parse(sessionId),
         projectId: existingProject.id,
+        name: "Test Session",
         cwd: "/workspace",
+        lastMessageAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

@@ -56,7 +56,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
                   </Link>
                   <div className="h-4 w-px bg-border hidden sm:block" />
                   <h1 className="text-lg sm:text-xl font-semibold truncate">
-                    Session
+                    {session.name}
                   </h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground">
@@ -70,7 +70,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
           <div className="flex-1 overflow-hidden">
             <ChatInterface
               sessionId={session.id}
-              projectId={session.projectId}
+              projectId={session.projectId || undefined}
               initialMessages={messages.items}
             />
           </div>

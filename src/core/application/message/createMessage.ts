@@ -36,6 +36,16 @@ export async function createMessage(
   const params = parseResult.value;
 
   const result = await context.messageRepository.create(params);
+
+  if (result.isOk()) {
+    // Update session's lastMessageAt
+    const message = result.value;
+    await context.sessionRepository.updateLastMessageAt(
+      message.sessionId,
+      message.timestamp,
+    );
+  }
+
   return result.mapErr((error) => {
     const appError = new ApplicationError("Failed to create message", error);
     console.error("[createMessage] Repository operation failed", {

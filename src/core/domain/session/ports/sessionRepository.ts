@@ -16,6 +16,10 @@ export interface SessionRepository {
     id: SessionId,
     cwd: string,
   ): Promise<Result<Session, RepositoryError>>;
+  updateLastMessageAt(
+    id: SessionId,
+    timestamp: Date,
+  ): Promise<Result<Session, RepositoryError>>;
   delete(id: SessionId): Promise<Result<void, RepositoryError>>;
   list(
     query: ListSessionQuery,

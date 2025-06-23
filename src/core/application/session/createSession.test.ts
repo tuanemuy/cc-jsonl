@@ -35,6 +35,7 @@ describe("createSession", () => {
       // Arrange
       const input: CreateSessionInput = {
         projectId: "test-project-id" as ProjectId,
+        name: "Test Session",
         cwd: "/tmp",
       };
 
@@ -57,6 +58,7 @@ describe("createSession", () => {
       const input: CreateSessionInput = {
         id: "custom-session-id" as SessionId,
         projectId: "test-project-id" as ProjectId,
+        name: "Test Session",
         cwd: "/tmp",
       };
 
@@ -76,6 +78,7 @@ describe("createSession", () => {
       // Arrange
       const input: CreateSessionInput = {
         projectId: "test-project-id" as ProjectId,
+        name: "Test Session",
         cwd: "/tmp",
       };
 
@@ -97,6 +100,7 @@ describe("createSession", () => {
       const projectId = "550e8400-e29b-41d4-a716-446655440000";
       const input: CreateSessionInput = {
         projectId: projectId as ProjectId,
+        name: "Test Session",
         cwd: "/tmp",
       };
 
@@ -116,6 +120,7 @@ describe("createSession", () => {
       const input: CreateSessionInput = {
         id: sessionId as SessionId,
         projectId: "test-project-id" as ProjectId,
+        name: "Test Session",
         cwd: "/tmp",
       };
 
@@ -136,6 +141,7 @@ describe("createSession", () => {
       const input: CreateSessionInput = {
         id: sessionId as SessionId,
         projectId: projectId as ProjectId,
+        name: "Test Session",
         cwd: "/tmp",
       };
 
@@ -154,10 +160,12 @@ describe("createSession", () => {
       // Arrange
       const input1: CreateSessionInput = {
         projectId: "project-1" as ProjectId,
+        name: "Test Session 1",
         cwd: "/tmp",
       };
       const input2: CreateSessionInput = {
         projectId: "project-2" as ProjectId,
+        name: "Test Session 2",
         cwd: "/tmp",
       };
 
@@ -180,10 +188,12 @@ describe("createSession", () => {
       const projectId = "shared-project" as ProjectId;
       const input1: CreateSessionInput = {
         projectId,
+        name: "Test Session 1",
         cwd: "/tmp",
       };
       const input2: CreateSessionInput = {
         projectId,
+        name: "Test Session 2",
         cwd: "/tmp",
       };
 
@@ -255,6 +265,7 @@ describe("createSession", () => {
       // Arrange
       const input: CreateSessionInput = {
         projectId: "" as ProjectId,
+        name: "Test Session",
         cwd: "/tmp",
       };
 
@@ -311,6 +322,7 @@ describe("createSession", () => {
       const input: CreateSessionInput = {
         id: "" as SessionId,
         projectId: "test-project-id" as ProjectId,
+        name: "Test Session",
         cwd: "/tmp",
       };
 
@@ -330,11 +342,13 @@ describe("createSession", () => {
       const input1: CreateSessionInput = {
         id: duplicateId,
         projectId: "project-1" as ProjectId,
+        name: "Test Session 1",
         cwd: "/tmp",
       };
       const input2: CreateSessionInput = {
         id: duplicateId,
         projectId: "project-2" as ProjectId,
+        name: "Test Session 2",
         cwd: "/updated/path",
       };
 
@@ -395,6 +409,7 @@ describe("createSession", () => {
       // Arrange
       const input: CreateSessionInput = {
         projectId: "test-project-id" as ProjectId,
+        name: "Test Session",
         cwd: "/tmp",
       };
 
@@ -424,6 +439,7 @@ describe("createSession", () => {
       // Arrange
       const input: CreateSessionInput = {
         projectId: "a" as ProjectId,
+        name: "Test Session",
         cwd: "/tmp",
       };
 
@@ -442,6 +458,7 @@ describe("createSession", () => {
       const input: CreateSessionInput = {
         id: "b" as SessionId,
         projectId: "test-project-id" as ProjectId,
+        name: "Test Session",
         cwd: "/tmp",
       };
 
@@ -460,6 +477,7 @@ describe("createSession", () => {
       const longProjectId = "a".repeat(1000);
       const input: CreateSessionInput = {
         projectId: longProjectId as ProjectId,
+        name: "Test Session",
         cwd: "/tmp",
       };
 
@@ -479,6 +497,7 @@ describe("createSession", () => {
       const input: CreateSessionInput = {
         id: longSessionId as SessionId,
         projectId: "test-project-id" as ProjectId,
+        name: "Test Session",
         cwd: "/tmp",
       };
 
@@ -496,6 +515,7 @@ describe("createSession", () => {
       // Arrange
       const input: CreateSessionInput = {
         projectId: "   " as ProjectId,
+        name: "Test Session",
         cwd: "/tmp",
       };
 
@@ -514,6 +534,7 @@ describe("createSession", () => {
       const input: CreateSessionInput = {
         id: "   " as SessionId,
         projectId: "test-project-id" as ProjectId,
+        name: "Test Session",
         cwd: "/tmp",
       };
 
