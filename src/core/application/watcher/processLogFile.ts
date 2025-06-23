@@ -243,7 +243,7 @@ async function ensureSessionExists(
     const result = await createSession(context, {
       id: brandedSessionId,
       projectId: project.id,
-      name: "Untitled Session",
+      name: null,
       cwd,
     });
     if (result.isErr()) {

@@ -296,7 +296,7 @@ describe("batchProcessDirectory", () => {
             {
               id: sessionIdSchema.parse("existing"),
               projectId: projectIdSchema.parse("test-project"),
-              name: "Test Session",
+              name: null,
               cwd: "/test/dir",
               lastMessageAt: null,
               createdAt: new Date(),

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { listSessionsAction } from "@/actions/session";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { formatDate, formatRelativeTime } from "@/lib/date";
+import { getSessionDisplayName } from "@/lib/sessionName";
 
 export default async function SessionsPage() {
   const sessions = await listSessionsAction({
@@ -47,7 +48,7 @@ export default async function SessionsPage() {
                         <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0" />
                         <div className="min-w-0">
                           <h3 className="font-medium group-hover:text-primary transition-colors truncate">
-                            {session.name}
+                            {getSessionDisplayName(session.name)}
                           </h3>
                           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm text-muted-foreground">
                             <span>{formatDate(session.createdAt)}</span>

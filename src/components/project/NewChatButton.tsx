@@ -18,7 +18,7 @@ interface NewChatButtonProps {
 
 const inputSchema = z.object({
   projectId: z.string(),
-  name: z.string(),
+  name: z.string().nullable(),
   cwd: z.string(),
 });
 
@@ -30,7 +30,7 @@ export function NewChatButton({ projectId }: NewChatButtonProps) {
     resolver: zodResolver(inputSchema),
     defaultValues: {
       projectId,
-      name: "Untitled Session",
+      name: null,
       cwd: "/tmp",
     },
   });
@@ -38,7 +38,7 @@ export function NewChatButton({ projectId }: NewChatButtonProps) {
   const [_formState, formAction, isPending] = useActionState(
     createSessionAction,
     {
-      input: { projectId, name: "Untitled Session", cwd: "/tmp" },
+      input: { projectId, name: null, cwd: "/tmp" },
       error: null,
     },
   );
@@ -48,7 +48,9 @@ export function NewChatButton({ projectId }: NewChatButtonProps) {
     startTransition(() => {
       const formData = new FormData();
       formData.append("projectId", data.projectId);
-      formData.append("name", data.name);
+      if (data.name) {
+        formData.append("name", data.name);
+      }
       formData.append("cwd", data.cwd);
       formAction(formData);
     });

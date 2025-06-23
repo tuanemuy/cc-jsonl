@@ -89,7 +89,7 @@ export async function sendMessageStream(
 
       const createSessionResult = await context.sessionRepository.create({
         projectId: projectsResult.value.items[0].id,
-        name: "Untitled Session",
+        name: null,
         cwd: "/tmp",
       });
       if (createSessionResult.isErr()) {

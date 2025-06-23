@@ -7,7 +7,7 @@ import type { Context } from "../context";
 
 export const updateSessionNameInputSchema = z.object({
   id: z.string(),
-  name: z.string().min(1).max(100),
+  name: z.string().min(1).max(100).nullable(),
 });
 
 export type UpdateSessionNameInput = z.infer<

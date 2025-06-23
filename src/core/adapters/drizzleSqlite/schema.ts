@@ -24,7 +24,7 @@ export const sessions = sqliteTable("sessions", {
   projectId: text("project_id").references(() => projects.id, {
     onDelete: "cascade",
   }),
-  name: text("name").notNull(),
+  name: text("name"),
   cwd: text("cwd").notNull(),
   lastMessageAt: integer("last_message_at", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" })

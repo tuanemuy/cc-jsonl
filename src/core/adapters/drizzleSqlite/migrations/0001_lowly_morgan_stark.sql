@@ -2,7 +2,7 @@ PRAGMA foreign_keys=OFF;--> statement-breakpoint
 CREATE TABLE `__new_sessions` (
 	`id` text PRIMARY KEY NOT NULL,
 	`project_id` text,
-	`name` text NOT NULL,
+	`name` text,
 	`cwd` text NOT NULL,
 	`last_message_at` integer,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
@@ -11,7 +11,6 @@ CREATE TABLE `__new_sessions` (
 );
 --> statement-breakpoint
 INSERT INTO `__new_sessions`("id", "project_id", "cwd", "created_at", "updated_at") SELECT "id", "project_id", "cwd", "created_at", "updated_at" FROM `sessions`;--> statement-breakpoint
-UPDATE `__new_sessions` SET "name" = 'Untitled Session' WHERE "name" IS NULL;--> statement-breakpoint
 DROP TABLE `sessions`;--> statement-breakpoint
 ALTER TABLE `__new_sessions` RENAME TO `sessions`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;

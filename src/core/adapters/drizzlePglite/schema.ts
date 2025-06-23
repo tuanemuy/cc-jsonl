@@ -24,7 +24,7 @@ export const sessions = pgTable("sessions", {
   projectId: uuid("project_id").references(() => projects.id, {
     onDelete: "cascade",
   }),
-  name: text("name").notNull(),
+  name: text("name"),
   cwd: text("cwd").notNull(),
   lastMessageAt: timestamp("last_message_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })

@@ -23,7 +23,7 @@ describe("getSession", () => {
   ): Session => ({
     id: id as SessionId,
     projectId: projectId as ProjectId,
-    name: "Test Session",
+    name: null,
     cwd: "/tmp",
     lastMessageAt: null,
     createdAt,

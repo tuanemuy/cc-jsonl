@@ -33,7 +33,7 @@ export class MockSessionRepository implements SessionRepository {
       const updatedSession: Session = {
         ...existingSession,
         projectId: params.projectId || null,
-        name: params.name,
+        name: params.name || null,
         cwd: params.cwd,
         updatedAt: new Date(),
       };
@@ -47,7 +47,7 @@ export class MockSessionRepository implements SessionRepository {
     const session: Session = {
       id: params.id || (uuidv7() as SessionId),
       projectId: params.projectId || null,
-      name: params.name,
+      name: params.name || null,
       cwd: params.cwd,
       lastMessageAt: null,
       createdAt: now,

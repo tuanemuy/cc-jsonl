@@ -28,7 +28,7 @@ export async function createSessionAction(
 ): Promise<FormState<CreateSessionFormInput, CreateSessionInput>> {
   const rawData = {
     projectId: formData.get("projectId"),
-    name: formData.get("name") || "Untitled Session",
+    name: formData.get("name") || null,
     cwd: formData.get("cwd"),
   };
 

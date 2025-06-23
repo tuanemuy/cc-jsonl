@@ -80,7 +80,7 @@ describe("sendMessageStream", () => {
       const session: Session = {
         id: "session-123" as SessionId,
         projectId: project.id,
-        name: "Test Session",
+        name: null,
         cwd: "/tmp",
         lastMessageAt: null,
         createdAt: new Date("2024-01-01T10:00:00Z"),
@@ -148,7 +148,7 @@ describe("sendMessageStream", () => {
       const session: Session = {
         id: "session-123" as SessionId,
         projectId: project.id,
-        name: "Test Session",
+        name: null,
         cwd: "/tmp",
         lastMessageAt: null,
         createdAt: new Date("2024-01-01T10:00:00Z"),
