@@ -1,10 +1,12 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { Bot, Loader2, Send, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { Message } from "@/core/domain/message/types";
+import { formatTime } from "@/lib/date";
 import { MessageContent } from "./MessageContent";
 
 interface ChatInterfaceProps {
@@ -151,91 +153,114 @@ export function ChatInterface({
   };
 
   return (
-    <div className="h-[600px] border rounded-lg bg-card text-card-foreground shadow-sm flex flex-col">
+    <div className="h-full flex flex-col bg-background">
       {/* Header */}
-      <div className="p-6 pb-2 border-b">
-        <h3 className="text-lg font-semibold leading-none tracking-tight flex items-center gap-2">
-          <Bot className="h-5 w-5" />
+      <div className="px-4 py-3 sm:px-6 sm:py-4 border-b bg-muted/30">
+        <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+          <Bot className="h-4 w-4 sm:h-5 sm:w-5" />
           Chat with Claude
         </h3>
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-hidden p-6 pb-4">
-        <div className="h-full overflow-y-auto space-y-4 pr-2" ref={scrollRef}>
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex gap-3 ${
-                message.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
-              <div
-                className={`flex gap-3 max-w-[80%] ${
-                  message.role === "user" ? "flex-row-reverse" : "flex-row"
+      <div className="flex-1 overflow-hidden">
+        <div
+          className="h-full overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 space-y-4"
+          ref={scrollRef}
+        >
+          <AnimatePresence initial={false}>
+            {messages.map((message, index) => (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+                className={`flex gap-2 sm:gap-3 ${
+                  message.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                <div className="flex-shrink-0">
-                  {message.role === "user" ? (
-                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                      <User className="h-4 w-4 text-primary-foreground" />
-                    </div>
-                  ) : (
-                    <div className="w-8 h-8 bg-muted-foreground rounded-full flex items-center justify-center">
-                      <Bot className="h-4 w-4 text-muted" />
-                    </div>
-                  )}
-                </div>
                 <div
-                  className={`rounded-lg px-4 py-2 min-w-0 ${
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
+                  className={`flex gap-2 sm:gap-3 max-w-[85%] sm:max-w-[80%] ${
+                    message.role === "user" ? "flex-row-reverse" : "flex-row"
                   }`}
                 >
-                  <div className="break-words">
-                    <MessageContent content={message.content} />
-                    {message.isStreaming && (
-                      <span className="inline-block w-2 h-4 bg-current opacity-50 animate-pulse ml-1" />
+                  <motion.div
+                    className="flex-shrink-0"
+                    whileTap={{ scale: 0.9 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                  >
+                    {message.role === "user" ? (
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary rounded-full flex items-center justify-center shadow-sm">
+                        <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary-foreground" />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 bg-muted-foreground rounded-full flex items-center justify-center shadow-sm">
+                        <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted" />
+                      </div>
                     )}
-                  </div>
-                  <div className="text-xs opacity-75 mt-1">
-                    {message.timestamp.toLocaleTimeString()}
-                  </div>
+                  </motion.div>
+                  <motion.div
+                    className={`rounded-2xl px-4 py-3 sm:px-4 sm:py-3 min-w-0 shadow-sm ${
+                      message.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted"
+                    }`}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                  >
+                    <div className="break-words text-sm sm:text-base">
+                      <MessageContent content={message.content} />
+                      {message.isStreaming && (
+                        <span className="inline-block w-2 h-4 bg-current opacity-50 animate-pulse ml-1" />
+                      )}
+                    </div>
+                    <div className="text-xs opacity-70 mt-1">
+                      {formatTime(message.timestamp)}
+                    </div>
+                  </motion.div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       </div>
 
       {/* Input Form */}
-      <div className="p-6 pt-2 border-t">
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1 min-h-[60px] resize-none"
-            onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSubmit({ preventDefault: () => {} } as React.FormEvent);
-              }
-            }}
-            disabled={isLoading}
-          />
-          <Button
-            type="submit"
-            disabled={!input.trim() || isLoading}
-            className="px-4"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
+      <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6">
+          <div className="flex gap-2 sm:gap-3 max-w-4xl mx-auto">
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type your message..."
+              className="flex-1 min-h-[56px] sm:min-h-[60px] resize-none text-sm sm:text-base"
+              onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+                }
+              }}
+              disabled={isLoading}
+            />
+            <motion.div
+              whileTap={{ scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            >
+              <Button
+                type="submit"
+                disabled={!input.trim() || isLoading}
+                size="lg"
+                className="px-4 sm:px-5 h-[56px] sm:h-[60px] rounded-full shadow-sm"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </motion.div>
+          </div>
         </form>
       </div>
     </div>
