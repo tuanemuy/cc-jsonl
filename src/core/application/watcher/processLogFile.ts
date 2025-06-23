@@ -5,12 +5,15 @@ import type { LogParser } from "@/core/domain/watcher/ports/logParser";
 import type {
   AssistantLog,
   ClaudeLogEntry,
+  SummaryLog,
   SystemLog,
   UserLog,
 } from "@/core/domain/watcher/types";
 import type { Context } from "../context";
 import { createProject } from "../project";
 import { createSession } from "../session";
+import { generateSessionName } from "../session/generateSessionName";
+import { updateSessionName } from "../session/updateSessionName";
 
 export const processLogFileInputSchema = z.object({
   filePath: z.string().min(1),
@@ -84,6 +87,22 @@ export async function processLogFile(
     );
     if (processEntriesResult.isErr()) {
       return err(processEntriesResult.error);
+    }
+
+    // If no summary entry was found, generate session name from messages
+    const hasSummary = entries.some((entry) => entry.type === "summary");
+    if (!hasSummary) {
+      const generateNameResult = await generateAndUpdateSessionName(
+        context,
+        sessionIdSchema.parse(sessionId),
+      );
+      if (generateNameResult.isErr()) {
+        console.warn("[processLogFile] Failed to generate session name", {
+          sessionId,
+          error: generateNameResult.error.message,
+          cause: generateNameResult.error.cause,
+        });
+      }
     }
 
     console.log(
@@ -322,6 +341,19 @@ async function processLogEntries(
             cause: result.error.cause,
           });
         }
+      } else if (entry.type === "summary") {
+        const result = await processSummaryEntry(
+          context,
+          brandedSessionId,
+          entry as SummaryLog,
+        );
+        if (result.isErr()) {
+          console.warn("[processLogEntries] Failed to process summary entry", {
+            entryType: entry.type,
+            error: result.error.message,
+            cause: result.error.cause,
+          });
+        }
       }
     } catch (error) {
       console.warn("[processLogEntries] Failed to process log entry", {
@@ -451,4 +483,136 @@ async function processSystemEntry(
   }
 
   return ok(undefined);
+}
+
+async function processSummaryEntry(
+  context: Context,
+  sessionId: SessionId,
+  entry: SummaryLog,
+): Promise<Result<void, ProcessLogFileError>> {
+  try {
+    // Generate session name from summary text
+    const summaryText = entry.summary;
+    if (!summaryText) {
+      console.log(
+        "[processSummaryEntry] Empty summary, skipping name generation",
+      );
+      return ok(undefined);
+    }
+
+    // Extract a session name from the summary
+    const sessionName = generateSessionNameFromSummary(summaryText);
+
+    // Update the session name using the updateSessionName function
+    const updateResult = await updateSessionName(context, {
+      id: sessionId,
+      name: sessionName,
+    });
+
+    if (updateResult.isErr()) {
+      const error = {
+        type: "PROCESS_LOG_FILE_ERROR" as const,
+        message: `Failed to update session name from summary: ${updateResult.error.message}`,
+        cause: updateResult.error,
+      };
+      console.error("[processSummaryEntry] Session name update failed", {
+        sessionId,
+        sessionName,
+        error: error.message,
+        cause: error.cause,
+      });
+      return err(error);
+    }
+
+    console.log(
+      `Updated session name from summary: ${sessionId} -> "${sessionName}"`,
+    );
+    return ok(undefined);
+  } catch (error) {
+    const processError = {
+      type: "PROCESS_LOG_FILE_ERROR" as const,
+      message: `Failed to process summary entry: ${error instanceof Error ? error.message : String(error)}`,
+      cause: error,
+    };
+    console.error("[processSummaryEntry] Unexpected error", {
+      sessionId,
+      error: processError.message,
+      cause: processError.cause,
+    });
+    return err(processError);
+  }
+}
+
+function generateSessionNameFromSummary(summaryText: string): string {
+  // Clean and extract meaningful text from summary
+  const cleaned = summaryText.trim();
+
+  // Extract first sentence or meaningful phrase
+  const sentences = cleaned.split(/[.!?]+/);
+  const firstSentence = sentences[0]?.trim();
+
+  if (!firstSentence) {
+    return "Generated Session";
+  }
+
+  // Remove common prefixes and clean up
+  let name = firstSentence
+    .replace(/^(Summary|Session|Chat|Conversation|Discussion):\s*/i, "")
+    .replace(/^(The|This|A|An)\s+/i, "")
+    .trim();
+
+  // Truncate to reasonable length
+  const maxLength = 50;
+  if (name.length > maxLength) {
+    name = `${name.substring(0, maxLength - 3)}...`;
+  }
+
+  return name || "Generated Session";
+}
+
+async function generateAndUpdateSessionName(
+  context: Context,
+  sessionId: SessionId,
+): Promise<Result<void, ProcessLogFileError>> {
+  try {
+    // Generate session name from messages
+    const nameResult = await generateSessionName(context, sessionId);
+    if (nameResult.isErr()) {
+      return err({
+        type: "PROCESS_LOG_FILE_ERROR",
+        message: `Failed to generate session name: ${nameResult.error.message}`,
+        cause: nameResult.error,
+      });
+    }
+
+    const sessionName = nameResult.value;
+
+    // Only update if we got a meaningful name (not "Untitled Session")
+    if (sessionName !== "Untitled Session") {
+      const updateResult = await updateSessionName(context, {
+        id: sessionId,
+        name: sessionName,
+      });
+
+      if (updateResult.isErr()) {
+        return err({
+          type: "PROCESS_LOG_FILE_ERROR",
+          message: `Failed to update session name: ${updateResult.error.message}`,
+          cause: updateResult.error,
+        });
+      }
+
+      console.log(
+        `Generated and updated session name: ${sessionId} -> "${sessionName}"`,
+      );
+    }
+
+    return ok(undefined);
+  } catch (error) {
+    return err({
+      type: "PROCESS_LOG_FILE_ERROR",
+      message: `Failed to generate and update session name: ${error instanceof Error ? error.message : String(error)}`,
+      cause: error,
+    });
+  }
 }

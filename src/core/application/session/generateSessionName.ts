@@ -7,9 +7,9 @@ export async function generateSessionName(
   context: Context,
   sessionId: SessionId,
 ): Promise<Result<string, ApplicationError>> {
-  // Get the first message in the session
+  // Get the first user message in the session
   const messagesResult = await context.messageRepository.list({
-    pagination: { page: 1, limit: 1, order: "asc", orderBy: "timestamp" },
+    pagination: { page: 1, limit: 5, order: "asc", orderBy: "timestamp" },
     filter: { sessionId },
   });
 
@@ -27,12 +27,15 @@ export async function generateSessionName(
     return ok("Untitled Session");
   }
 
-  const firstMessage = items[0];
+  // Find the first user message with meaningful content
+  const firstUserMessage = items.find(
+    (msg) =>
+      msg.role === "user" && msg.content && msg.content.trim().length > 0,
+  );
 
-  // Generate name from first user message content
-  if (firstMessage.role === "user" && firstMessage.content) {
+  if (firstUserMessage?.content) {
     // Use first line of user message, truncated
-    const firstLine = firstMessage.content.split("\n")[0];
+    const firstLine = firstUserMessage.content.split("\n")[0];
     return ok(truncateSessionName(firstLine));
   }
 
