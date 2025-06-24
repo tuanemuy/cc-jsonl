@@ -35,7 +35,7 @@ export async function createMessage(
 
   const params = parseResult.value;
 
-  const result = await context.messageRepository.create(params);
+  const result = await context.messageRepository.upsert(params);
 
   if (result.isOk()) {
     // Update session's lastMessageAt

@@ -18,7 +18,7 @@ export class MockMessageRepository implements MessageRepository {
     }
   }
 
-  async create(
+  async upsert(
     params: CreateMessageParams,
   ): Promise<Result<Message, RepositoryError>> {
     const existingResult = await this.findByUuid(params.uuid);

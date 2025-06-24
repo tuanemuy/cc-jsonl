@@ -35,7 +35,7 @@ export async function createSession(
 
   const params = parseResult.value;
 
-  const result = await context.sessionRepository.create(params);
+  const result = await context.sessionRepository.upsert(params);
   return result.mapErr((error) => {
     const appError = new ApplicationError("Failed to create session", error);
     console.error("[createSession] Repository operation failed", {

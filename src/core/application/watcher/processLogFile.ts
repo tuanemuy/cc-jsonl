@@ -454,7 +454,7 @@ async function processMessageEntry(
     });
   }
 
-  const result = await context.messageRepository.create({
+  const result = await context.messageRepository.upsert({
     sessionId,
     role: entry.message.role,
     content,
@@ -523,7 +523,7 @@ async function processSystemEntry(
   sessionId: SessionId,
   entry: SystemLog,
 ): Promise<Result<void, ProcessLogFileError>> {
-  const result = await context.messageRepository.create({
+  const result = await context.messageRepository.upsert({
     sessionId,
     role: "assistant",
     content: `[SYSTEM] ${entry.content}`,

@@ -20,7 +20,7 @@ export class MockSessionRepository implements SessionRepository {
     }
   }
 
-  async create(
+  async upsert(
     params: CreateSessionParams,
   ): Promise<Result<Session, RepositoryError>> {
     // Check if session with same ID already exists (if ID is provided)

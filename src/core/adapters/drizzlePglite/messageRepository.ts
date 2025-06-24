@@ -16,7 +16,7 @@ import { messages } from "./schema";
 export class DrizzlePgliteMessageRepository implements MessageRepository {
   constructor(private readonly db: Database) {}
 
-  async create(
+  async upsert(
     params: CreateMessageParams,
   ): Promise<Result<Message, RepositoryError>> {
     try {
@@ -40,14 +40,14 @@ export class DrizzlePgliteMessageRepository implements MessageRepository {
 
       const message = result[0];
       if (!message) {
-        return err(new RepositoryError("Failed to create message"));
+        return err(new RepositoryError("Failed to upsert message"));
       }
 
       return validate(messageSchema, message).mapErr((error) => {
         return new RepositoryError("Invalid message data", error);
       });
     } catch (error) {
-      return err(new RepositoryError("Failed to create message", error));
+      return err(new RepositoryError("Failed to upsert message", error));
     }
   }
 

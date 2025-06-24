@@ -8,7 +8,7 @@ import type {
 } from "../types";
 
 export interface MessageRepository {
-  create(
+  upsert(
     params: CreateMessageParams,
   ): Promise<Result<Message, RepositoryError>>;
   findById(id: MessageId): Promise<Result<Message | null, RepositoryError>>;

@@ -147,7 +147,7 @@ export async function sendMessageStream(
         return err(error);
       }
 
-      const createSessionResult = await context.sessionRepository.create({
+      const createSessionResult = await context.sessionRepository.upsert({
         id: sessionId,
         projectId: projectsResult.value.items[0].id,
         name: null,
