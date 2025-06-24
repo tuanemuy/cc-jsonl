@@ -58,3 +58,23 @@ export const messages = sqliteTable("messages", {
     .default(sql`(unixepoch())`)
     .$onUpdate(() => new Date()),
 });
+
+export const logFileTracking = sqliteTable("log_file_tracking", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => uuidv7()),
+  filePath: text("file_path").notNull().unique(),
+  lastProcessedAt: integer("last_processed_at", {
+    mode: "timestamp",
+  }).notNull(),
+  fileSize: integer("file_size"),
+  fileModifiedAt: integer("file_modified_at", { mode: "timestamp" }),
+  checksum: text("checksum"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`)
+    .$onUpdate(() => new Date()),
+});

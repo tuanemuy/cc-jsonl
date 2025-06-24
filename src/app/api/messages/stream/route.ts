@@ -13,6 +13,14 @@ export async function GET(request: NextRequest) {
       return new Response("Valid message is required", { status: 400 });
     }
 
+    // If no sessionId is provided (new session), cwd is required
+    if (!sessionId && !cwd) {
+      return new Response(
+        "cwd is required when creating a new session (no sessionId provided)",
+        { status: 400 },
+      );
+    }
+
     const context = getServerContext();
 
     const encoder = new TextEncoder();

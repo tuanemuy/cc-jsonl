@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { AnthropicClaudeService } from "@/core/adapters/anthropic/claudeService";
 import { getDatabase } from "@/core/adapters/drizzleSqlite/client";
+import { DrizzleSqliteLogFileTrackingRepository } from "@/core/adapters/drizzleSqlite/logFileTrackingRepository";
 import { DrizzleSqliteMessageRepository } from "@/core/adapters/drizzleSqlite/messageRepository";
 import { DrizzleSqliteProjectRepository } from "@/core/adapters/drizzleSqlite/projectRepository";
 import { DrizzleSqliteSessionRepository } from "@/core/adapters/drizzleSqlite/sessionRepository";
@@ -32,6 +33,7 @@ function getContext(): Context {
     sessionRepository: new DrizzleSqliteSessionRepository(db),
     messageRepository: new DrizzleSqliteMessageRepository(db),
     claudeService: new AnthropicClaudeService(),
+    logFileTrackingRepository: new DrizzleSqliteLogFileTrackingRepository(db),
   };
 }
 

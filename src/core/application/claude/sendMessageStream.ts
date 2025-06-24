@@ -7,11 +7,26 @@ import { ApplicationError } from "@/lib/error";
 import { validate } from "@/lib/validation";
 import type { Context } from "../context";
 
-export const sendMessageStreamInputSchema = z.object({
-  message: z.string().min(1),
-  sessionId: z.string().min(1).optional(),
-  cwd: z.string().optional(),
-});
+export const sendMessageStreamInputSchema = z
+  .object({
+    message: z.string().min(1),
+    sessionId: z.string().min(1).optional(),
+    cwd: z.string().min(1).optional(),
+  })
+  .refine(
+    (data) => {
+      // If no sessionId is provided (new session), cwd is required
+      if (!data.sessionId && !data.cwd) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message:
+        "cwd is required when creating a new session (no sessionId provided)",
+      path: ["cwd"],
+    },
+  );
 export type SendMessageStreamInput = z.infer<
   typeof sendMessageStreamInputSchema
 >;
@@ -42,9 +57,11 @@ export async function sendMessageStream(
   const params = parseResult.value;
 
   try {
-    // Get or create session
-    let session: Session;
+    let session: Session | null = null;
+    let isNewSession = false;
+
     if (params.sessionId) {
+      // Existing session: fetch from database
       const sessionId = sessionIdSchema.parse(params.sessionId);
       const sessionResult = await context.sessionRepository.findById(sessionId);
       if (sessionResult.isErr()) {
@@ -69,7 +86,41 @@ export async function sendMessageStream(
       }
       session = sessionResult.value;
     } else {
-      // Create new session - need to determine project ID
+      // New session: don't save to DB yet, just prepare session object
+      isNewSession = true;
+      // We'll create the session object after getting the session ID from Claude response
+    }
+
+    // Send to Claude with streaming
+    const claudeResult = await context.claudeService.sendMessageStream(
+      {
+        message: params.message,
+        sessionId: params.sessionId, // undefined for new sessions
+        cwd: params.cwd || (session ? session.cwd : undefined),
+      },
+      [], // No previous messages needed as per requirements
+      onChunk,
+    );
+    if (claudeResult.isErr()) {
+      const error = new ApplicationError(
+        "Failed to send message to Claude",
+        claudeResult.error,
+      );
+      console.error("[sendMessageStream] Claude API streaming call failed", {
+        sessionId: params.sessionId || "new",
+        error: error.message,
+        cause: error.cause,
+      });
+      return err(error);
+    }
+
+    const claudeResponse = claudeResult.value;
+
+    if (isNewSession) {
+      // Extract session ID from Claude response and create session in DB
+      const sessionId = sessionIdSchema.parse(claudeResponse.id); // Parse as branded type
+
+      // Get default project for new sessions
       const projectsResult = await context.projectRepository.list({
         pagination: { page: 1, limit: 1, order: "desc", orderBy: "createdAt" },
       });
@@ -85,10 +136,22 @@ export async function sendMessageStream(
         return err(error);
       }
 
+      // Create session in database with Claude's session ID
+      if (!params.cwd) {
+        const error = new ApplicationError(
+          "cwd is required when creating a new session",
+        );
+        console.error("[sendMessageStream] Missing cwd for new session", {
+          error: error.message,
+        });
+        return err(error);
+      }
+
       const createSessionResult = await context.sessionRepository.create({
+        id: sessionId,
         projectId: projectsResult.value.items[0].id,
         name: null,
-        cwd: "/tmp",
+        cwd: params.cwd,
       });
       if (createSessionResult.isErr()) {
         const error = new ApplicationError(
@@ -104,30 +167,9 @@ export async function sendMessageStream(
       session = createSessionResult.value;
     }
 
-    // Send to Claude with streaming
-    const claudeResult = await context.claudeService.sendMessageStream(
-      {
-        message: params.message,
-        sessionId: params.sessionId,
-        cwd: params.cwd || session.cwd,
-      },
-      [], // No previous messages needed as per requirements
-      onChunk,
-    );
-    if (claudeResult.isErr()) {
-      const error = new ApplicationError(
-        "Failed to send message to Claude",
-        claudeResult.error,
-      );
-      console.error("[sendMessageStream] Claude API streaming call failed", {
-        sessionId: session.id,
-        error: error.message,
-        cause: error.cause,
-      });
-      return err(error);
+    if (!session) {
+      return err(new ApplicationError("Session was not created or found"));
     }
-
-    const claudeResponse = claudeResult.value;
 
     return ok({
       session,

@@ -100,7 +100,10 @@ export async function batchProcessDirectory(
             }
           }
 
-          const result = await processLogFile(context, { filePath });
+          const result = await processLogFile(context, {
+            filePath,
+            skipTracking: false,
+          });
           if (result.isOk()) {
             console.log(
               `Successfully processed: ${filePath} (${result.value.entriesProcessed} entries)`,

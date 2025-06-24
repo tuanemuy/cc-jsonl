@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { listProjectsAction } from "@/actions/project";
 import { listSessionsAction } from "@/actions/session";
 import { PageLayout } from "@/components/layout/PageLayout";
+import { NewChatButton } from "@/components/project/NewChatButton";
 import { SessionListItem } from "@/components/session/SessionListItem";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { ProjectSkeleton } from "@/components/ui/skeleton-loader";
@@ -82,12 +83,19 @@ export default function Home() {
         <div className="container mx-auto px-4 py-6 sm:py-8">
           <div className="max-w-4xl mx-auto">
             <header className="mb-6 sm:mb-8">
-              <h1 className="text-2xl sm:text-3xl font-bold">
-                Claude Code Chat Logs
-              </h1>
-              <p className="text-sm sm:text-base text-muted-foreground mt-2">
-                Browse your Claude Code projects and chat sessions
-              </p>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold">
+                    Claude Code Chat Logs
+                  </h1>
+                  <p className="text-sm sm:text-base text-muted-foreground mt-2">
+                    Browse your Claude Code projects and chat sessions
+                  </p>
+                </div>
+                <div className="flex justify-center sm:justify-end">
+                  <NewChatButton />
+                </div>
+              </div>
             </header>
 
             <Tabs defaultValue="projects" className="w-full">

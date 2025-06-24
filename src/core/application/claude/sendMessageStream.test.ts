@@ -46,6 +46,7 @@ describe("sendMessageStream", () => {
 
       const input: SendMessageStreamInput = {
         message: "Hello, streaming Claude!",
+        cwd: "/test/workspace",
       };
 
       const result = await sendMessageStream(context, input, onChunkSpy);
@@ -60,6 +61,10 @@ describe("sendMessageStream", () => {
         // Check that onChunk was called with streaming data
         expect(onChunkSpy).toHaveBeenCalled();
         expect(onChunkSpy.mock.calls.length).toBeGreaterThan(0);
+
+        // Messages should not be created automatically for new sessions
+        const allMessages = mockMessageRepository.getAll();
+        expect(allMessages).toHaveLength(0); // No messages should be created
       }
     });
 
@@ -114,6 +119,7 @@ describe("sendMessageStream", () => {
 
       const input: SendMessageStreamInput = {
         message: "Multi word message",
+        cwd: "/test/workspace",
       };
 
       const result = await sendMessageStream(context, input, onChunkSpy);
@@ -192,7 +198,7 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        // No messages should be created since we removed message persistence
+        // Messages should not be created automatically for existing sessions
         const allMessages = mockMessageRepository.getAll();
         expect(allMessages).toHaveLength(2); // Only the existing messages
         expect(onChunkSpy).toHaveBeenCalled();
@@ -212,6 +218,7 @@ describe("sendMessageStream", () => {
 
       const input: SendMessageStreamInput = {
         message: "こんにちは、Claude！",
+        cwd: "/test/workspace",
       };
 
       const result = await sendMessageStream(context, input, onChunkSpy);
@@ -237,6 +244,7 @@ describe("sendMessageStream", () => {
 
       const input: SendMessageStreamInput = {
         message: "Test streaming",
+        cwd: "/test/workspace",
       };
 
       const chunks: string[] = [];
@@ -259,6 +267,7 @@ describe("sendMessageStream", () => {
     it("should fail with empty message", async () => {
       const input: SendMessageStreamInput = {
         message: "",
+        cwd: "/test/workspace",
       };
 
       const result = await sendMessageStream(context, input, onChunkSpy);
@@ -272,8 +281,22 @@ describe("sendMessageStream", () => {
     it("should fail with null message", async () => {
       const input = {
         message: null,
+        cwd: "/test/workspace",
         // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
+
+      const result = await sendMessageStream(context, input, onChunkSpy);
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.message).toBe("Invalid input");
+      }
+    });
+
+    it("should fail when no cwd provided for new session", async () => {
+      const input: SendMessageStreamInput = {
+        message: "Hello, streaming Claude!",
+      };
 
       const result = await sendMessageStream(context, input, onChunkSpy);
 
@@ -286,6 +309,7 @@ describe("sendMessageStream", () => {
     it("should fail when no projects exist and no sessionId provided", async () => {
       const input: SendMessageStreamInput = {
         message: "Hello, streaming Claude!",
+        cwd: "/test/workspace",
       };
 
       const result = await sendMessageStream(context, input, onChunkSpy);
@@ -325,6 +349,7 @@ describe("sendMessageStream", () => {
 
       const input: SendMessageStreamInput = {
         message: "Hello, streaming Claude!",
+        cwd: "/test/workspace",
       };
 
       const result = await sendMessageStream(context, input, onChunkSpy);
@@ -338,6 +363,7 @@ describe("sendMessageStream", () => {
     it("should fail with non-string message", async () => {
       const input = {
         message: 123,
+        cwd: "/test/workspace",
         // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
 
@@ -378,6 +404,7 @@ describe("sendMessageStream", () => {
 
       const input: SendMessageStreamInput = {
         message: "A",
+        cwd: "/test/workspace",
       };
 
       const result = await sendMessageStream(context, input, onChunkSpy);
@@ -404,6 +431,7 @@ describe("sendMessageStream", () => {
       const longMessage = "A".repeat(1000);
       const input: SendMessageStreamInput = {
         message: longMessage,
+        cwd: "/test/workspace",
       };
 
       const result = await sendMessageStream(context, input, onChunkSpy);
@@ -430,6 +458,7 @@ describe("sendMessageStream", () => {
       const whitespaceMessage = "   \t   ";
       const input: SendMessageStreamInput = {
         message: whitespaceMessage,
+        cwd: "/test/workspace",
       };
 
       const result = await sendMessageStream(context, input, onChunkSpy);
@@ -455,6 +484,7 @@ describe("sendMessageStream", () => {
       const multilineMessage = "Line 1\nLine 2\nLine 3";
       const input: SendMessageStreamInput = {
         message: multilineMessage,
+        cwd: "/test/workspace",
       };
 
       const result = await sendMessageStream(context, input, onChunkSpy);
@@ -482,6 +512,7 @@ describe("sendMessageStream", () => {
 
       const input: SendMessageStreamInput = {
         message: "Fast response test",
+        cwd: "/test/workspace",
       };
 
       const result = await sendMessageStream(context, input, noOpCallback);
@@ -507,6 +538,7 @@ describe("sendMessageStream", () => {
       const specialMessage = "Special chars: !@#$%^&*()_+-=[]{}|;':\",./<>?";
       const input: SendMessageStreamInput = {
         message: specialMessage,
+        cwd: "/test/workspace",
       };
 
       const result = await sendMessageStream(context, input, onChunkSpy);
