@@ -1,82 +1,41 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
-import { startTransition, useActionState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod/v4";
-import { createSessionAction } from "@/actions/session";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
 import type { ProjectId } from "@/core/domain/project/types";
 import { useHaptic } from "@/hooks/use-haptic";
 
 interface NewChatButtonProps {
-  projectId: ProjectId;
+  projectId?: ProjectId;
 }
 
-const inputSchema = z.object({
-  projectId: z.string(),
-  name: z.string().nullable(),
-  cwd: z.string(),
-});
-
-type FormData = z.infer<typeof inputSchema>;
-
-export function NewChatButton({ projectId }: NewChatButtonProps) {
+export function NewChatButton({ projectId: _projectId }: NewChatButtonProps) {
   const { impact } = useHaptic();
-  const form = useForm<FormData>({
-    resolver: zodResolver(inputSchema),
-    defaultValues: {
-      projectId,
-      name: null,
-      cwd: "/tmp",
-    },
-  });
+  const router = useRouter();
 
-  const [_formState, formAction, isPending] = useActionState(
-    createSessionAction,
-    {
-      input: { projectId, name: null, cwd: "/tmp" },
-      error: null,
-    },
-  );
-
-  const onSubmit = (data: FormData) => {
+  const handleNewChat = () => {
     impact("medium");
-    startTransition(() => {
-      const formData = new FormData();
-      formData.append("projectId", data.projectId);
-      if (data.name) {
-        formData.append("name", data.name);
-      }
-      formData.append("cwd", data.cwd);
-      formAction(formData);
-    });
+    // Navigate to new chat page without creating a session
+    // Session will be created when the first message is sent
+    router.push("/sessions/new");
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <motion.div
-          whileTap={{ scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 400, damping: 17 }}
-        >
-          <Button
-            type="submit"
-            disabled={isPending}
-            size="sm"
-            className="flex items-center gap-1.5 shadow-sm"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">
-              {isPending ? "Creating..." : "New Chat"}
-            </span>
-            <span className="sm:hidden">{isPending ? "..." : "New"}</span>
-          </Button>
-        </motion.div>
-      </form>
-    </Form>
+    <motion.div
+      whileTap={{ scale: 0.95 }}
+      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+    >
+      <Button
+        onClick={handleNewChat}
+        size="sm"
+        className="flex items-center gap-1.5 shadow-sm"
+      >
+        <Plus className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">New Chat</span>
+        <span className="sm:hidden">New</span>
+      </Button>
+    </motion.div>
   );
 }

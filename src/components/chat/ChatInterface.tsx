@@ -2,17 +2,21 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot, Loader2, Send, Settings, User, Wrench } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Message } from "@/core/domain/message/types";
 import { formatTime } from "@/lib/date";
 import { MessageContent } from "./MessageContent";
 
 interface ChatInterfaceProps {
-  sessionId: string;
+  sessionId?: string;
   projectId?: string;
   initialMessages: Message[];
+  cwd?: string;
 }
 
 interface ChatMessage {
@@ -28,7 +32,9 @@ export function ChatInterface({
   sessionId,
   projectId: _projectId,
   initialMessages,
+  cwd,
 }: ChatInterfaceProps) {
+  const _router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>(
     initialMessages.map((msg) => ({
       id: msg.id,
@@ -38,6 +44,7 @@ export function ChatInterface({
     })),
   );
   const [input, setInput] = useState("");
+  const [currentCwd, setCurrentCwd] = useState(cwd || "");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -132,6 +139,9 @@ export function ChatInterface({
       if (sessionId) {
         url.searchParams.set("sessionId", sessionId);
       }
+      if (currentCwd) {
+        url.searchParams.set("cwd", currentCwd);
+      }
 
       const eventSource = new EventSource(url.toString());
 
@@ -216,6 +226,9 @@ export function ChatInterface({
             // Close the EventSource
             eventSource.close();
             setIsLoading(false);
+
+            // If this was a new session, update the sessionId state
+            // but don't redirect to keep the user on the current page
           } else if (data.type === "error") {
             // Create error message
             const errorMessage: ChatMessage = {
@@ -327,7 +340,24 @@ export function ChatInterface({
 
       {/* Input Form */}
       <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
+          {/* CWD Input for new sessions */}
+          {!sessionId && (
+            <div className="max-w-4xl mx-auto">
+              <Label htmlFor="cwd" className="text-sm font-medium">
+                Working Directory
+              </Label>
+              <Input
+                id="cwd"
+                value={currentCwd}
+                onChange={(e) => setCurrentCwd(e.target.value)}
+                placeholder="/path/to/your/project"
+                className="mt-1"
+                disabled={isLoading}
+              />
+            </div>
+          )}
+
           <div className="flex gap-2 sm:gap-3 max-w-4xl mx-auto">
             <Textarea
               value={input}
@@ -348,7 +378,11 @@ export function ChatInterface({
             >
               <Button
                 type="submit"
-                disabled={!input.trim() || isLoading}
+                disabled={
+                  !input.trim() ||
+                  isLoading ||
+                  (!sessionId && !currentCwd.trim())
+                }
                 size="lg"
                 className="px-4 sm:px-5 h-[56px] sm:h-[60px] rounded-full shadow-sm"
               >

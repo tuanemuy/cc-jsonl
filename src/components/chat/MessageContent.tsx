@@ -134,7 +134,14 @@ interface WebFetchResult {
   content: string;
 }
 
-type ContentBlock = TextContent | ToolUseContent | ToolResultContent | ThinkingContent | RedactedThinkingContent | ServerToolUseContent | WebSearchToolResultContent;
+type ContentBlock =
+  | TextContent
+  | ToolUseContent
+  | ToolResultContent
+  | ThinkingContent
+  | RedactedThinkingContent
+  | ServerToolUseContent
+  | WebSearchToolResultContent;
 
 function parseTextContent(text: string): ContentBlock[] {
   // Simply return as text block without any markdown parsing
@@ -180,7 +187,10 @@ export function MessageContent({
   return (
     <div className={`space-y-2 ${isStreaming ? "streaming" : ""}`}>
       {parsedContent.map((block, index) => {
-        const key = "id" in block && typeof block.id === "string" ? block.id : `${block.type}-${index}`;
+        const key =
+          "id" in block && typeof block.id === "string"
+            ? block.id
+            : `${block.type}-${index}`;
         switch (block.type) {
           case "text":
             return (
@@ -199,16 +209,31 @@ export function MessageContent({
             return <ToolResultDisplay key={key} block={block} />;
 
           case "thinking":
-            return <ThinkingMessageDisplay key={key} block={block as ThinkingContent} />;
+            return (
+              <ThinkingMessageDisplay
+                key={key}
+                block={block as ThinkingContent}
+              />
+            );
 
           case "redacted_thinking":
             return <RedactedThinkingDisplay key={key} />;
 
           case "server_tool_use":
-            return <ServerToolUseDisplay key={key} block={block as ServerToolUseContent} />;
+            return (
+              <ServerToolUseDisplay
+                key={key}
+                block={block as ServerToolUseContent}
+              />
+            );
 
           case "web_search_tool_result":
-            return <WebSearchToolResultDisplay key={key} block={block as WebSearchToolResultContent} />;
+            return (
+              <WebSearchToolResultDisplay
+                key={key}
+                block={block as WebSearchToolResultContent}
+              />
+            );
 
           default: {
             const unknownBlock = block as { type: string };
@@ -656,7 +681,6 @@ function WebFetchResultDisplay({ result }: { result: WebFetchResult }) {
   );
 }
 
-
 function ThinkingMessageDisplay({ block }: { block: ThinkingContent }) {
   return (
     <div className="border rounded-lg p-3 bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800">
@@ -672,7 +696,6 @@ function ThinkingMessageDisplay({ block }: { block: ThinkingContent }) {
     </div>
   );
 }
-
 
 function RedactedThinkingDisplay() {
   return (
@@ -690,7 +713,7 @@ function RedactedThinkingDisplay() {
 
 function ServerToolUseDisplay({ block }: { block: ServerToolUseContent }) {
   const toolInfo = getToolInfo(block.name, block.input);
-  
+
   return (
     <div className="border rounded-lg p-3 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
       <div className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
@@ -714,7 +737,11 @@ function ServerToolUseDisplay({ block }: { block: ServerToolUseContent }) {
   );
 }
 
-function WebSearchToolResultDisplay({ block }: { block: WebSearchToolResultContent }) {
+function WebSearchToolResultDisplay({
+  block,
+}: {
+  block: WebSearchToolResultContent;
+}) {
   return (
     <div className="border rounded-lg p-3 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
       <div className="flex items-center gap-2 text-sm font-medium text-green-900 dark:text-green-100 mb-2">

@@ -76,7 +76,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                     <SessionListItem
                       key={session.id}
                       session={session}
-                      href={`/projects/${projectIdParam}/sessions/${session.id}`}
+                      href={`/sessions/${session.id}`}
                     />
                   ))}
                 </div>
