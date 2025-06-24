@@ -20,7 +20,7 @@ export class MockProjectRepository implements ProjectRepository {
     }
   }
 
-  async create(
+  async upsert(
     params: CreateProjectParams,
   ): Promise<Result<Project, RepositoryError>> {
     // Check if project with same path already exists

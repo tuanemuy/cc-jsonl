@@ -454,7 +454,7 @@ async function processMessageEntry(
     });
   }
 
-  const result = await context.messageRepository.create({
+  const result = await context.messageRepository.upsert({
     sessionId,
     role: entry.message.role,
     content,
@@ -496,6 +496,25 @@ async function processMessageEntry(
     });
   }
 
+  // Update session's last message timestamp
+  const timestampUpdateResult =
+    await context.sessionRepository.updateLastMessageAt(
+      sessionId,
+      new Date(entry.timestamp),
+    );
+
+  if (timestampUpdateResult.isErr()) {
+    console.warn(
+      "[processMessageEntry] Failed to update session lastMessageAt",
+      {
+        sessionId,
+        timestamp: entry.timestamp,
+        error: timestampUpdateResult.error.message,
+        cause: timestampUpdateResult.error.cause,
+      },
+    );
+  }
+
   return ok(undefined);
 }
 
@@ -504,7 +523,7 @@ async function processSystemEntry(
   sessionId: SessionId,
   entry: SystemLog,
 ): Promise<Result<void, ProcessLogFileError>> {
-  const result = await context.messageRepository.create({
+  const result = await context.messageRepository.upsert({
     sessionId,
     role: "assistant",
     content: `[SYSTEM] ${entry.content}`,
@@ -543,6 +562,25 @@ async function processSystemEntry(
       error: sessionUpdateResult.error.message,
       cause: sessionUpdateResult.error.cause,
     });
+  }
+
+  // Update session's last message timestamp
+  const timestampUpdateResult =
+    await context.sessionRepository.updateLastMessageAt(
+      sessionId,
+      new Date(entry.timestamp),
+    );
+
+  if (timestampUpdateResult.isErr()) {
+    console.warn(
+      "[processSystemEntry] Failed to update session lastMessageAt",
+      {
+        sessionId,
+        timestamp: entry.timestamp,
+        error: timestampUpdateResult.error.message,
+        cause: timestampUpdateResult.error.cause,
+      },
+    );
   }
 
   return ok(undefined);

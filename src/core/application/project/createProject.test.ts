@@ -310,8 +310,8 @@ describe("createProject", () => {
       };
 
       // Mock the repository to throw an error
-      const originalCreate = context.projectRepository.create;
-      context.projectRepository.create = vi
+      const originalUpsert = context.projectRepository.upsert;
+      context.projectRepository.upsert = vi
         .fn()
         .mockResolvedValue(err(new RepositoryError("Mock repository error")));
 
@@ -326,7 +326,7 @@ describe("createProject", () => {
       }
 
       // Restore original method
-      context.projectRepository.create = originalCreate;
+      context.projectRepository.upsert = originalUpsert;
     });
   });
 

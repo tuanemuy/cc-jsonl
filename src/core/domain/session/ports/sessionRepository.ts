@@ -8,7 +8,7 @@ import type {
 } from "../types";
 
 export interface SessionRepository {
-  create(
+  upsert(
     params: CreateSessionParams,
   ): Promise<Result<Session, RepositoryError>>;
   findById(id: SessionId): Promise<Result<Session | null, RepositoryError>>;

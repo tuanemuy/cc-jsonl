@@ -414,8 +414,8 @@ describe("createSession", () => {
       };
 
       // Mock the repository to throw an error
-      const originalCreate = context.sessionRepository.create;
-      context.sessionRepository.create = vi
+      const originalUpsert = context.sessionRepository.upsert;
+      context.sessionRepository.upsert = vi
         .fn()
         .mockResolvedValue(err(new RepositoryError("Mock repository error")));
 
@@ -430,7 +430,7 @@ describe("createSession", () => {
       }
 
       // Restore original method
-      context.sessionRepository.create = originalCreate;
+      context.sessionRepository.upsert = originalUpsert;
     });
   });
 

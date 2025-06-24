@@ -17,7 +17,7 @@ import { projects } from "./schema";
 export class DrizzlePgliteProjectRepository implements ProjectRepository {
   constructor(private readonly db: Database) {}
 
-  async create(
+  async upsert(
     params: CreateProjectParams,
   ): Promise<Result<Project, RepositoryError>> {
     try {
@@ -35,14 +35,14 @@ export class DrizzlePgliteProjectRepository implements ProjectRepository {
 
       const project = result[0];
       if (!project) {
-        return err(new RepositoryError("Failed to create project"));
+        return err(new RepositoryError("Failed to upsert project"));
       }
 
       return validate(projectSchema, project).mapErr((error) => {
         return new RepositoryError("Invalid project data", error);
       });
     } catch (error) {
-      return err(new RepositoryError("Failed to create project", error));
+      return err(new RepositoryError("Failed to upsert project", error));
     }
   }
 

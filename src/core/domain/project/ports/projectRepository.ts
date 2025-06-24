@@ -9,7 +9,7 @@ import type {
 } from "../types";
 
 export interface ProjectRepository {
-  create(
+  upsert(
     params: CreateProjectParams,
   ): Promise<Result<Project, RepositoryError>>;
   findById(id: ProjectId): Promise<Result<Project | null, RepositoryError>>;

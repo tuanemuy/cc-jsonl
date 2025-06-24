@@ -43,3 +43,7 @@ export const listSessionQuerySchema = z.object({
     .optional(),
 });
 export type ListSessionQuery = z.infer<typeof listSessionQuerySchema>;
+
+export function getSessionDisplayName(name: string | null): string {
+  return name || "Untitled Session";
+}

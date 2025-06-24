@@ -1,8 +1,10 @@
 import { MessageSquare } from "lucide-react";
 import Link from "next/link";
-import type { Session } from "@/core/domain/session/types";
+import {
+  getSessionDisplayName,
+  type Session,
+} from "@/core/domain/session/types";
 import { formatDate, formatRelativeTime } from "@/lib/date";
-import { getSessionDisplayName } from "@/lib/sessionName";
 
 interface SessionListItemProps {
   session: Session;

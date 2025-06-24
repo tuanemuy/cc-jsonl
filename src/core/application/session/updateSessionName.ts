@@ -46,8 +46,8 @@ export async function updateSessionName(
     return err(new ApplicationError("Session not found"));
   }
 
-  // Since we don't have a direct updateName method, we'll need to use the create method with upsert
-  const updateResult = await context.sessionRepository.create({
+  // Since we don't have a direct updateName method, we'll need to use the upsert method
+  const updateResult = await context.sessionRepository.upsert({
     id: id as SessionId,
     projectId: sessionResult.value.projectId,
     name,

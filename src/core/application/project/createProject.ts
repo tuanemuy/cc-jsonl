@@ -35,7 +35,7 @@ export async function createProject(
 
   const params = parseResult.value;
 
-  const result = await context.projectRepository.create(params);
+  const result = await context.projectRepository.upsert(params);
   return result.mapErr((error) => {
     const appError = new ApplicationError("Failed to create project", error);
     console.error("[createProject] Repository operation failed", {

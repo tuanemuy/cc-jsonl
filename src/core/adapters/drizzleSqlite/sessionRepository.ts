@@ -16,7 +16,7 @@ import { sessions } from "./schema";
 export class DrizzleSqliteSessionRepository implements SessionRepository {
   constructor(private readonly db: Database) {}
 
-  async create(
+  async upsert(
     params: CreateSessionParams,
   ): Promise<Result<Session, RepositoryError>> {
     try {
@@ -43,14 +43,14 @@ export class DrizzleSqliteSessionRepository implements SessionRepository {
 
       const session = result[0];
       if (!session) {
-        return err(new RepositoryError("Failed to create session"));
+        return err(new RepositoryError("Failed to upsert session"));
       }
 
       return validate(sessionSchema, session).mapErr((error) => {
         return new RepositoryError("Invalid session data", error);
       });
     } catch (error) {
-      return err(new RepositoryError("Failed to create session", error));
+      return err(new RepositoryError("Failed to upsert session", error));
     }
   }
 
