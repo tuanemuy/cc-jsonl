@@ -140,7 +140,6 @@ export const logFileTrackingSchema = z.object({
   lastProcessedAt: z.date(),
   fileSize: z.number().nullable().optional(),
   fileModifiedAt: z.date().nullable().optional(),
-  checksum: z.string().nullable().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -152,7 +151,6 @@ export const createLogFileTrackingParamsSchema = z.object({
   lastProcessedAt: z.date(),
   fileSize: z.number().optional(),
   fileModifiedAt: z.date().optional(),
-  checksum: z.string().optional(),
 });
 
 export type CreateLogFileTrackingParams = z.infer<
@@ -163,7 +161,6 @@ export const updateLogFileTrackingParamsSchema = z.object({
   lastProcessedAt: z.date(),
   fileSize: z.number().optional(),
   fileModifiedAt: z.date().optional(),
-  checksum: z.string().optional(),
 });
 
 export type UpdateLogFileTrackingParams = z.infer<
@@ -173,13 +170,7 @@ export type UpdateLogFileTrackingParams = z.infer<
 export const fileProcessingStatusSchema = z.object({
   filePath: z.string(),
   shouldProcess: z.boolean(),
-  reason: z.enum([
-    "new_file",
-    "file_modified",
-    "size_changed",
-    "checksum_changed",
-    "up_to_date",
-  ]),
+  reason: z.enum(["new_file", "file_modified", "size_changed", "up_to_date"]),
   lastProcessedAt: z.date().optional(),
   fileModifiedAt: z.date().optional(),
 });

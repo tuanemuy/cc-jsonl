@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
 import { err, ok, type Result } from "neverthrow";
 import { z } from "zod";
@@ -11,7 +10,6 @@ import type { Context } from "../context";
 
 export const checkFileProcessingStatusInputSchema = z.object({
   filePath: z.string().min(1),
-  includeChecksum: z.boolean().default(false),
 });
 
 export type CheckFileProcessingStatusInput = z.infer<
@@ -53,13 +51,6 @@ export async function checkFileProcessingStatus(
     const fileModifiedAt = fileStats.mtime;
     const fileSize = fileStats.size;
 
-    // Get file checksum if requested
-    let checksum: string | undefined;
-    if (input.includeChecksum) {
-      const fileContent = await fs.readFile(input.filePath);
-      checksum = createHash("sha256").update(fileContent).digest("hex");
-    }
-
     // Check if tracking record exists
     const trackingResult =
       await context.logFileTrackingRepository.findByFilePath(input.filePath);
@@ -85,7 +76,8 @@ export async function checkFileProcessingStatus(
     }
 
     // Check if file was modified after last processing
-    if (tracking.fileModifiedAt && fileModifiedAt > tracking.fileModifiedAt) {
+    // Compare file modification time with last processed time to avoid precision issues
+    if (fileModifiedAt > tracking.lastProcessedAt) {
       return ok({
         filePath: input.filePath,
         shouldProcess: true,
@@ -101,17 +93,6 @@ export async function checkFileProcessingStatus(
         filePath: input.filePath,
         shouldProcess: true,
         reason: "size_changed",
-        lastProcessedAt: tracking.lastProcessedAt,
-        fileModifiedAt,
-      });
-    }
-
-    // Check if checksum changed (if both checksums are available)
-    if (checksum && tracking.checksum && checksum !== tracking.checksum) {
-      return ok({
-        filePath: input.filePath,
-        shouldProcess: true,
-        reason: "checksum_changed",
         lastProcessedAt: tracking.lastProcessedAt,
         fileModifiedAt,
       });
@@ -136,7 +117,6 @@ export async function checkFileProcessingStatus(
 
 export const updateFileProcessingStatusInputSchema = z.object({
   filePath: z.string().min(1),
-  includeChecksum: z.boolean().default(false),
 });
 
 export type UpdateFileProcessingStatusInput = z.infer<
@@ -174,13 +154,6 @@ export async function updateFileProcessingStatus(
     const fileSize = fileStats.size;
     const now = new Date();
 
-    // Get file checksum if requested
-    let checksum: string | undefined;
-    if (input.includeChecksum) {
-      const fileContent = await fs.readFile(input.filePath);
-      checksum = createHash("sha256").update(fileContent).digest("hex");
-    }
-
     // Check if tracking record exists
     const trackingResult =
       await context.logFileTrackingRepository.findByFilePath(input.filePath);
@@ -202,7 +175,6 @@ export async function updateFileProcessingStatus(
         lastProcessedAt: now,
         fileSize,
         fileModifiedAt,
-        checksum,
       };
 
       const createResult =
@@ -220,7 +192,6 @@ export async function updateFileProcessingStatus(
         lastProcessedAt: now,
         fileSize,
         fileModifiedAt,
-        checksum,
       };
 
       const updateResult =

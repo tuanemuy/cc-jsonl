@@ -69,7 +69,6 @@ export const logFileTracking = sqliteTable("log_file_tracking", {
   }).notNull(),
   fileSize: integer("file_size"),
   fileModifiedAt: integer("file_modified_at", { mode: "timestamp" }),
-  checksum: text("checksum"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
