@@ -200,6 +200,21 @@ export async function sendMessage(
       return err(error);
     }
 
+    // Update session's last message timestamp
+    const timestampUpdateResult =
+      await context.sessionRepository.updateLastMessageAt(
+        session.id,
+        new Date(),
+      );
+
+    if (timestampUpdateResult.isErr()) {
+      console.warn("[sendMessage] Failed to update session lastMessageAt", {
+        sessionId: session.id,
+        error: timestampUpdateResult.error.message,
+        cause: timestampUpdateResult.error.cause,
+      });
+    }
+
     return ok({
       session,
       userMessage: userMessageResult.value,

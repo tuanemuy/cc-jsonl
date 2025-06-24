@@ -496,6 +496,25 @@ async function processMessageEntry(
     });
   }
 
+  // Update session's last message timestamp
+  const timestampUpdateResult =
+    await context.sessionRepository.updateLastMessageAt(
+      sessionId,
+      new Date(entry.timestamp),
+    );
+
+  if (timestampUpdateResult.isErr()) {
+    console.warn(
+      "[processMessageEntry] Failed to update session lastMessageAt",
+      {
+        sessionId,
+        timestamp: entry.timestamp,
+        error: timestampUpdateResult.error.message,
+        cause: timestampUpdateResult.error.cause,
+      },
+    );
+  }
+
   return ok(undefined);
 }
 
@@ -543,6 +562,25 @@ async function processSystemEntry(
       error: sessionUpdateResult.error.message,
       cause: sessionUpdateResult.error.cause,
     });
+  }
+
+  // Update session's last message timestamp
+  const timestampUpdateResult =
+    await context.sessionRepository.updateLastMessageAt(
+      sessionId,
+      new Date(entry.timestamp),
+    );
+
+  if (timestampUpdateResult.isErr()) {
+    console.warn(
+      "[processSystemEntry] Failed to update session lastMessageAt",
+      {
+        sessionId,
+        timestamp: entry.timestamp,
+        error: timestampUpdateResult.error.message,
+        cause: timestampUpdateResult.error.cause,
+      },
+    );
   }
 
   return ok(undefined);
