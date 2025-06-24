@@ -14,9 +14,14 @@ import { createProject } from "../project";
 import { createSession } from "../session";
 import { generateSessionName } from "../session/generateSessionName";
 import { updateSessionName } from "../session/updateSessionName";
+import {
+  checkFileProcessingStatus,
+  updateFileProcessingStatus,
+} from "./checkFileProcessingStatus";
 
 export const processLogFileInputSchema = z.object({
   filePath: z.string().min(1),
+  skipTracking: z.boolean().optional(),
 });
 
 export type ProcessLogFileInput = z.infer<typeof processLogFileInputSchema>;
@@ -30,7 +35,9 @@ export type ProcessLogFileError = {
 export async function processLogFile(
   context: Context & { logParser: LogParser },
   input: ProcessLogFileInput,
-): Promise<Result<{ entriesProcessed: number }, ProcessLogFileError>> {
+): Promise<
+  Result<{ entriesProcessed: number; skipped: boolean }, ProcessLogFileError>
+> {
   const parseResult = processLogFileInputSchema.safeParse(input);
   if (!parseResult.success) {
     return err({
@@ -41,6 +48,33 @@ export async function processLogFile(
   }
 
   try {
+    const skipTracking = input.skipTracking ?? false;
+
+    // Check if file needs processing (unless tracking is skipped)
+    if (!skipTracking) {
+      const statusResult = await checkFileProcessingStatus(context, {
+        filePath: input.filePath,
+        includeChecksum: false,
+      });
+
+      if (statusResult.isErr()) {
+        console.warn(
+          "[processLogFile] Failed to check file processing status",
+          statusResult.error,
+        );
+        // Continue processing despite status check failure
+      } else if (!statusResult.value.shouldProcess) {
+        console.log(
+          `Skipping file (${statusResult.value.reason}): ${input.filePath}`,
+        );
+        return ok({ entriesProcessed: 0, skipped: true });
+      } else {
+        console.log(
+          `File should be processed (${statusResult.value.reason}): ${input.filePath}`,
+        );
+      }
+    }
+
     console.log(`Processing log file: ${input.filePath}`);
 
     const parsedResult = await context.logParser.parseFile(input.filePath);
@@ -62,7 +96,22 @@ export async function processLogFile(
 
     if (entries.length === 0) {
       console.log(`No valid log entries found in: ${input.filePath}`);
-      return ok({ entriesProcessed: 0 });
+
+      // Update tracking status even if no entries were processed
+      if (!skipTracking) {
+        const updateResult = await updateFileProcessingStatus(context, {
+          filePath: input.filePath,
+          includeChecksum: false,
+        });
+        if (updateResult.isErr()) {
+          console.warn(
+            "[processLogFile] Failed to update file tracking status",
+            updateResult.error,
+          );
+        }
+      }
+
+      return ok({ entriesProcessed: 0, skipped: false });
     }
 
     const ensureProjectResult = await ensureProjectExists(context, projectName);
@@ -105,11 +154,25 @@ export async function processLogFile(
       }
     }
 
+    // Update file processing tracking status
+    if (!input.skipTracking) {
+      const updateResult = await updateFileProcessingStatus(context, {
+        filePath: input.filePath,
+        includeChecksum: false,
+      });
+      if (updateResult.isErr()) {
+        console.warn(
+          "[processLogFile] Failed to update file tracking status",
+          updateResult.error,
+        );
+      }
+    }
+
     console.log(
       `Successfully processed ${entries.length} entries from: ${input.filePath}`,
     );
 
-    return ok({ entriesProcessed: entries.length });
+    return ok({ entriesProcessed: entries.length, skipped: false });
   } catch (error) {
     const processError = {
       type: "PROCESS_LOG_FILE_ERROR" as const,

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { MockClaudeService } from "@/core/adapters/mock/claudeService";
+import { MockLogFileTrackingRepository } from "@/core/adapters/mock/logFileTrackingRepository";
 import { MockLogParser } from "@/core/adapters/mock/logParser";
 import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
 import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
@@ -35,6 +36,7 @@ describe("processLogFile", () => {
       sessionRepository: mockSessionRepository,
       messageRepository: mockMessageRepository,
       claudeService: new MockClaudeService(),
+      logFileTrackingRepository: new MockLogFileTrackingRepository(),
       logParser: mockLogParser,
     };
   });
@@ -90,7 +92,10 @@ describe("processLogFile", () => {
       mockLogParser.setParsedFile(filePath, parsedFile);
 
       // Act
-      const result = await processLogFile(context, { filePath });
+      const result = await processLogFile(context, {
+        filePath,
+        skipTracking: true,
+      });
 
       // Assert
       expect(result.isOk()).toBe(true);
@@ -193,7 +198,10 @@ describe("processLogFile", () => {
       mockLogParser.setParsedFile(filePath, parsedFile);
 
       // Act
-      const result = await processLogFile(context, { filePath });
+      const result = await processLogFile(context, {
+        filePath,
+        skipTracking: true,
+      });
 
       // Assert
       expect(result.isOk()).toBe(true);
@@ -236,7 +244,10 @@ describe("processLogFile", () => {
       mockLogParser.setParsedFile(filePath, parsedFile);
 
       // Act
-      const result = await processLogFile(context, { filePath });
+      const result = await processLogFile(context, {
+        filePath,
+        skipTracking: true,
+      });
 
       // Assert
       expect(result.isOk()).toBe(true);
@@ -249,7 +260,10 @@ describe("processLogFile", () => {
   describe("異常系", () => {
     it("無効な入力でエラーになる", async () => {
       // Act
-      const result = await processLogFile(context, { filePath: "" });
+      const result = await processLogFile(context, {
+        filePath: "",
+        skipTracking: true,
+      });
 
       // Assert
       expect(result.isErr()).toBe(true);
@@ -265,7 +279,10 @@ describe("processLogFile", () => {
       mockLogParser.setShouldFail(true, "Failed to parse file");
 
       // Act
-      const result = await processLogFile(context, { filePath });
+      const result = await processLogFile(context, {
+        filePath,
+        skipTracking: true,
+      });
 
       // Assert
       expect(result.isErr()).toBe(true);
@@ -305,7 +322,10 @@ describe("processLogFile", () => {
       mockProjectRepository.setShouldFailList(true);
 
       // Act
-      const result = await processLogFile(context, { filePath });
+      const result = await processLogFile(context, {
+        filePath,
+        skipTracking: true,
+      });
 
       // Assert
       expect(result.isErr()).toBe(true);
@@ -347,7 +367,10 @@ describe("processLogFile", () => {
       mockSessionRepository.setShouldFailList(true);
 
       // Act
-      const result = await processLogFile(context, { filePath });
+      const result = await processLogFile(context, {
+        filePath,
+        skipTracking: true,
+      });
 
       // Assert
       expect(result.isErr()).toBe(true);
@@ -386,7 +409,10 @@ describe("processLogFile", () => {
       mockLogParser.setParsedFile(filePath, parsedFile);
 
       // Act
-      const result = await processLogFile(context, { filePath });
+      const result = await processLogFile(context, {
+        filePath,
+        skipTracking: true,
+      });
 
       // Assert
       expect(result.isOk()).toBe(true);
@@ -426,7 +452,10 @@ describe("processLogFile", () => {
       mockLogParser.setParsedFile(filePath, parsedFile);
 
       // Act
-      const result = await processLogFile(context, { filePath });
+      const result = await processLogFile(context, {
+        filePath,
+        skipTracking: true,
+      });
 
       // Assert
       expect(result.isOk()).toBe(true);
@@ -502,7 +531,10 @@ describe("processLogFile", () => {
       mockLogParser.setParsedFile(filePath, parsedFile);
 
       // Act
-      const result = await processLogFile(context, { filePath });
+      const result = await processLogFile(context, {
+        filePath,
+        skipTracking: true,
+      });
 
       // Assert
       expect(result.isOk()).toBe(true);
@@ -580,6 +612,7 @@ describe("processLogFile", () => {
       // Act
       const result = await processLogFile(context, {
         filePath: sampleFilePath,
+        skipTracking: true,
       });
 
       // Assert
@@ -665,7 +698,10 @@ describe("processLogFile", () => {
         mockLogParser.setParsedFile(fullPath, parsedFile);
 
         // Act
-        const result = await processLogFile(context, { filePath: fullPath });
+        const result = await processLogFile(context, {
+          filePath: fullPath,
+          skipTracking: true,
+        });
 
         // Assert
         expect(result.isOk()).toBe(true);
@@ -733,6 +769,7 @@ describe("processLogFile", () => {
       // Act
       const result = await processLogFile(context, {
         filePath: sampleFilePath,
+        skipTracking: true,
       });
 
       const endTime = Date.now();
@@ -776,6 +813,7 @@ describe("processLogFile", () => {
       // Act
       const result = await processLogFile(context, {
         filePath: "/path/to/invalid/file.jsonl",
+        skipTracking: true,
       });
 
       // Assert

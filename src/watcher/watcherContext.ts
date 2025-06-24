@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ChokidarFileWatcher } from "@/core/adapters/chokidar/fileWatcher";
 import { ClaudeLogParser } from "@/core/adapters/claudeLog/logParser";
 import { getDatabase } from "@/core/adapters/drizzleSqlite/client";
+import { DrizzleSqliteLogFileTrackingRepository } from "@/core/adapters/drizzleSqlite/logFileTrackingRepository";
 import { DrizzleSqliteMessageRepository } from "@/core/adapters/drizzleSqlite/messageRepository";
 import { DrizzleSqliteProjectRepository } from "@/core/adapters/drizzleSqlite/projectRepository";
 import { DrizzleSqliteSessionRepository } from "@/core/adapters/drizzleSqlite/sessionRepository";
@@ -48,6 +49,7 @@ export function getWatcherContext(): {
     sessionRepository: new DrizzleSqliteSessionRepository(db),
     messageRepository: new DrizzleSqliteMessageRepository(db),
     claudeService: new MockClaudeService(),
+    logFileTrackingRepository: new DrizzleSqliteLogFileTrackingRepository(db),
     fileWatcher,
     logParser,
   };

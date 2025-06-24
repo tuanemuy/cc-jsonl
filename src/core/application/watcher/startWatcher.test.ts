@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MockClaudeService } from "@/core/adapters/mock/claudeService";
 import { MockFileWatcher } from "@/core/adapters/mock/fileWatcher";
+import { MockLogFileTrackingRepository } from "@/core/adapters/mock/logFileTrackingRepository";
 import { MockLogParser } from "@/core/adapters/mock/logParser";
 import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
 import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
@@ -25,6 +26,7 @@ describe("startWatcher", () => {
       sessionRepository: new MockSessionRepository(),
       messageRepository: new MockMessageRepository(),
       claudeService: new MockClaudeService(),
+      logFileTrackingRepository: new MockLogFileTrackingRepository(),
       fileWatcher: mockFileWatcher,
       logParser: mockLogParser,
     };
@@ -289,6 +291,7 @@ describe("stopWatcher", () => {
       sessionRepository: new MockSessionRepository(),
       messageRepository: new MockMessageRepository(),
       claudeService: new MockClaudeService(),
+      logFileTrackingRepository: new MockLogFileTrackingRepository(),
       fileWatcher: mockFileWatcher,
       logParser: new MockLogParser(),
     };
