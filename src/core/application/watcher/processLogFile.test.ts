@@ -157,7 +157,9 @@ describe("processLogFile", () => {
       const existingSession = {
         id: sessionIdSchema.parse(sessionId),
         projectId: existingProject.id,
+        name: null,
         cwd: "/workspace",
+        lastMessageAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -405,12 +407,12 @@ describe("processLogFile", () => {
       }
     });
 
-    it("summaryログエントリは処理されない", async () => {
+    it("summaryログエントリが処理されてセッション名が更新される", async () => {
       // Arrange
       const filePath = "/path/to/summary/session.jsonl";
       const summaryLogEntry = {
         type: "summary" as const,
-        summary: "Test summary",
+        summary: "User discussed implementing a new feature for authentication",
         leafUuid: "leaf-uuid",
       };
 
@@ -432,7 +434,35 @@ describe("processLogFile", () => {
         expect(result.value.entriesProcessed).toBe(1);
       }
 
-      // メッセージが保存されていないことを確認
+      // セッションが作成されたことを確認
+      const projects = await mockProjectRepository.list({
+        pagination: { page: 1, limit: 10, order: "asc", orderBy: "createdAt" },
+      });
+      expect(projects.isOk()).toBe(true);
+      if (projects.isOk()) {
+        expect(projects.value.items).toHaveLength(1);
+
+        const sessions = await mockSessionRepository.list({
+          pagination: {
+            page: 1,
+            limit: 10,
+            order: "asc",
+            orderBy: "createdAt",
+          },
+          filter: { projectId: projects.value.items[0].id },
+        });
+        expect(sessions.isOk()).toBe(true);
+        if (sessions.isOk()) {
+          expect(sessions.value.items).toHaveLength(1);
+          const session = sessions.value.items[0];
+          // セッション名がサマリーから生成されていることを確認
+          expect(session.name).toBeTruthy();
+          expect(session.name).not.toBe("Untitled Session");
+          expect(session.name).toContain("User discussed implementing");
+        }
+      }
+
+      // メッセージが保存されていないことを確認（summaryはメッセージではない）
       const messages = await mockMessageRepository.list({
         pagination: { page: 1, limit: 10, order: "asc", orderBy: "createdAt" },
         filter: { sessionId: sessionIdSchema.parse("summary-session") },
@@ -440,6 +470,84 @@ describe("processLogFile", () => {
       expect(messages.isOk()).toBe(true);
       if (messages.isOk()) {
         expect(messages.value.items).toHaveLength(0);
+      }
+    });
+
+    it("サマリーがない場合は最初のユーザーメッセージからセッション名が生成される", async () => {
+      // Arrange
+      const filePath = "/path/to/no-summary/session.jsonl";
+      const userLogEntry = {
+        uuid: "user-uuid-1",
+        parentUuid: null,
+        timestamp: "2024-01-01T00:00:00Z",
+        isSidechain: false,
+        userType: "external" as const,
+        cwd: "/test",
+        sessionId: "no-summary-session",
+        version: "1.0.0",
+        type: "user" as const,
+        message: {
+          role: "user" as const,
+          content: "How do I implement OAuth authentication in my app?",
+        },
+      };
+
+      const parsedFile: ParsedLogFile = {
+        filePath,
+        projectName: "no-summary-project",
+        sessionId: "no-summary-session",
+        entries: [userLogEntry],
+      };
+
+      mockLogParser.setParsedFile(filePath, parsedFile);
+
+      // Act
+      const result = await processLogFile(context, { filePath });
+
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.entriesProcessed).toBe(1);
+      }
+
+      // セッションが作成されて名前が設定されたことを確認
+      const projects = await mockProjectRepository.list({
+        pagination: { page: 1, limit: 10, order: "asc", orderBy: "createdAt" },
+      });
+      expect(projects.isOk()).toBe(true);
+      if (projects.isOk()) {
+        expect(projects.value.items).toHaveLength(1);
+
+        const sessions = await mockSessionRepository.list({
+          pagination: {
+            page: 1,
+            limit: 10,
+            order: "asc",
+            orderBy: "createdAt",
+          },
+          filter: { projectId: projects.value.items[0].id },
+        });
+        expect(sessions.isOk()).toBe(true);
+        if (sessions.isOk()) {
+          expect(sessions.value.items).toHaveLength(1);
+          const session = sessions.value.items[0];
+          // セッション名がメッセージから生成されていることを確認
+          expect(session.name).toBeTruthy();
+          expect(session.name).not.toBe("Untitled Session");
+          expect(session.name).toContain(
+            "How do I implement OAuth authentication",
+          );
+        }
+      }
+
+      // メッセージが保存されていることを確認
+      const messages = await mockMessageRepository.list({
+        pagination: { page: 1, limit: 10, order: "asc", orderBy: "createdAt" },
+        filter: { sessionId: sessionIdSchema.parse("no-summary-session") },
+      });
+      expect(messages.isOk()).toBe(true);
+      if (messages.isOk()) {
+        expect(messages.value.items).toHaveLength(1);
       }
     });
   });

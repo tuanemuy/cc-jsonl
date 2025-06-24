@@ -11,7 +11,7 @@ import { MessageContent } from "./MessageContent";
 
 interface ChatInterfaceProps {
   sessionId: string;
-  projectId: string;
+  projectId?: string;
   initialMessages: Message[];
 }
 

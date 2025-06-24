@@ -21,10 +21,12 @@ export const sessions = sqliteTable("sessions", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => uuidv7()),
-  projectId: text("project_id")
-    .notNull()
-    .references(() => projects.id, { onDelete: "cascade" }),
+  projectId: text("project_id").references(() => projects.id, {
+    onDelete: "cascade",
+  }),
+  name: text("name"),
   cwd: text("cwd").notNull(),
+  lastMessageAt: integer("last_message_at", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

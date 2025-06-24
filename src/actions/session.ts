@@ -18,6 +18,7 @@ import { validate } from "@/lib/validation";
 
 type CreateSessionFormInput = {
   projectId: unknown;
+  name: unknown;
   cwd: unknown;
 };
 
@@ -27,6 +28,7 @@ export async function createSessionAction(
 ): Promise<FormState<CreateSessionFormInput, CreateSessionInput>> {
   const rawData = {
     projectId: formData.get("projectId"),
+    name: formData.get("name") || null,
     cwd: formData.get("cwd"),
   };
 

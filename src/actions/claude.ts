@@ -16,7 +16,7 @@ type SendMessageInput = {
 
 type SendMessageResult = {
   sessionId: string;
-  projectId: string;
+  projectId?: string;
 };
 
 export async function sendMessageAction(
@@ -50,14 +50,16 @@ export async function sendMessageAction(
 
   // Revalidate paths to show new data
   revalidatePath("/");
-  revalidatePath(`/projects/${session.projectId}`);
-  revalidatePath(`/projects/${session.projectId}/sessions/${session.id}`);
+  if (session.projectId) {
+    revalidatePath(`/projects/${session.projectId}`);
+    revalidatePath(`/projects/${session.projectId}/sessions/${session.id}`);
+  }
 
   return {
     input: rawData,
     result: {
       sessionId: session.id,
-      projectId: session.projectId,
+      projectId: session.projectId || undefined,
     },
     error: null,
   };

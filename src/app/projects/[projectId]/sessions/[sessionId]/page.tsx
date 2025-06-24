@@ -7,6 +7,7 @@ import { ChatInterface } from "@/components/chat/ChatInterface";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { sessionIdSchema } from "@/core/domain/session/types";
 import { formatDate } from "@/lib/date";
+import { getSessionDisplayName } from "@/lib/sessionName";
 
 interface SessionPageProps {
   params: Promise<{
@@ -56,7 +57,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
                   </Link>
                   <div className="h-4 w-px bg-border hidden sm:block" />
                   <h1 className="text-lg sm:text-xl font-semibold truncate">
-                    Session
+                    {getSessionDisplayName(session.name)}
                   </h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground">
@@ -70,7 +71,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
           <div className="flex-1 overflow-hidden">
             <ChatInterface
               sessionId={session.id}
-              projectId={session.projectId}
+              projectId={session.projectId || undefined}
               initialMessages={messages.items}
             />
           </div>

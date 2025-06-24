@@ -17,8 +17,10 @@ export type SessionId = z.infer<typeof sessionIdSchema>;
 
 export const sessionSchema = z.object({
   id: sessionIdSchema,
-  projectId: projectIdSchema,
+  projectId: projectIdSchema.nullable(),
+  name: z.string().nullable(),
   cwd: z.string(),
+  lastMessageAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -26,7 +28,8 @@ export type Session = z.infer<typeof sessionSchema>;
 
 export const createSessionParamsSchema = z.object({
   id: sessionIdSchema.optional(),
-  projectId: projectIdSchema,
+  projectId: projectIdSchema.nullable().optional(),
+  name: z.string().nullable().optional(),
   cwd: z.string(),
 });
 export type CreateSessionParams = z.infer<typeof createSessionParamsSchema>;

@@ -24,8 +24,10 @@ CREATE TABLE "projects" (
 --> statement-breakpoint
 CREATE TABLE "sessions" (
 	"id" uuid PRIMARY KEY NOT NULL,
-	"project_id" uuid NOT NULL,
+	"project_id" uuid,
+	"name" text,
 	"cwd" text NOT NULL,
+	"last_message_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
