@@ -35,6 +35,7 @@ export function ChatInterface({
   cwd,
 }: ChatInterfaceProps) {
   const _router = useRouter();
+  const [currentSessionId, setCurrentSessionId] = useState(sessionId);
   const [messages, setMessages] = useState<ChatMessage[]>(
     initialMessages.map((msg) => ({
       id: msg.id,
@@ -136,8 +137,8 @@ export function ChatInterface({
       // Create a URL with query parameters for GET request
       const url = new URL("/api/messages/stream", window.location.origin);
       url.searchParams.set("message", input);
-      if (sessionId) {
-        url.searchParams.set("sessionId", sessionId);
+      if (currentSessionId) {
+        url.searchParams.set("sessionId", currentSessionId);
       }
       if (currentCwd) {
         url.searchParams.set("cwd", currentCwd);
@@ -229,6 +230,15 @@ export function ChatInterface({
 
             // If this was a new session, update the sessionId state
             // but don't redirect to keep the user on the current page
+            if (!currentSessionId && data.sessionId) {
+              setCurrentSessionId(data.sessionId);
+              // Update the URL to include the new session ID without navigation
+              window.history.replaceState(
+                null,
+                "",
+                `/sessions/${data.sessionId}`,
+              );
+            }
           } else if (data.type === "error") {
             // Create error message
             const errorMessage: ChatMessage = {
@@ -342,7 +352,7 @@ export function ChatInterface({
       <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
           {/* CWD Input for new sessions */}
-          {!sessionId && (
+          {!currentSessionId && (
             <div className="max-w-4xl mx-auto">
               <Label htmlFor="cwd" className="text-sm font-medium">
                 Working Directory
@@ -381,7 +391,7 @@ export function ChatInterface({
                 disabled={
                   !input.trim() ||
                   isLoading ||
-                  (!sessionId && !currentCwd.trim())
+                  (!currentSessionId && !currentCwd.trim())
                 }
                 size="lg"
                 className="px-4 sm:px-5 h-[56px] sm:h-[60px] rounded-full shadow-sm"
