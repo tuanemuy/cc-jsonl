@@ -36,9 +36,12 @@ export class MockClaudeService implements ClaudeService {
       role: "assistant",
       model: "claude-3-sonnet-20240229",
       stop_reason: "end_turn",
+      stop_sequence: null,
       usage: {
         input_tokens: 10,
         output_tokens: 15,
+        cache_creation_input_tokens: 0,
+        cache_read_input_tokens: 0,
       },
     };
 
@@ -50,6 +53,8 @@ export class MockClaudeService implements ClaudeService {
     _messages: ClaudeMessage[],
     onChunk: (chunk: string) => void,
   ): Promise<Result<ClaudeResponse, ClaudeError>> {
+    console.log("[Mock Claude] Starting sendMessageStream for:", input.message);
+
     if (this.shouldFailNext) {
       this.shouldFailNext = false;
       return err(new ClaudeError("Mock Claude service stream error"));
@@ -58,9 +63,13 @@ export class MockClaudeService implements ClaudeService {
     const responseText = `You said: ${input.message}`;
     const chunks = responseText.split(" ");
 
-    for (const chunk of chunks) {
-      onChunk(`${chunk} `);
-      await new Promise((resolve) => setTimeout(resolve, 10));
+    console.log("[Mock Claude] Will send chunks:", chunks);
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = `${chunks[i]} `;
+      console.log("[Mock Claude] Sending chunk:", chunk);
+      onChunk(chunk);
+      await new Promise((resolve) => setTimeout(resolve, 100)); // Slower for testing
     }
 
     const response: ClaudeResponse = this.mockResponse || {
@@ -74,9 +83,12 @@ export class MockClaudeService implements ClaudeService {
       role: "assistant",
       model: "claude-3-sonnet-20240229",
       stop_reason: "end_turn",
+      stop_sequence: null,
       usage: {
         input_tokens: 10,
         output_tokens: 15,
+        cache_creation_input_tokens: 0,
+        cache_read_input_tokens: 0,
       },
     };
 

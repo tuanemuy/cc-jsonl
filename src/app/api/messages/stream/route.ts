@@ -2,13 +2,15 @@ import type { NextRequest } from "next/server";
 import { getServerContext } from "@/actions/context";
 import { sendMessageStream } from "@/core/application/claude/sendMessageStream";
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { message, sessionId } = body;
+    const { searchParams } = new URL(request.url);
+    const message = searchParams.get("message");
+    const sessionId = searchParams.get("sessionId");
+    const cwd = searchParams.get("cwd");
 
-    if (!message) {
-      return new Response("Message is required", { status: 400 });
+    if (!message || typeof message !== "string") {
+      return new Response("Valid message is required", { status: 400 });
     }
 
     const context = getServerContext();
@@ -17,47 +19,96 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          const initData = `data: ${JSON.stringify({ type: "init" })}\n\n`;
+          controller.enqueue(encoder.encode(initData));
+
           const result = await sendMessageStream(
             context,
-            { message, sessionId },
+            {
+              message,
+              sessionId: sessionId || undefined,
+              cwd: cwd || undefined,
+            },
             (chunk: string) => {
-              // Send chunk as Server-Sent Event
-              const data = `data: ${JSON.stringify({ type: "chunk", content: chunk })}\n\n`;
-              controller.enqueue(encoder.encode(data));
+              try {
+                const data = `data: ${JSON.stringify({ type: "chunk", content: chunk })}\n\n`;
+                controller.enqueue(encoder.encode(data));
+
+                // Add explicit flush comment to prevent buffering
+                const flushData = ": flush\n\n";
+                controller.enqueue(encoder.encode(flushData));
+              } catch (chunkError) {
+                console.error("Error sending chunk:", chunkError);
+              }
             },
           );
 
           if (result.isErr()) {
-            const errorData = `data: ${JSON.stringify({ type: "error", error: result.error.message })}\n\n`;
+            const errorData = `data: ${JSON.stringify({
+              type: "error",
+              error: result.error.message || "Unknown error",
+            })}\n\n`;
             controller.enqueue(encoder.encode(errorData));
           } else {
-            const { session, assistantMessage } = result.value;
+            const { session, claudeResponse } = result.value;
             const completeData = `data: ${JSON.stringify({
               type: "complete",
               sessionId: session.id,
               projectId: session.projectId,
-              messageId: assistantMessage.id,
+              content: claudeResponse.content,
+              metadata: {
+                id: claudeResponse.id,
+                model: claudeResponse.model,
+                stop_reason: claudeResponse.stop_reason,
+                usage: claudeResponse.usage,
+              },
             })}\n\n`;
             controller.enqueue(encoder.encode(completeData));
           }
 
+          const endData = `data: ${JSON.stringify({ type: "end" })}\n\n`;
+          controller.enqueue(encoder.encode(endData));
+
           controller.close();
-        } catch (_error) {
-          const errorData = `data: ${JSON.stringify({ type: "error", error: "Internal server error" })}\n\n`;
-          controller.enqueue(encoder.encode(errorData));
+        } catch (error) {
+          console.error("Stream error:", error);
+          try {
+            const errorData = `data: ${JSON.stringify({
+              type: "error",
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Internal server error",
+            })}\n\n`;
+            controller.enqueue(encoder.encode(errorData));
+          } catch (encodingError) {
+            console.error("Error encoding error message:", encodingError);
+          }
           controller.close();
         }
+      },
+      cancel() {
+        // Stream cancelled by client
       },
     });
 
     return new Response(stream, {
       headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
         Connection: "keep-alive",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "X-Accel-Buffering": "no", // Disable nginx buffering
+        "Transfer-Encoding": "chunked", // Force chunked encoding
+        "X-Content-Type-Options": "nosniff", // Security header
       },
     });
-  } catch (_error) {
-    return new Response("Internal server error", { status: 500 });
+  } catch (error) {
+    console.error("API route error:", error);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }

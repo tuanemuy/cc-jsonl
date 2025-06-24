@@ -173,7 +173,7 @@ export async function sendMessage(
     const claudeResponse = claudeResult.value;
     const assistantContent = claudeResponse.content
       .filter((c) => c.type === "text")
-      .map((c) => c.text)
+      .map((c) => (c.type === "text" ? c.text : ""))
       .join("");
 
     // Create assistant message
