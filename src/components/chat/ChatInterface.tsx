@@ -54,11 +54,16 @@ export function ChatInterface({
   const [permissionRequest, setPermissionRequest] =
     useState<PermissionRequest | null>(null);
   const [showPermissionDialog, setShowPermissionDialog] = useState(false);
-  const [pendingToolUse, setPendingToolUse] = useState<{
-    id: string;
-    name: string;
-    input: Record<string, unknown>;
-  } | null>(null);
+  const [pendingToolUses, setPendingToolUses] = useState<
+    Map<
+      string,
+      {
+        id: string;
+        name: string;
+        input: Record<string, unknown>;
+      }
+    >
+  >(new Map());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const getMessageIcon = (
@@ -208,7 +213,11 @@ export function ChatInterface({
                     };
                   } else if (jsonData.type === "tool_use") {
                     // Store the tool use for permission checking
-                    setPendingToolUse(jsonData);
+                    setPendingToolUses((prev) => {
+                      const newMap = new Map(prev);
+                      newMap.set(jsonData.id, jsonData);
+                      return newMap;
+                    });
 
                     newMessage = {
                       id: `tool-${Date.now()}-${jsonData.id || Math.random()}`,
@@ -229,10 +238,10 @@ export function ChatInterface({
                     };
 
                     // Check for permission errors
-                    if (
-                      pendingToolUse &&
-                      jsonData.tool_use_id === pendingToolUse.id
-                    ) {
+                    const pendingToolUse = pendingToolUses.get(
+                      jsonData.tool_use_id,
+                    );
+                    if (pendingToolUse) {
                       const permissionResult = detectPermissionError(
                         jsonData,
                         pendingToolUse,
@@ -242,10 +251,14 @@ export function ChatInterface({
                         setShowPermissionDialog(true);
                         eventSource.close();
                         setIsLoading(false);
-                        setPendingToolUse(null);
                         return prev;
                       }
-                      setPendingToolUse(null);
+                      // Remove processed tool use
+                      setPendingToolUses((prev) => {
+                        const newMap = new Map(prev);
+                        newMap.delete(jsonData.tool_use_id);
+                        return newMap;
+                      });
                     }
                   } else {
                     // Ignore result, system and other unknown types
@@ -403,7 +416,11 @@ export function ChatInterface({
                     };
                   } else if (jsonData.type === "tool_use") {
                     // Store the tool use for permission checking
-                    setPendingToolUse(jsonData);
+                    setPendingToolUses((prev) => {
+                      const newMap = new Map(prev);
+                      newMap.set(jsonData.id, jsonData);
+                      return newMap;
+                    });
 
                     newMessage = {
                       id: `tool-${Date.now()}-${jsonData.id || Math.random()}`,
@@ -424,10 +441,10 @@ export function ChatInterface({
                     };
 
                     // Check for permission errors in continue flow
-                    if (
-                      pendingToolUse &&
-                      jsonData.tool_use_id === pendingToolUse.id
-                    ) {
+                    const pendingToolUse = pendingToolUses.get(
+                      jsonData.tool_use_id,
+                    );
+                    if (pendingToolUse) {
                       const permissionResult = detectPermissionError(
                         jsonData,
                         pendingToolUse,
@@ -437,10 +454,14 @@ export function ChatInterface({
                         setShowPermissionDialog(true);
                         eventSource.close();
                         setIsLoading(false);
-                        setPendingToolUse(null);
                         return prev;
                       }
-                      setPendingToolUse(null);
+                      // Remove processed tool use
+                      setPendingToolUses((prev) => {
+                        const newMap = new Map(prev);
+                        newMap.delete(jsonData.tool_use_id);
+                        return newMap;
+                      });
                     }
                   } else {
                     return prev;
@@ -487,7 +508,7 @@ export function ChatInterface({
   const handlePermissionDeny = () => {
     setShowPermissionDialog(false);
     setPermissionRequest(null);
-    setPendingToolUse(null);
+    setPendingToolUses(new Map());
 
     // Add a message indicating permission was denied
     const denyMessage: ChatMessage = {
