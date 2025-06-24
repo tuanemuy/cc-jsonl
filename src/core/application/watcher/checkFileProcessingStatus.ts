@@ -42,7 +42,6 @@ export async function checkFileProcessingStatus(
         filePath: input.filePath,
         shouldProcess: true,
         reason: "new_file",
-        fileModifiedAt: new Date(),
       });
     }
 
@@ -71,7 +70,6 @@ export async function checkFileProcessingStatus(
         filePath: input.filePath,
         shouldProcess: true,
         reason: "new_file",
-        fileModifiedAt,
       });
     }
 
@@ -83,7 +81,6 @@ export async function checkFileProcessingStatus(
         shouldProcess: true,
         reason: "file_modified",
         lastProcessedAt: tracking.lastProcessedAt,
-        fileModifiedAt,
       });
     }
 
@@ -94,7 +91,6 @@ export async function checkFileProcessingStatus(
         shouldProcess: true,
         reason: "size_changed",
         lastProcessedAt: tracking.lastProcessedAt,
-        fileModifiedAt,
       });
     }
 
@@ -104,7 +100,6 @@ export async function checkFileProcessingStatus(
       shouldProcess: false,
       reason: "up_to_date",
       lastProcessedAt: tracking.lastProcessedAt,
-      fileModifiedAt,
     });
   } catch (error) {
     return err({
@@ -150,7 +145,6 @@ export async function updateFileProcessingStatus(
 
     // Get file stats
     const fileStats = await fs.stat(input.filePath);
-    const fileModifiedAt = fileStats.mtime;
     const fileSize = fileStats.size;
     const now = new Date();
 
@@ -174,7 +168,6 @@ export async function updateFileProcessingStatus(
         filePath: input.filePath,
         lastProcessedAt: now,
         fileSize,
-        fileModifiedAt,
       };
 
       const createResult =
@@ -191,7 +184,6 @@ export async function updateFileProcessingStatus(
       const updateParams: UpdateLogFileTrackingParams = {
         lastProcessedAt: now,
         fileSize,
-        fileModifiedAt,
       };
 
       const updateResult =
