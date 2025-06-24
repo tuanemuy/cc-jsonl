@@ -253,7 +253,7 @@ export function ChatInterface({
                         setIsLoading(false);
                         return prev;
                       }
-                      // Remove processed tool use
+                      // Only remove processed tool use if no permission error
                       setPendingToolUses((prev) => {
                         const newMap = new Map(prev);
                         newMap.delete(jsonData.tool_use_id);
@@ -330,6 +330,13 @@ export function ChatInterface({
 
   const handlePermissionAllow = async () => {
     if (!permissionRequest) return;
+
+    // Remove the tool use from pending map
+    setPendingToolUses((prev) => {
+      const newMap = new Map(prev);
+      newMap.delete(permissionRequest.originalToolUse.id);
+      return newMap;
+    });
 
     try {
       const allowedToolResult = formatAllowedTool(permissionRequest);
@@ -456,7 +463,7 @@ export function ChatInterface({
                         setIsLoading(false);
                         return prev;
                       }
-                      // Remove processed tool use
+                      // Only remove processed tool use if no permission error
                       setPendingToolUses((prev) => {
                         const newMap = new Map(prev);
                         newMap.delete(jsonData.tool_use_id);
@@ -506,9 +513,17 @@ export function ChatInterface({
   };
 
   const handlePermissionDeny = () => {
+    // Remove the specific tool use from pending map
+    if (permissionRequest) {
+      setPendingToolUses((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(permissionRequest.originalToolUse.id);
+        return newMap;
+      });
+    }
+
     setShowPermissionDialog(false);
     setPermissionRequest(null);
-    setPendingToolUses(new Map());
 
     // Add a message indicating permission was denied
     const denyMessage: ChatMessage = {
