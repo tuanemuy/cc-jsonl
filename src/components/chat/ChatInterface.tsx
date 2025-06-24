@@ -221,14 +221,18 @@ export function ChatInterface({
                   } else if (jsonData.type === "tool_result") {
                     newMessage = {
                       id: `tool_result-${Date.now()}-${jsonData.tool_use_id || Math.random()}`,
-                      role: "assistant",
+                      role: "tool",
                       content: JSON.stringify([jsonData]),
                       timestamp: new Date(),
+                      messageType: "tool_use",
                       isStreaming: false,
                     };
 
                     // Check for permission errors
-                    if (pendingToolUse) {
+                    if (
+                      pendingToolUse &&
+                      jsonData.tool_use_id === pendingToolUse.id
+                    ) {
                       const permissionResult = detectPermissionError(
                         jsonData,
                         pendingToolUse,
@@ -238,6 +242,7 @@ export function ChatInterface({
                         setShowPermissionDialog(true);
                         eventSource.close();
                         setIsLoading(false);
+                        setPendingToolUse(null);
                         return prev;
                       }
                       setPendingToolUse(null);
@@ -386,6 +391,57 @@ export function ChatInterface({
                       timestamp: new Date(),
                       isStreaming: false,
                     };
+                  } else if (jsonData.type === "thinking") {
+                    newMessage = {
+                      id: `thinking-${Date.now()}-${Math.random()}`,
+                      role: "assistant",
+                      content: JSON.stringify([
+                        { type: "thinking", content: jsonData.content },
+                      ]),
+                      timestamp: new Date(),
+                      isStreaming: false,
+                    };
+                  } else if (jsonData.type === "tool_use") {
+                    // Store the tool use for permission checking
+                    setPendingToolUse(jsonData);
+
+                    newMessage = {
+                      id: `tool-${Date.now()}-${jsonData.id || Math.random()}`,
+                      role: "assistant",
+                      content: JSON.stringify([jsonData]),
+                      timestamp: new Date(),
+                      messageType: "tool_use",
+                      isStreaming: false,
+                    };
+                  } else if (jsonData.type === "tool_result") {
+                    newMessage = {
+                      id: `tool_result-${Date.now()}-${jsonData.tool_use_id || Math.random()}`,
+                      role: "tool",
+                      content: JSON.stringify([jsonData]),
+                      timestamp: new Date(),
+                      messageType: "tool_use",
+                      isStreaming: false,
+                    };
+
+                    // Check for permission errors in continue flow
+                    if (
+                      pendingToolUse &&
+                      jsonData.tool_use_id === pendingToolUse.id
+                    ) {
+                      const permissionResult = detectPermissionError(
+                        jsonData,
+                        pendingToolUse,
+                      );
+                      if (permissionResult.isOk() && permissionResult.value) {
+                        setPermissionRequest(permissionResult.value);
+                        setShowPermissionDialog(true);
+                        eventSource.close();
+                        setIsLoading(false);
+                        setPendingToolUse(null);
+                        return prev;
+                      }
+                      setPendingToolUse(null);
+                    }
                   } else {
                     return prev;
                   }
