@@ -54,7 +54,6 @@ export async function processLogFile(
     if (!skipTracking) {
       const statusResult = await checkFileProcessingStatus(context, {
         filePath: input.filePath,
-        includeChecksum: false,
       });
 
       if (statusResult.isErr()) {
@@ -101,7 +100,6 @@ export async function processLogFile(
       if (!skipTracking) {
         const updateResult = await updateFileProcessingStatus(context, {
           filePath: input.filePath,
-          includeChecksum: false,
         });
         if (updateResult.isErr()) {
           console.warn(
@@ -158,7 +156,6 @@ export async function processLogFile(
     if (!input.skipTracking) {
       const updateResult = await updateFileProcessingStatus(context, {
         filePath: input.filePath,
-        includeChecksum: false,
       });
       if (updateResult.isErr()) {
         console.warn(
