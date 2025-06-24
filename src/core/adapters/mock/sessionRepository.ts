@@ -103,6 +103,25 @@ export class MockSessionRepository implements SessionRepository {
     return ok(updatedSession);
   }
 
+  async updateName(
+    id: SessionId,
+    name: string,
+  ): Promise<Result<Session, RepositoryError>> {
+    const session = this.sessions.get(id);
+    if (!session) {
+      return err(new RepositoryError("Session not found"));
+    }
+
+    const updatedSession: Session = {
+      ...session,
+      name,
+      updatedAt: new Date(),
+    };
+
+    this.sessions.set(id, updatedSession);
+    return ok(updatedSession);
+  }
+
   async delete(id: SessionId): Promise<Result<void, RepositoryError>> {
     if (!this.sessions.has(id)) {
       return err(new RepositoryError("Session not found"));

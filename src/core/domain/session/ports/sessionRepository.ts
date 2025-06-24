@@ -20,6 +20,10 @@ export interface SessionRepository {
     id: SessionId,
     timestamp: Date,
   ): Promise<Result<Session, RepositoryError>>;
+  updateName(
+    id: SessionId,
+    name: string,
+  ): Promise<Result<Session, RepositoryError>>;
   delete(id: SessionId): Promise<Result<void, RepositoryError>>;
   list(
     query: ListSessionQuery,

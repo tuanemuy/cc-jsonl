@@ -10,10 +10,6 @@ import type {
   UserLog,
 } from "@/core/domain/watcher/types";
 import type { Context } from "../context";
-import { createProject } from "../project";
-import { createSession } from "../session";
-import { generateSessionName } from "../session/generateSessionName";
-import { updateSessionName } from "../session/updateSessionName";
 import {
   checkFileProcessingStatus,
   updateFileProcessingStatus,
@@ -211,7 +207,7 @@ async function ensureProjectExists(
   );
 
   if (!projectExists) {
-    const result = await createProject(context, {
+    const result = await context.projectRepository.upsert({
       name: projectName,
       path: projectName,
     });
@@ -319,7 +315,7 @@ async function ensureSessionExists(
         ? firstEntryWithCwd.cwd
         : "/tmp";
 
-    const result = await createSession(context, {
+    const result = await context.sessionRepository.upsert({
       id: brandedSessionId,
       projectId: project.id,
       name: null,
@@ -601,11 +597,11 @@ async function processSummaryEntry(
     // Extract a session name from the summary
     const sessionName = generateSessionNameFromSummary(summaryText);
 
-    // Update the session name using the updateSessionName function
-    const updateResult = await updateSessionName(context, {
-      id: sessionId,
-      name: sessionName,
-    });
+    // Update the session name directly using the adapter
+    const updateResult = await context.sessionRepository.updateName(
+      sessionId,
+      sessionName,
+    );
 
     if (updateResult.isErr()) {
       const error = {
@@ -673,24 +669,45 @@ async function generateAndUpdateSessionName(
   sessionId: SessionId,
 ): Promise<Result<void, ProcessLogFileError>> {
   try {
-    // Generate session name from messages
-    const nameResult = await generateSessionName(context, sessionId);
-    if (nameResult.isErr()) {
+    // Generate session name from messages using adapter directly
+    const messagesResult = await context.messageRepository.list({
+      pagination: { page: 1, limit: 5, order: "asc", orderBy: "timestamp" },
+      filter: { sessionId },
+    });
+
+    if (messagesResult.isErr()) {
       return err({
         type: "PROCESS_LOG_FILE_ERROR",
-        message: `Failed to generate session name: ${nameResult.error.message}`,
-        cause: nameResult.error,
+        message: `Failed to fetch messages for session name generation: ${messagesResult.error.message}`,
+        cause: messagesResult.error,
       });
     }
 
-    const sessionName = nameResult.value;
+    const { items } = messagesResult.value;
+    if (items.length === 0) {
+      return ok(undefined); // No messages, no name generation needed
+    }
+
+    // Find the first user message with meaningful content
+    const firstUserMessage = items.find(
+      (msg) =>
+        msg.role === "user" && msg.content && msg.content.trim().length > 0,
+    );
+
+    if (!firstUserMessage?.content) {
+      return ok(undefined); // No meaningful content found
+    }
+
+    // Use first line of user message, truncated
+    const firstLine = firstUserMessage.content.split("\n")[0];
+    const sessionName = truncateSessionName(firstLine);
 
     // Only update if we got a meaningful name (not "Untitled Session")
     if (sessionName !== "Untitled Session") {
-      const updateResult = await updateSessionName(context, {
-        id: sessionId,
-        name: sessionName,
-      });
+      const updateResult = await context.sessionRepository.updateName(
+        sessionId,
+        sessionName,
+      );
 
       if (updateResult.isErr()) {
         return err({
@@ -713,4 +730,15 @@ async function generateAndUpdateSessionName(
       cause: error,
     });
   }
+}
+
+function truncateSessionName(text: string): string {
+  const maxLength = 50;
+  const cleaned = text.trim();
+
+  if (cleaned.length <= maxLength) {
+    return cleaned;
+  }
+
+  return `${cleaned.substring(0, maxLength - 3)}...`;
 }

@@ -133,6 +133,33 @@ export class DrizzlePgliteSessionRepository implements SessionRepository {
     }
   }
 
+  async updateName(
+    id: SessionId,
+    name: string,
+  ): Promise<Result<Session, RepositoryError>> {
+    try {
+      const result = await this.db
+        .update(sessions)
+        .set({
+          name,
+          updatedAt: new Date(),
+        })
+        .where(eq(sessions.id, id))
+        .returning();
+
+      const session = result[0];
+      if (!session) {
+        return err(new RepositoryError("Session not found"));
+      }
+
+      return validate(sessionSchema, session).mapErr((error) => {
+        return new RepositoryError("Invalid session data after update", error);
+      });
+    } catch (error) {
+      return err(new RepositoryError("Failed to update session name", error));
+    }
+  }
+
   async delete(id: SessionId): Promise<Result<void, RepositoryError>> {
     try {
       await this.db.delete(sessions).where(eq(sessions.id, id));
