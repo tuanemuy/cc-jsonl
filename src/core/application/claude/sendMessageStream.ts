@@ -12,6 +12,7 @@ export const sendMessageStreamInputSchema = z
     message: z.string().min(1),
     sessionId: z.string().min(1).optional(),
     cwd: z.string().min(1).optional(),
+    allowedTools: z.array(z.string()).optional(),
   })
   .refine(
     (data) => {
@@ -97,6 +98,7 @@ export async function sendMessageStream(
         message: params.message,
         sessionId: params.sessionId, // undefined for new sessions
         cwd: params.cwd || (session ? session.cwd : undefined),
+        allowedTools: params.allowedTools,
       },
       [], // No previous messages needed as per requirements
       onChunk,

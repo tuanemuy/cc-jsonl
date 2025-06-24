@@ -123,7 +123,7 @@ describe("detectPermissionError", () => {
     }
   });
 
-  it("should return null for unsupported tool types", () => {
+  it("should support any tool type with fallback parameter extraction", () => {
     const toolResult = {
       content: "permission denied",
       is_error: true,
@@ -132,9 +132,10 @@ describe("detectPermissionError", () => {
 
     const originalToolUse = {
       id: "toolu_123",
-      name: "UnsupportedTool",
+      name: "CustomTool",
       input: {
         someParam: "value",
+        anotherParam: 123,
       },
     };
 
@@ -142,7 +143,9 @@ describe("detectPermissionError", () => {
 
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
-      expect(result.value).toBeNull();
+      expect(result.value).toBeDefined();
+      expect(result.value?.toolName).toBe("CustomTool");
+      expect(result.value?.toolCommand).toBe("value"); // First string value
     }
   });
 

@@ -4,6 +4,7 @@ export const sendMessageInputSchema = z.object({
   message: z.string().min(1),
   sessionId: z.string().optional(),
   cwd: z.string().optional(),
+  allowedTools: z.array(z.string()).optional(),
 });
 export type SendMessageInput = z.infer<typeof sendMessageInputSchema>;
 

@@ -52,23 +52,32 @@ export function detectPermissionError(
     }
 
     const toolName = toolUse.name as ToolType;
-    if (!["Bash", "Read", "WebSearch"].includes(toolName)) {
-      return ok(null);
-    }
 
+    // Extract tool command based on common parameter patterns
     let toolCommand: string;
-    switch (toolName) {
-      case "Bash":
-        toolCommand = toolUse.input.command || "";
-        break;
-      case "Read":
-        toolCommand = toolUse.input.file_path || "";
-        break;
-      case "WebSearch":
-        toolCommand = toolUse.input.url || "";
-        break;
-      default:
-        return ok(null);
+    const input = toolUse.input;
+
+    // Try common parameter names in order of likelihood
+    if (input.command) {
+      toolCommand = String(input.command);
+    } else if (input.file_path) {
+      toolCommand = String(input.file_path);
+    } else if (input.path) {
+      toolCommand = String(input.path);
+    } else if (input.url) {
+      toolCommand = String(input.url);
+    } else if (input.query) {
+      toolCommand = String(input.query);
+    } else if (input.text) {
+      toolCommand = String(input.text);
+    } else if (input.prompt) {
+      toolCommand = String(input.prompt);
+    } else {
+      // Fallback: use first string value or JSON representation
+      const firstStringValue = Object.values(input).find(
+        (v) => typeof v === "string",
+      );
+      toolCommand = firstStringValue || JSON.stringify(input);
     }
 
     const permissionRequest: PermissionRequest = {

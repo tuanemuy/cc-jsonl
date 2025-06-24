@@ -325,13 +325,11 @@ export function ChatInterface({
 
       const allowedTool = allowedToolResult.value;
 
-      // Send continue message with allowedTools embedded in the message
-      const continueMessageContent = `continue\n\nallowedTools: ${JSON.stringify([allowedTool])}`;
-
+      // Send continue message with allowedTools as URL parameter
       const continueMessage: ChatMessage = {
         id: `continue-${Date.now()}`,
         role: "user",
-        content: continueMessageContent,
+        content: "continue",
         timestamp: new Date(),
       };
 
@@ -340,9 +338,10 @@ export function ChatInterface({
       setPermissionRequest(null);
       setIsLoading(true);
 
-      // Create URL for continue request
+      // Create URL for continue request with allowedTools parameter
       const url = new URL("/api/messages/stream", window.location.origin);
-      url.searchParams.set("message", continueMessageContent);
+      url.searchParams.set("message", "continue");
+      url.searchParams.set("allowedTools", JSON.stringify([allowedTool]));
       if (currentSessionId) {
         url.searchParams.set("sessionId", currentSessionId);
       }

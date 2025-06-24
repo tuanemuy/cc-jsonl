@@ -78,4 +78,23 @@ describe("formatAllowedTool", () => {
       expect(result.value).toBe("Bash(grep -r 'pattern' /path/with spaces/)");
     }
   });
+
+  it("should format custom tool correctly", () => {
+    const request: PermissionRequest = {
+      toolName: "CustomTool",
+      toolCommand: "custom-parameter-value",
+      originalToolUse: {
+        id: "toolu_999",
+        name: "CustomTool",
+        input: { customParam: "custom-parameter-value" },
+      },
+    };
+
+    const result = formatAllowedTool(request);
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value).toBe("CustomTool(custom-parameter-value)");
+    }
+  });
 });

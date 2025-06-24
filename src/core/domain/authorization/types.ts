@@ -9,12 +9,13 @@ export type PermissionErrorKeywords = z.infer<
   typeof permissionErrorKeywordsSchema
 >;
 
-export const toolTypeSchema = z.enum(["Bash", "Read", "WebSearch"]);
+// Support all tool types, not just specific ones
+export const toolTypeSchema = z.string();
 export type ToolType = z.infer<typeof toolTypeSchema>;
 
 export const allowedToolSchema = z
   .string()
-  .regex(/^(Bash|Read|WebSearch)\(.+\)$/);
+  .regex(/^[A-Za-z_][A-Za-z0-9_]*\(.+\)$/);
 export type AllowedTool = z.infer<typeof allowedToolSchema>;
 
 export const permissionRequestSchema = z.object({

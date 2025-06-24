@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const message = searchParams.get("message");
     const sessionId = searchParams.get("sessionId");
     const cwd = searchParams.get("cwd");
+    const allowedToolsParam = searchParams.get("allowedTools");
 
     if (!message || typeof message !== "string") {
       return new Response("Valid message is required", { status: 400 });
@@ -23,6 +24,16 @@ export async function GET(request: NextRequest) {
 
     const context = getServerContext();
 
+    // Parse allowedTools if provided
+    let allowedTools: string[] | undefined;
+    if (allowedToolsParam) {
+      try {
+        allowedTools = JSON.parse(allowedToolsParam);
+      } catch {
+        return new Response("Invalid allowedTools parameter", { status: 400 });
+      }
+    }
+
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
@@ -36,6 +47,7 @@ export async function GET(request: NextRequest) {
               message,
               sessionId: sessionId || undefined,
               cwd: cwd || undefined,
+              allowedTools,
             },
             (chunk: string) => {
               try {

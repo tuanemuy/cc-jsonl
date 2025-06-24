@@ -74,6 +74,7 @@ export class AnthropicClaudeService implements ClaudeService {
         pathToClaudeCodeExecutable?: string;
         resume?: string;
         cwd?: string;
+        allowedTools?: string[];
       } = {
         pathToClaudeCodeExecutable: this.pathToClaudeCodeExecutable,
       };
@@ -86,6 +87,11 @@ export class AnthropicClaudeService implements ClaudeService {
       // Add working directory if provided
       if (input.cwd) {
         options.cwd = input.cwd;
+      }
+
+      // Add allowed tools if provided
+      if (input.allowedTools) {
+        options.allowedTools = input.allowedTools;
       }
 
       const messages: SDKMessage[] = [];
@@ -128,6 +134,7 @@ export class AnthropicClaudeService implements ClaudeService {
         pathToClaudeCodeExecutable?: string;
         resume?: string;
         cwd?: string;
+        allowedTools?: string[];
       } = {
         pathToClaudeCodeExecutable: this.pathToClaudeCodeExecutable,
       };
@@ -140,6 +147,11 @@ export class AnthropicClaudeService implements ClaudeService {
       // Add working directory if provided
       if (input.cwd) {
         options.cwd = input.cwd;
+      }
+
+      // Add allowed tools if provided
+      if (input.allowedTools) {
+        options.allowedTools = input.allowedTools;
       }
 
       const messages: SDKMessage[] = [];
