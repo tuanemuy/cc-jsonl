@@ -10,11 +10,13 @@ import {
   Play,
   Search,
   SearchCode,
+  Settings,
   Terminal,
 } from "lucide-react";
 
 interface MessageContentProps {
   content: string;
+  isStreaming?: boolean;
 }
 
 interface TextContent {
@@ -41,6 +43,28 @@ interface ToolResultContent {
     | TodoResult
     | WebSearchResult
     | WebFetchResult;
+}
+
+interface ThinkingContent {
+  type: "thinking";
+  content: string;
+}
+
+interface RedactedThinkingContent {
+  type: "redacted_thinking";
+}
+
+interface ServerToolUseContent {
+  type: "server_tool_use";
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+}
+
+interface WebSearchToolResultContent {
+  type: "web_search_tool_result";
+  tool_use_id: string;
+  content: unknown;
 }
 
 // Tool result types
@@ -110,30 +134,61 @@ interface WebFetchResult {
   content: string;
 }
 
-type ContentBlock = TextContent | ToolUseContent | ToolResultContent;
+type ContentBlock = TextContent | ToolUseContent | ToolResultContent | ThinkingContent | RedactedThinkingContent | ServerToolUseContent | WebSearchToolResultContent;
 
-export function MessageContent({ content }: MessageContentProps) {
+function parseTextContent(text: string): ContentBlock[] {
+  // Simply return as text block without any markdown parsing
+  return [{ type: "text", text }];
+}
+
+// parseStreamingContent function removed - NDJSON format handles this cleanly
+
+export function MessageContent({
+  content,
+  isStreaming = false,
+}: MessageContentProps) {
+  // Parse content based on Claude Code SDK streaming format
   let parsedContent: ContentBlock[] = [];
 
   try {
-    if (typeof content === "string" && content.startsWith("[")) {
-      parsedContent = JSON.parse(content);
-    } else if (typeof content === "string") {
-      parsedContent = [{ type: "text", text: content }];
+    if (typeof content === "string" && content.trim()) {
+      const trimmed = content.trim();
+
+      // Check if it's a complete JSON array (final format)
+      if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+        try {
+          parsedContent = JSON.parse(trimmed);
+        } catch {
+          // If parsing fails, treat as text
+          parsedContent = parseTextContent(content);
+        }
+      } else {
+        // During streaming, content is plain text (NDJSON is handled upstream)
+        parsedContent = parseTextContent(content);
+      }
     }
   } catch {
+    // Fallback to plain text
+    parsedContent = [{ type: "text", text: content }];
+  }
+
+  // If no parsed content, create a fallback
+  if (parsedContent.length === 0) {
     parsedContent = [{ type: "text", text: content }];
   }
 
   return (
-    <div className="space-y-2">
+    <div className={`space-y-2 ${isStreaming ? "streaming" : ""}`}>
       {parsedContent.map((block, index) => {
-        const key = "id" in block ? block.id : `${block.type}-${index}`;
+        const key = "id" in block && typeof block.id === "string" ? block.id : `${block.type}-${index}`;
         switch (block.type) {
           case "text":
             return (
               <div key={key} className="whitespace-pre-wrap">
                 {block.text}
+                {isStreaming && index === parsedContent.length - 1 && (
+                  <span className="inline-block w-2 h-4 bg-primary ml-1 animate-pulse" />
+                )}
               </div>
             );
 
@@ -142,6 +197,18 @@ export function MessageContent({ content }: MessageContentProps) {
 
           case "tool_result":
             return <ToolResultDisplay key={key} block={block} />;
+
+          case "thinking":
+            return <ThinkingMessageDisplay key={key} block={block as ThinkingContent} />;
+
+          case "redacted_thinking":
+            return <RedactedThinkingDisplay key={key} />;
+
+          case "server_tool_use":
+            return <ServerToolUseDisplay key={key} block={block as ServerToolUseContent} />;
+
+          case "web_search_tool_result":
+            return <WebSearchToolResultDisplay key={key} block={block as WebSearchToolResultContent} />;
 
           default: {
             const unknownBlock = block as { type: string };
@@ -583,6 +650,80 @@ function WebFetchResultDisplay({ result }: { result: WebFetchResult }) {
       <div className="text-sm max-h-64 overflow-y-auto">
         <pre className="whitespace-pre-wrap text-foreground">
           {result.content}
+        </pre>
+      </div>
+    </div>
+  );
+}
+
+
+function ThinkingMessageDisplay({ block }: { block: ThinkingContent }) {
+  return (
+    <div className="border rounded-lg p-3 bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800">
+      <div className="flex items-center gap-2 text-sm font-medium text-purple-900 dark:text-purple-100 mb-2">
+        <Settings className="h-4 w-4" />
+        <span>Thinking</span>
+      </div>
+      <div className="text-sm">
+        <div className="whitespace-pre-wrap text-purple-900 dark:text-purple-100">
+          {block.content}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+function RedactedThinkingDisplay() {
+  return (
+    <div className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-950 border-gray-200 dark:border-gray-800">
+      <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <Settings className="h-4 w-4" />
+        <span>Redacted Thinking</span>
+      </div>
+      <div className="text-sm text-gray-600 dark:text-gray-400">
+        <em>This thinking content has been redacted.</em>
+      </div>
+    </div>
+  );
+}
+
+function ServerToolUseDisplay({ block }: { block: ServerToolUseContent }) {
+  const toolInfo = getToolInfo(block.name, block.input);
+  
+  return (
+    <div className="border rounded-lg p-3 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+      <div className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+        {toolInfo.icon}
+        <span>Server Tool: {toolInfo.displayName}</span>
+      </div>
+      {toolInfo.primaryDisplay && (
+        <div className="mb-2 text-sm font-mono text-foreground bg-muted/50 p-2 rounded">
+          {toolInfo.primaryDisplay}
+        </div>
+      )}
+      <details className="text-xs">
+        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+          View parameters
+        </summary>
+        <pre className="mt-2 p-2 bg-muted rounded overflow-x-auto">
+          {JSON.stringify(block.input, null, 2)}
+        </pre>
+      </details>
+    </div>
+  );
+}
+
+function WebSearchToolResultDisplay({ block }: { block: WebSearchToolResultContent }) {
+  return (
+    <div className="border rounded-lg p-3 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+      <div className="flex items-center gap-2 text-sm font-medium text-green-900 dark:text-green-100 mb-2">
+        <Search className="h-4 w-4" />
+        <span>Web Search Result</span>
+      </div>
+      <div className="text-sm">
+        <pre className="whitespace-pre-wrap overflow-x-auto text-foreground bg-muted p-2 rounded">
+          {JSON.stringify(block.content, null, 2)}
         </pre>
       </div>
     </div>

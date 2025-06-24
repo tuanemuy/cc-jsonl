@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot, Loader2, Send, User } from "lucide-react";
+import { Bot, Loader2, Send, Settings, User, Wrench } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,10 +17,11 @@ interface ChatInterfaceProps {
 
 interface ChatMessage {
   id: string;
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system" | "tool";
   content: string;
   timestamp: Date;
   isStreaming?: boolean;
+  messageType?: "init" | "result" | "thinking" | "tool_use" | "normal";
 }
 
 export function ChatInterface({
@@ -40,13 +41,74 @@ export function ChatInterface({
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // TODO: Fix linter warning about exhaustive-deps
-  // biome-ignore lint: react-hooks/exhaustive-deps
+  const getMessageIcon = (
+    role: ChatMessage["role"],
+    messageType?: ChatMessage["messageType"],
+  ) => {
+    if (role === "user") {
+      return (
+        <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary-foreground" />
+      );
+    }
+    if (
+      role === "system" ||
+      messageType === "init" ||
+      messageType === "result"
+    ) {
+      return <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted" />;
+    }
+    if (role === "tool" || messageType === "tool_use") {
+      return <Wrench className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted" />;
+    }
+    return <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted" />;
+  };
+
+  const getMessageStyle = (
+    role: ChatMessage["role"],
+    messageType?: ChatMessage["messageType"],
+  ) => {
+    if (role === "user") {
+      return "bg-primary text-primary-foreground";
+    }
+    if (
+      role === "system" ||
+      messageType === "init" ||
+      messageType === "result"
+    ) {
+      return "bg-blue-50 dark:bg-blue-950 text-blue-900 dark:text-blue-100 border border-blue-200 dark:border-blue-800";
+    }
+    if (role === "tool" || messageType === "tool_use") {
+      return "bg-orange-50 dark:bg-orange-950 text-orange-900 dark:text-orange-100 border border-orange-200 dark:border-orange-800";
+    }
+    return "bg-muted";
+  };
+
+  const getAvatarStyle = (
+    role: ChatMessage["role"],
+    messageType?: ChatMessage["messageType"],
+  ) => {
+    if (role === "user") {
+      return "bg-primary";
+    }
+    if (
+      role === "system" ||
+      messageType === "init" ||
+      messageType === "result"
+    ) {
+      return "bg-blue-500";
+    }
+    if (role === "tool" || messageType === "tool_use") {
+      return "bg-orange-500";
+    }
+    return "bg-muted-foreground";
+  };
+
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]); // Scroll when messages change
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,95 +121,137 @@ export function ChatInterface({
       timestamp: new Date(),
     };
 
-    const assistantMessage: ChatMessage = {
-      id: `temp-assistant-${Date.now()}`,
-      role: "assistant",
-      content: "",
-      timestamp: new Date(),
-      isStreaming: true,
-    };
-
-    setMessages((prev) => [...prev, userMessage, assistantMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/messages/stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input, sessionId }),
-      });
-
-      if (!response.body) {
-        throw new Error("No response body");
+      // Create a URL with query parameters for GET request
+      const url = new URL("/api/messages/stream", window.location.origin);
+      url.searchParams.set("message", input);
+      if (sessionId) {
+        url.searchParams.set("sessionId", sessionId);
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
+      const eventSource = new EventSource(url.toString());
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n");
+          if (data.type === "chunk") {
+            // Parse NDJSON content
+            const lines = data.content
+              .split("\n")
+              .filter((line: string) => line.trim());
 
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const data = JSON.parse(line.slice(6));
+            for (const line of lines) {
+              try {
+                const jsonData = JSON.parse(line);
 
-              if (data.type === "chunk") {
                 setMessages((prev) => {
-                  const newMessages = [...prev];
-                  const lastMessage = newMessages[newMessages.length - 1];
-                  if (lastMessage && lastMessage.role === "assistant") {
-                    lastMessage.content += data.content;
+                  // Handle Claude Code SDK message types
+                  let newMessage: ChatMessage;
+
+                  // Check if this is a complete message with role and content
+                  if (jsonData.role && jsonData.content) {
+                    // This is a complete message (user or assistant)
+                    newMessage = {
+                      id: `msg-${Date.now()}-${Math.random()}`,
+                      role: jsonData.role,
+                      content: JSON.stringify(jsonData.content),
+                      timestamp: new Date(),
+                      isStreaming: false,
+                    };
+                  } else if (jsonData.type === "text") {
+                    newMessage = {
+                      id: `text-${Date.now()}-${Math.random()}`,
+                      role: "assistant",
+                      content: JSON.stringify([
+                        { type: "text", text: jsonData.text },
+                      ]),
+                      timestamp: new Date(),
+                      isStreaming: false,
+                    };
+                  } else if (jsonData.type === "thinking") {
+                    newMessage = {
+                      id: `thinking-${Date.now()}-${Math.random()}`,
+                      role: "assistant",
+                      content: JSON.stringify([
+                        { type: "thinking", content: jsonData.content },
+                      ]),
+                      timestamp: new Date(),
+                      isStreaming: false,
+                    };
+                  } else if (jsonData.type === "tool_use") {
+                    newMessage = {
+                      id: `tool-${Date.now()}-${jsonData.id || Math.random()}`,
+                      role: "assistant",
+                      content: JSON.stringify([jsonData]),
+                      timestamp: new Date(),
+                      messageType: "tool_use",
+                      isStreaming: false,
+                    };
+                  } else if (jsonData.type === "tool_result") {
+                    newMessage = {
+                      id: `tool_result-${Date.now()}-${jsonData.tool_use_id || Math.random()}`,
+                      role: "assistant",
+                      content: JSON.stringify([jsonData]),
+                      timestamp: new Date(),
+                      isStreaming: false,
+                    };
+                  } else {
+                    // Ignore result, system and other unknown types
+                    // Result messages contain the final complete response but we already have the streamed parts
+                    return prev;
                   }
-                  return newMessages;
+
+                  return [...prev, newMessage];
                 });
-              } else if (data.type === "complete") {
-                setMessages((prev) => {
-                  const newMessages = [...prev];
-                  const lastMessage = newMessages[newMessages.length - 1];
-                  if (lastMessage && lastMessage.role === "assistant") {
-                    lastMessage.isStreaming = false;
-                    lastMessage.id = data.messageId;
-                  }
-                  return newMessages;
-                });
-                // Refresh the page to show updated data
-                window.location.reload();
-              } else if (data.type === "error") {
-                console.error("Streaming error:", data.error);
-                setMessages((prev) => {
-                  const newMessages = [...prev];
-                  const lastMessage = newMessages[newMessages.length - 1];
-                  if (lastMessage && lastMessage.role === "assistant") {
-                    lastMessage.content = `Error: ${data.error}`;
-                    lastMessage.isStreaming = false;
-                  }
-                  return newMessages;
-                });
+              } catch (e) {
+                console.error("Failed to parse NDJSON line:", e);
               }
-            } catch (e) {
-              console.error("Failed to parse SSE data:", e);
             }
+          } else if (data.type === "complete") {
+            // Close the EventSource
+            eventSource.close();
+            setIsLoading(false);
+          } else if (data.type === "error") {
+            // Create error message
+            const errorMessage: ChatMessage = {
+              id: `error-${Date.now()}`,
+              role: "assistant",
+              content: JSON.stringify([
+                { type: "text", text: `Error: ${data.error}` },
+              ]),
+              timestamp: new Date(),
+              isStreaming: false,
+            };
+            setMessages((prev) => [...prev, errorMessage]);
+            eventSource.close();
+            setIsLoading(false);
           }
+        } catch (e) {
+          console.error("Failed to parse SSE data:", e);
         }
-      }
+      };
+
+      eventSource.onerror = () => {
+        eventSource.close();
+        setIsLoading(false);
+      };
     } catch (error) {
       console.error("Failed to send message:", error);
-      setMessages((prev) => {
-        const newMessages = [...prev];
-        const lastMessage = newMessages[newMessages.length - 1];
-        if (lastMessage && lastMessage.role === "assistant") {
-          lastMessage.content = "Failed to send message. Please try again.";
-          lastMessage.isStreaming = false;
-        }
-        return newMessages;
-      });
-    } finally {
+      const errorMessage: ChatMessage = {
+        id: `error-${Date.now()}`,
+        role: "assistant",
+        content: JSON.stringify([
+          { type: "text", text: "Failed to send message. Please try again." },
+        ]),
+        timestamp: new Date(),
+        isStreaming: false,
+      };
+      setMessages((prev) => [...prev, errorMessage]);
       setIsLoading(false);
     }
   };
@@ -190,27 +294,22 @@ export function ChatInterface({
                     whileTap={{ scale: 0.9 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   >
-                    {message.role === "user" ? (
-                      <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary rounded-full flex items-center justify-center shadow-sm">
-                        <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary-foreground" />
-                      </div>
-                    ) : (
-                      <div className="w-8 h-8 sm:w-9 sm:h-9 bg-muted-foreground rounded-full flex items-center justify-center shadow-sm">
-                        <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted" />
-                      </div>
-                    )}
+                    <div
+                      className={`w-8 h-8 sm:w-9 sm:h-9 ${getAvatarStyle(message.role, message.messageType)} rounded-full flex items-center justify-center shadow-sm`}
+                    >
+                      {getMessageIcon(message.role, message.messageType)}
+                    </div>
                   </motion.div>
                   <motion.div
-                    className={`rounded-2xl px-4 py-3 sm:px-4 sm:py-3 min-w-0 shadow-sm ${
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}
+                    className={`rounded-2xl px-4 py-3 sm:px-4 sm:py-3 min-w-0 shadow-sm ${getMessageStyle(message.role, message.messageType)}`}
                     whileTap={{ scale: 0.98 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   >
                     <div className="break-words text-sm sm:text-base">
-                      <MessageContent content={message.content} />
+                      <MessageContent
+                        content={message.content}
+                        isStreaming={message.isStreaming}
+                      />
                       {message.isStreaming && (
                         <span className="inline-block w-2 h-4 bg-current opacity-50 animate-pulse ml-1" />
                       )}

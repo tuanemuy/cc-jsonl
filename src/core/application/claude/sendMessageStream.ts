@@ -1,6 +1,6 @@
 import { err, ok, type Result } from "neverthrow";
 import { z } from "zod/v4";
-import type { Message } from "@/core/domain/message/types";
+import type { ClaudeResponse } from "@/core/domain/claude/types";
 import type { Session } from "@/core/domain/session/types";
 import { sessionIdSchema } from "@/core/domain/session/types";
 import { ApplicationError } from "@/lib/error";
@@ -10,6 +10,7 @@ import type { Context } from "../context";
 export const sendMessageStreamInputSchema = z.object({
   message: z.string().min(1),
   sessionId: z.string().min(1).optional(),
+  cwd: z.string().optional(),
 });
 export type SendMessageStreamInput = z.infer<
   typeof sendMessageStreamInputSchema
@@ -20,10 +21,7 @@ export async function sendMessageStream(
   input: SendMessageStreamInput,
   onChunk: (chunk: string) => void,
 ): Promise<
-  Result<
-    { session: Session; userMessage: Message; assistantMessage: Message },
-    ApplicationError
-  >
+  Result<{ session: Session; claudeResponse: ClaudeResponse }, ApplicationError>
 > {
   console.log("[sendMessageStream] Starting streaming message processing", {
     sessionId: input.sessionId,
@@ -106,58 +104,14 @@ export async function sendMessageStream(
       session = createSessionResult.value;
     }
 
-    // Get previous messages for context
-    const messagesResult = await context.messageRepository.list({
-      pagination: { page: 1, limit: 50, order: "asc", orderBy: "timestamp" },
-      filter: { sessionId: session.id },
-    });
-    if (messagesResult.isErr()) {
-      const error = new ApplicationError(
-        "Failed to get messages",
-        messagesResult.error,
-      );
-      console.error(
-        "[sendMessageStream] Failed to retrieve previous messages",
-        { sessionId: session.id, error: error.message, cause: error.cause },
-      );
-      return err(error);
-    }
-
-    const previousMessages = messagesResult.value.items
-      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
-      .map((msg) => ({
-        role: msg.role,
-        content: msg.content || "",
-      }));
-
-    // Create user message
-    const userMessageResult = await context.messageRepository.create({
-      sessionId: session.id,
-      role: "user",
-      content: params.message,
-      timestamp: new Date(),
-      rawData: JSON.stringify({ content: params.message, role: "user" }),
-      uuid: crypto.randomUUID(),
-      parentUuid: null,
-      cwd: session.cwd,
-    });
-    if (userMessageResult.isErr()) {
-      const error = new ApplicationError(
-        "Failed to create user message",
-        userMessageResult.error,
-      );
-      console.error("[sendMessageStream] User message creation failed", {
-        sessionId: session.id,
-        error: error.message,
-        cause: error.cause,
-      });
-      return err(error);
-    }
-
     // Send to Claude with streaming
     const claudeResult = await context.claudeService.sendMessageStream(
-      { message: params.message },
-      previousMessages,
+      {
+        message: params.message,
+        sessionId: params.sessionId,
+        cwd: params.cwd || session.cwd,
+      },
+      [], // No previous messages needed as per requirements
       onChunk,
     );
     if (claudeResult.isErr()) {
@@ -174,39 +128,10 @@ export async function sendMessageStream(
     }
 
     const claudeResponse = claudeResult.value;
-    const assistantContent = claudeResponse.content
-      .filter((c) => c.type === "text")
-      .map((c) => c.text)
-      .join("");
-
-    // Create assistant message
-    const assistantMessageResult = await context.messageRepository.create({
-      sessionId: session.id,
-      role: "assistant",
-      content: assistantContent,
-      timestamp: new Date(),
-      rawData: JSON.stringify(claudeResponse),
-      uuid: crypto.randomUUID(),
-      parentUuid: userMessageResult.value.uuid,
-      cwd: session.cwd,
-    });
-    if (assistantMessageResult.isErr()) {
-      const error = new ApplicationError(
-        "Failed to create assistant message",
-        assistantMessageResult.error,
-      );
-      console.error("[sendMessageStream] Assistant message creation failed", {
-        sessionId: session.id,
-        error: error.message,
-        cause: error.cause,
-      });
-      return err(error);
-    }
 
     return ok({
       session,
-      userMessage: userMessageResult.value,
-      assistantMessage: assistantMessageResult.value,
+      claudeResponse,
     });
   } catch (error) {
     const appError = new ApplicationError(

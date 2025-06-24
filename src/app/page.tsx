@@ -7,14 +7,14 @@ import { useEffect, useState } from "react";
 import { listProjectsAction } from "@/actions/project";
 import { listSessionsAction } from "@/actions/session";
 import { PageLayout } from "@/components/layout/PageLayout";
+import { SessionListItem } from "@/components/session/SessionListItem";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { ProjectSkeleton } from "@/components/ui/skeleton-loader";
 import { SwipeableCard } from "@/components/ui/swipeable-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Project } from "@/core/domain/project/types";
 import type { Session } from "@/core/domain/session/types";
-import { formatDate, formatRelativeTime } from "@/lib/date";
-import { getSessionDisplayName } from "@/lib/sessionName";
+import { formatDate } from "@/lib/date";
 
 export default function Home() {
   const router = useRouter();
@@ -171,7 +171,7 @@ export default function Home() {
                       </p>
                     </div>
                   ) : (
-                    <div className="grid gap-2 sm:gap-3">
+                    <div className="grid gap-2 sm:gap-3 w-full">
                       {sessions.map((session) => (
                         <SwipeableCard
                           key={session.id}
@@ -180,40 +180,11 @@ export default function Home() {
                           }
                           className="cursor-pointer"
                         >
-                          <Link
+                          <SessionListItem
+                            session={session}
                             href={`/sessions/${session.id}`}
-                            className="group block p-4 sm:p-5 border rounded-lg hover:bg-accent/50 hover:border-accent transition-all active:scale-[0.98]"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3 min-w-0">
-                                <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0" />
-                                <div className="min-w-0">
-                                  <h3 className="font-medium group-hover:text-primary transition-colors truncate">
-                                    {getSessionDisplayName(session.name)}
-                                  </h3>
-                                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm text-muted-foreground">
-                                    <span>{formatDate(session.createdAt)}</span>
-                                    {session.lastMessageAt && (
-                                      <>
-                                        <span className="hidden sm:inline">
-                                          •
-                                        </span>
-                                        <span className="text-xs">
-                                          Last message{" "}
-                                          {formatRelativeTime(
-                                            session.lastMessageAt,
-                                          )}
-                                        </span>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              <span className="text-muted-foreground group-hover:translate-x-1 transition-transform flex-shrink-0">
-                                →
-                              </span>
-                            </div>
-                          </Link>
+                            className="active:scale-[0.98]"
+                          />
                         </SwipeableCard>
                       ))}
                     </div>

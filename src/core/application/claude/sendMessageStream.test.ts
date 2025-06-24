@@ -54,14 +54,8 @@ describe("sendMessageStream", () => {
       if (result.isOk()) {
         expect(result.value.session).toBeDefined();
         expect(result.value.session.projectId).toBe(project.id);
-        expect(result.value.userMessage.content).toBe(
-          "Hello, streaming Claude!",
-        );
-        expect(result.value.userMessage.role).toBe("user");
-        expect(result.value.assistantMessage.content).toBe(
-          "You said: Hello, streaming Claude!",
-        );
-        expect(result.value.assistantMessage.role).toBe("assistant");
+        expect(result.value.claudeResponse).toBeDefined();
+        expect(result.value.claudeResponse.content).toBeDefined();
 
         // Check that onChunk was called with streaming data
         expect(onChunkSpy).toHaveBeenCalled();
@@ -102,8 +96,7 @@ describe("sendMessageStream", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         expect(result.value.session.id).toBe("session-123");
-        expect(result.value.userMessage.sessionId).toBe("session-123");
-        expect(result.value.assistantMessage.sessionId).toBe("session-123");
+        expect(result.value.claudeResponse).toBeDefined();
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -199,8 +192,9 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
+        // No messages should be created since we removed message persistence
         const allMessages = mockMessageRepository.getAll();
-        expect(allMessages).toHaveLength(4);
+        expect(allMessages).toHaveLength(2); // Only the existing messages
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -224,10 +218,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.userMessage.content).toBe("こんにちは、Claude！");
-        expect(result.value.assistantMessage.content).toBe(
-          "You said: こんにちは、Claude！",
-        );
+        expect(result.value.claudeResponse).toBeDefined();
+        expect(result.value.claudeResponse.content).toBeDefined();
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -392,8 +384,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.userMessage.content).toBe("A");
-        expect(result.value.assistantMessage.content).toBe("You said: A");
+        expect(result.value.claudeResponse).toBeDefined();
+        expect(result.value.claudeResponse.content).toBeDefined();
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -418,10 +410,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.userMessage.content).toBe(longMessage);
-        expect(result.value.assistantMessage.content).toBe(
-          `You said: ${longMessage}`,
-        );
+        expect(result.value.claudeResponse).toBeDefined();
+        expect(result.value.claudeResponse.content).toBeDefined();
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -446,7 +436,7 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.userMessage.content).toBe(whitespaceMessage);
+        expect(result.value.claudeResponse).toBeDefined();
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -471,10 +461,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.userMessage.content).toBe(multilineMessage);
-        expect(result.value.assistantMessage.content).toBe(
-          `You said: ${multilineMessage}`,
-        );
+        expect(result.value.claudeResponse).toBeDefined();
+        expect(result.value.claudeResponse.content).toBeDefined();
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -500,10 +488,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.userMessage.content).toBe("Fast response test");
-        expect(result.value.assistantMessage.content).toBe(
-          "You said: Fast response test",
-        );
+        expect(result.value.claudeResponse).toBeDefined();
+        expect(result.value.claudeResponse.content).toBeDefined();
       }
     });
 
@@ -527,10 +513,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.userMessage.content).toBe(specialMessage);
-        expect(result.value.assistantMessage.content).toBe(
-          `You said: ${specialMessage}`,
-        );
+        expect(result.value.claudeResponse).toBeDefined();
+        expect(result.value.claudeResponse.content).toBeDefined();
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });

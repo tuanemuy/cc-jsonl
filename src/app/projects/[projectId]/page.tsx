@@ -5,9 +5,9 @@ import { getProjectAction } from "@/actions/project";
 import { listSessionsAction } from "@/actions/session";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { NewChatButton } from "@/components/project/NewChatButton";
+import { SessionListItem } from "@/components/session/SessionListItem";
 import { projectIdSchema } from "@/core/domain/project/types";
-import { formatDate, formatRelativeTime } from "@/lib/date";
-import { getSessionDisplayName } from "@/lib/sessionName";
+import { formatDate } from "@/lib/date";
 
 interface ProjectPageProps {
   params: Promise<{
@@ -73,32 +73,11 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               ) : (
                 <div className="grid gap-2 sm:gap-3">
                   {sessions.items.map((session) => (
-                    <Link
+                    <SessionListItem
                       key={session.id}
+                      session={session}
                       href={`/projects/${projectIdParam}/sessions/${session.id}`}
-                      className="group block p-4 sm:p-5 border rounded-lg hover:bg-accent/50 hover:border-accent transition-all"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0" />
-                          <div className="min-w-0">
-                            <h3 className="font-medium group-hover:text-primary transition-colors truncate">
-                              {getSessionDisplayName(session.name)}
-                            </h3>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm text-muted-foreground">
-                              <span>{formatDate(session.createdAt)}</span>
-                              <span className="hidden sm:inline">•</span>
-                              <span className="text-xs">
-                                Updated {formatRelativeTime(session.updatedAt)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <span className="text-muted-foreground group-hover:translate-x-1 transition-transform flex-shrink-0">
-                          →
-                        </span>
-                      </div>
-                    </Link>
+                    />
                   ))}
                 </div>
               )}
