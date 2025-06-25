@@ -27,7 +27,7 @@ export const sessionSchema = z.object({
 export type Session = z.infer<typeof sessionSchema>;
 
 export const createSessionParamsSchema = z.object({
-  id: sessionIdSchema.optional(),
+  id: sessionIdSchema,
   projectId: projectIdSchema.nullable().optional(),
   name: z.string().nullable().optional(),
   cwd: z.string(),

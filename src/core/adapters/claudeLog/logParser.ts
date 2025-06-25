@@ -18,12 +18,11 @@ export class ClaudeLogParser implements LogParser {
   ): Promise<Result<ParsedLogFile, LogParserError>> {
     try {
       const projectName = this.extractProjectName(filePath);
-      const sessionId = this.extractSessionId(filePath);
 
-      if (!projectName || !sessionId) {
+      if (!projectName) {
         return err({
           type: "PARSER_ERROR",
-          message: `Could not extract project name or session ID from: ${filePath}`,
+          message: `Could not extract project name from: ${filePath}`,
         });
       }
 
@@ -45,11 +44,34 @@ export class ClaudeLogParser implements LogParser {
         });
       }
 
+      // Extract sessionId from the first entry that has it
+      const entries = entriesResult.value;
+      if (entries.length === 0) {
+        return err({
+          type: "PARSER_ERROR",
+          message: `No log entries found in: ${filePath}`,
+        });
+      }
+
+      // Get sessionId from the first non-summary entry (since summary entries don't have sessionId)
+      const entryWithSessionId = entries.find(
+        (entry) => entry.type !== "summary" && "sessionId" in entry,
+      );
+
+      if (!entryWithSessionId || !("sessionId" in entryWithSessionId)) {
+        return err({
+          type: "PARSER_ERROR",
+          message: `Could not find session ID in log entries from: ${filePath}`,
+        });
+      }
+
+      const sessionId = entryWithSessionId.sessionId;
+
       return ok({
         filePath,
         projectName,
         sessionId,
-        entries: entriesResult.value,
+        entries,
       });
     } catch (error) {
       return err({
@@ -121,10 +143,9 @@ export class ClaudeLogParser implements LogParser {
     return null;
   }
 
-  extractSessionId(filePath: string): string | null {
-    const fileName = filePath.split("/").pop();
-    if (!fileName) return null;
-
-    return fileName.replace(".jsonl", "");
+  extractSessionId(_filePath: string): string | null {
+    // This method is deprecated - sessionId is now extracted from log entry content
+    // Keeping for interface compatibility
+    return null;
   }
 }

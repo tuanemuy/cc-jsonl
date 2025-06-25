@@ -20,16 +20,14 @@ export class DrizzlePgliteSessionRepository implements SessionRepository {
     params: CreateSessionParams,
   ): Promise<Result<Session, RepositoryError>> {
     try {
-      const values = params.id
-        ? params
-        : {
-            projectId: params.projectId || null,
-            name: params.name || null,
-            cwd: params.cwd,
-          };
       const result = await this.db
         .insert(sessions)
-        .values(values)
+        .values({
+          id: params.id,
+          projectId: params.projectId || null,
+          name: params.name || null,
+          cwd: params.cwd,
+        })
         .onConflictDoUpdate({
           target: sessions.id,
           set: {

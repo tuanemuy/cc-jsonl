@@ -18,9 +18,7 @@ export const projects = pgTable("projects", {
 });
 
 export const sessions = pgTable("sessions", {
-  id: uuid("id")
-    .primaryKey()
-    .$defaultFn(() => uuidv7()),
+  id: uuid("id").primaryKey(),
   projectId: uuid("project_id").references(() => projects.id, {
     onDelete: "cascade",
   }),

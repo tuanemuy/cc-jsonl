@@ -18,9 +18,7 @@ export const projects = sqliteTable("projects", {
 });
 
 export const sessions = sqliteTable("sessions", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => uuidv7()),
+  id: text("id").primaryKey(),
   projectId: text("project_id").references(() => projects.id, {
     onDelete: "cascade",
   }),
