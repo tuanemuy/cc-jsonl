@@ -74,6 +74,7 @@ export class AnthropicClaudeService implements ClaudeService {
         pathToClaudeCodeExecutable?: string;
         resume?: string;
         cwd?: string;
+        allowedTools?: string[];
       } = {
         pathToClaudeCodeExecutable: this.pathToClaudeCodeExecutable,
       };
@@ -86,6 +87,11 @@ export class AnthropicClaudeService implements ClaudeService {
       // Add working directory if provided
       if (input.cwd) {
         options.cwd = input.cwd;
+      }
+
+      // Add allowed tools if provided
+      if (input.allowedTools) {
+        options.allowedTools = input.allowedTools;
       }
 
       const messages: SDKMessage[] = [];
@@ -128,6 +134,7 @@ export class AnthropicClaudeService implements ClaudeService {
         pathToClaudeCodeExecutable?: string;
         resume?: string;
         cwd?: string;
+        allowedTools?: string[];
       } = {
         pathToClaudeCodeExecutable: this.pathToClaudeCodeExecutable,
       };
@@ -140,6 +147,11 @@ export class AnthropicClaudeService implements ClaudeService {
       // Add working directory if provided
       if (input.cwd) {
         options.cwd = input.cwd;
+      }
+
+      // Add allowed tools if provided
+      if (input.allowedTools) {
+        options.allowedTools = input.allowedTools;
       }
 
       const messages: SDKMessage[] = [];
@@ -204,8 +216,31 @@ export class AnthropicClaudeService implements ClaudeService {
             }
           }
         } else if (message.type === "user" && message.message) {
-          // Stream user messages as complete messages
-          onChunk(`${JSON.stringify(message.message)}\n`);
+          // Process user message content blocks individually
+          if (
+            message.message.content &&
+            Array.isArray(message.message.content)
+          ) {
+            for (const contentBlock of message.message.content) {
+              if (contentBlock.type === "text") {
+                // Send text content
+                onChunk(
+                  `${JSON.stringify({ type: "text", text: contentBlock.text })}\n`,
+                );
+              } else if (contentBlock.type === "tool_result") {
+                // Send tool_result as-is
+                onChunk(`${JSON.stringify(contentBlock)}\n`);
+              } else {
+                // Send other content types as-is
+                onChunk(`${JSON.stringify(contentBlock)}\n`);
+              }
+            }
+          } else if (typeof message.message.content === "string") {
+            // Handle string content
+            onChunk(
+              `${JSON.stringify({ type: "text", text: message.message.content })}\n`,
+            );
+          }
         } else if (message.type === "system" && message.subtype === "init") {
           // Stream system initialization message as NDJSON
           onChunk(`${JSON.stringify(message)}\n`);

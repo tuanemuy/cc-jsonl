@@ -8,9 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { detectPermissionError } from "@/core/application/authorization/detectPermissionError";
+import { formatAllowedTool } from "@/core/application/authorization/formatAllowedTool";
+import type { PermissionRequest } from "@/core/domain/authorization/types";
 import type { Message } from "@/core/domain/message/types";
 import { formatTime } from "@/lib/date";
 import { MessageContent } from "./MessageContent";
+import { PermissionDialog } from "./PermissionDialog";
 
 interface ChatInterfaceProps {
   sessionId?: string;
@@ -47,6 +51,19 @@ export function ChatInterface({
   const [input, setInput] = useState("");
   const [currentCwd, setCurrentCwd] = useState(cwd || "");
   const [isLoading, setIsLoading] = useState(false);
+  const [permissionRequest, setPermissionRequest] =
+    useState<PermissionRequest | null>(null);
+  const [showPermissionDialog, setShowPermissionDialog] = useState(false);
+  const pendingToolUsesRef = useRef<
+    Map<
+      string,
+      {
+        id: string;
+        name: string;
+        input: Record<string, unknown>;
+      }
+    >
+  >(new Map());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const getMessageIcon = (
@@ -118,30 +135,28 @@ export function ChatInterface({
     }
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
-
+  const sendMessage = async (message: string, allowedTools?: string[]) => {
     const userMessage: ChatMessage = {
       id: `temp-${Date.now()}`,
       role: "user",
-      content: input,
+      content: message,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInput("");
     setIsLoading(true);
 
     try {
-      // Create a URL with query parameters for GET request
       const url = new URL("/api/messages/stream", window.location.origin);
-      url.searchParams.set("message", input);
+      url.searchParams.set("message", message);
       if (currentSessionId) {
         url.searchParams.set("sessionId", currentSessionId);
       }
       if (currentCwd) {
         url.searchParams.set("cwd", currentCwd);
+      }
+      if (allowedTools) {
+        url.searchParams.set("allowedTools", JSON.stringify(allowedTools));
       }
 
       const eventSource = new EventSource(url.toString());
@@ -151,7 +166,6 @@ export function ChatInterface({
           const data = JSON.parse(event.data);
 
           if (data.type === "chunk") {
-            // Parse NDJSON content
             const lines = data.content
               .split("\n")
               .filter((line: string) => line.trim());
@@ -161,12 +175,9 @@ export function ChatInterface({
                 const jsonData = JSON.parse(line);
 
                 setMessages((prev) => {
-                  // Handle Claude Code SDK message types
                   let newMessage: ChatMessage;
 
-                  // Check if this is a complete message with role and content
                   if (jsonData.role && jsonData.content) {
-                    // This is a complete message (user or assistant)
                     newMessage = {
                       id: `msg-${Date.now()}-${Math.random()}`,
                       role: jsonData.role,
@@ -195,6 +206,8 @@ export function ChatInterface({
                       isStreaming: false,
                     };
                   } else if (jsonData.type === "tool_use") {
+                    pendingToolUsesRef.current.set(jsonData.id, jsonData);
+
                     newMessage = {
                       id: `tool-${Date.now()}-${jsonData.id || Math.random()}`,
                       role: "assistant",
@@ -206,14 +219,31 @@ export function ChatInterface({
                   } else if (jsonData.type === "tool_result") {
                     newMessage = {
                       id: `tool_result-${Date.now()}-${jsonData.tool_use_id || Math.random()}`,
-                      role: "assistant",
+                      role: "tool",
                       content: JSON.stringify([jsonData]),
                       timestamp: new Date(),
+                      messageType: "tool_use",
                       isStreaming: false,
                     };
+
+                    const pendingToolUse = pendingToolUsesRef.current.get(
+                      jsonData.tool_use_id,
+                    );
+                    if (pendingToolUse) {
+                      const permissionResult = detectPermissionError(
+                        jsonData,
+                        pendingToolUse,
+                      );
+                      if (permissionResult.isOk() && permissionResult.value) {
+                        setPermissionRequest(permissionResult.value);
+                        setShowPermissionDialog(true);
+                        eventSource.close();
+                        setIsLoading(false);
+                        return prev;
+                      }
+                      pendingToolUsesRef.current.delete(jsonData.tool_use_id);
+                    }
                   } else {
-                    // Ignore result, system and other unknown types
-                    // Result messages contain the final complete response but we already have the streamed parts
                     return prev;
                   }
 
@@ -224,15 +254,11 @@ export function ChatInterface({
               }
             }
           } else if (data.type === "complete") {
-            // Close the EventSource
             eventSource.close();
             setIsLoading(false);
 
-            // If this was a new session, update the sessionId state
-            // but don't redirect to keep the user on the current page
             if (!currentSessionId && data.sessionId) {
               setCurrentSessionId(data.sessionId);
-              // Update the URL to include the new session ID without navigation
               window.history.replaceState(
                 null,
                 "",
@@ -240,7 +266,6 @@ export function ChatInterface({
               );
             }
           } else if (data.type === "error") {
-            // Create error message
             const errorMessage: ChatMessage = {
               id: `error-${Date.now()}`,
               role: "assistant",
@@ -277,6 +302,68 @@ export function ChatInterface({
       setMessages((prev) => [...prev, errorMessage]);
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    const message = input;
+    setInput("");
+    await sendMessage(message);
+  };
+
+  const handlePermissionAllow = async () => {
+    if (!permissionRequest) return;
+
+    // Remove the tool use from pending map
+    pendingToolUsesRef.current.delete(permissionRequest.originalToolUse.id);
+
+    try {
+      const allowedToolResult = formatAllowedTool(permissionRequest);
+      if (allowedToolResult.isErr()) {
+        console.error(
+          "Failed to format allowed tool:",
+          allowedToolResult.error,
+        );
+        return;
+      }
+
+      const allowedTool = allowedToolResult.value;
+
+      setShowPermissionDialog(false);
+      setPermissionRequest(null);
+
+      await sendMessage("continue", [allowedTool]);
+    } catch (error) {
+      console.error("Failed to handle permission allow:", error);
+      setIsLoading(false);
+    }
+  };
+
+  const handlePermissionDeny = () => {
+    // Remove the specific tool use from pending map
+    if (permissionRequest) {
+      pendingToolUsesRef.current.delete(permissionRequest.originalToolUse.id);
+    }
+
+    setShowPermissionDialog(false);
+    setPermissionRequest(null);
+
+    // Add a message indicating permission was denied
+    const denyMessage: ChatMessage = {
+      id: `deny-${Date.now()}`,
+      role: "assistant",
+      content: JSON.stringify([
+        {
+          type: "text",
+          text: "Permission denied. Tool execution was blocked.",
+        },
+      ]),
+      timestamp: new Date(),
+      isStreaming: false,
+    };
+    setMessages((prev) => [...prev, denyMessage]);
   };
 
   return (
@@ -406,6 +493,15 @@ export function ChatInterface({
           </div>
         </form>
       </div>
+
+      {/* Permission Dialog */}
+      <PermissionDialog
+        open={showPermissionDialog}
+        onOpenChange={setShowPermissionDialog}
+        request={permissionRequest}
+        onAllow={handlePermissionAllow}
+        onDeny={handlePermissionDeny}
+      />
     </div>
   );
 }
