@@ -135,30 +135,28 @@ export function ChatInterface({
     }
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
-
+  const sendMessage = async (message: string, allowedTools?: string[]) => {
     const userMessage: ChatMessage = {
       id: `temp-${Date.now()}`,
       role: "user",
-      content: input,
+      content: message,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInput("");
     setIsLoading(true);
 
     try {
-      // Create a URL with query parameters for GET request
       const url = new URL("/api/messages/stream", window.location.origin);
-      url.searchParams.set("message", input);
+      url.searchParams.set("message", message);
       if (currentSessionId) {
         url.searchParams.set("sessionId", currentSessionId);
       }
       if (currentCwd) {
         url.searchParams.set("cwd", currentCwd);
+      }
+      if (allowedTools) {
+        url.searchParams.set("allowedTools", JSON.stringify(allowedTools));
       }
 
       const eventSource = new EventSource(url.toString());
@@ -168,7 +166,6 @@ export function ChatInterface({
           const data = JSON.parse(event.data);
 
           if (data.type === "chunk") {
-            // Parse NDJSON content
             const lines = data.content
               .split("\n")
               .filter((line: string) => line.trim());
@@ -178,12 +175,9 @@ export function ChatInterface({
                 const jsonData = JSON.parse(line);
 
                 setMessages((prev) => {
-                  // Handle Claude Code SDK message types
                   let newMessage: ChatMessage;
 
-                  // Check if this is a complete message with role and content
                   if (jsonData.role && jsonData.content) {
-                    // This is a complete message (user or assistant)
                     newMessage = {
                       id: `msg-${Date.now()}-${Math.random()}`,
                       role: jsonData.role,
@@ -212,7 +206,6 @@ export function ChatInterface({
                       isStreaming: false,
                     };
                   } else if (jsonData.type === "tool_use") {
-                    // Store the tool use for permission checking
                     pendingToolUsesRef.current.set(jsonData.id, jsonData);
 
                     newMessage = {
@@ -233,7 +226,6 @@ export function ChatInterface({
                       isStreaming: false,
                     };
 
-                    // Check for permission errors
                     const pendingToolUse = pendingToolUsesRef.current.get(
                       jsonData.tool_use_id,
                     );
@@ -249,12 +241,9 @@ export function ChatInterface({
                         setIsLoading(false);
                         return prev;
                       }
-                      // Only remove processed tool use if no permission error
                       pendingToolUsesRef.current.delete(jsonData.tool_use_id);
                     }
                   } else {
-                    // Ignore result, system and other unknown types
-                    // Result messages contain the final complete response but we already have the streamed parts
                     return prev;
                   }
 
@@ -265,15 +254,11 @@ export function ChatInterface({
               }
             }
           } else if (data.type === "complete") {
-            // Close the EventSource
             eventSource.close();
             setIsLoading(false);
 
-            // If this was a new session, update the sessionId state
-            // but don't redirect to keep the user on the current page
             if (!currentSessionId && data.sessionId) {
               setCurrentSessionId(data.sessionId);
-              // Update the URL to include the new session ID without navigation
               window.history.replaceState(
                 null,
                 "",
@@ -281,7 +266,6 @@ export function ChatInterface({
               );
             }
           } else if (data.type === "error") {
-            // Create error message
             const errorMessage: ChatMessage = {
               id: `error-${Date.now()}`,
               role: "assistant",
@@ -320,6 +304,15 @@ export function ChatInterface({
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    const message = input;
+    setInput("");
+    await sendMessage(message);
+  };
+
   const handlePermissionAllow = async () => {
     if (!permissionRequest) return;
 
@@ -338,154 +331,10 @@ export function ChatInterface({
 
       const allowedTool = allowedToolResult.value;
 
-      // Send continue message with allowedTools as URL parameter
-      const continueMessage: ChatMessage = {
-        id: `continue-${Date.now()}`,
-        role: "user",
-        content: "continue",
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, continueMessage]);
       setShowPermissionDialog(false);
       setPermissionRequest(null);
-      setIsLoading(true);
 
-      // Create URL for continue request with allowedTools parameter
-      const url = new URL("/api/messages/stream", window.location.origin);
-      url.searchParams.set("message", "continue");
-      url.searchParams.set("allowedTools", JSON.stringify([allowedTool]));
-      if (currentSessionId) {
-        url.searchParams.set("sessionId", currentSessionId);
-      }
-      if (currentCwd) {
-        url.searchParams.set("cwd", currentCwd);
-      }
-
-      const eventSource = new EventSource(url.toString());
-
-      eventSource.onmessage = (event) => {
-        // Reuse the same message handling logic
-        try {
-          const data = JSON.parse(event.data);
-
-          if (data.type === "chunk") {
-            // Handle chunk data the same way as in handleSubmit
-            const lines = data.content
-              .split("\n")
-              .filter((line: string) => line.trim());
-
-            for (const line of lines) {
-              try {
-                const jsonData = JSON.parse(line);
-                setMessages((prev) => {
-                  let newMessage: ChatMessage;
-
-                  if (jsonData.role && jsonData.content) {
-                    newMessage = {
-                      id: `msg-${Date.now()}-${Math.random()}`,
-                      role: jsonData.role,
-                      content: JSON.stringify(jsonData.content),
-                      timestamp: new Date(),
-                      isStreaming: false,
-                    };
-                  } else if (jsonData.type === "text") {
-                    newMessage = {
-                      id: `text-${Date.now()}-${Math.random()}`,
-                      role: "assistant",
-                      content: JSON.stringify([
-                        { type: "text", text: jsonData.text },
-                      ]),
-                      timestamp: new Date(),
-                      isStreaming: false,
-                    };
-                  } else if (jsonData.type === "thinking") {
-                    newMessage = {
-                      id: `thinking-${Date.now()}-${Math.random()}`,
-                      role: "assistant",
-                      content: JSON.stringify([
-                        { type: "thinking", content: jsonData.content },
-                      ]),
-                      timestamp: new Date(),
-                      isStreaming: false,
-                    };
-                  } else if (jsonData.type === "tool_use") {
-                    // Store the tool use for permission checking
-                    pendingToolUsesRef.current.set(jsonData.id, jsonData);
-
-                    newMessage = {
-                      id: `tool-${Date.now()}-${jsonData.id || Math.random()}`,
-                      role: "assistant",
-                      content: JSON.stringify([jsonData]),
-                      timestamp: new Date(),
-                      messageType: "tool_use",
-                      isStreaming: false,
-                    };
-                  } else if (jsonData.type === "tool_result") {
-                    newMessage = {
-                      id: `tool_result-${Date.now()}-${jsonData.tool_use_id || Math.random()}`,
-                      role: "tool",
-                      content: JSON.stringify([jsonData]),
-                      timestamp: new Date(),
-                      messageType: "tool_use",
-                      isStreaming: false,
-                    };
-
-                    // Check for permission errors in continue flow
-                    const pendingToolUse = pendingToolUsesRef.current.get(
-                      jsonData.tool_use_id,
-                    );
-                    if (pendingToolUse) {
-                      const permissionResult = detectPermissionError(
-                        jsonData,
-                        pendingToolUse,
-                      );
-                      if (permissionResult.isOk() && permissionResult.value) {
-                        setPermissionRequest(permissionResult.value);
-                        setShowPermissionDialog(true);
-                        eventSource.close();
-                        setIsLoading(false);
-                        return prev;
-                      }
-                      // Only remove processed tool use if no permission error
-                      pendingToolUsesRef.current.delete(jsonData.tool_use_id);
-                    }
-                  } else {
-                    return prev;
-                  }
-
-                  return [...prev, newMessage];
-                });
-              } catch (e) {
-                console.error("Failed to parse NDJSON line:", e);
-              }
-            }
-          } else if (data.type === "complete") {
-            eventSource.close();
-            setIsLoading(false);
-          } else if (data.type === "error") {
-            const errorMessage: ChatMessage = {
-              id: `error-${Date.now()}`,
-              role: "assistant",
-              content: JSON.stringify([
-                { type: "text", text: `Error: ${data.error}` },
-              ]),
-              timestamp: new Date(),
-              isStreaming: false,
-            };
-            setMessages((prev) => [...prev, errorMessage]);
-            eventSource.close();
-            setIsLoading(false);
-          }
-        } catch (e) {
-          console.error("Failed to parse SSE data:", e);
-        }
-      };
-
-      eventSource.onerror = () => {
-        eventSource.close();
-        setIsLoading(false);
-      };
+      await sendMessage("continue", [allowedTool]);
     } catch (error) {
       console.error("Failed to handle permission allow:", error);
       setIsLoading(false);
