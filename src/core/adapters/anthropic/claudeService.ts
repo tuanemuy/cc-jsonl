@@ -2,8 +2,7 @@ import { query, type SDKMessage } from "@anthropic-ai/claude-code";
 import { err, ok, type Result } from "neverthrow";
 import type { ClaudeService } from "@/core/domain/claude/ports/claudeService";
 import type {
-  ClaudeMessage,
-  ClaudeResponse,
+  ClaudeQueryResult,
   SendMessageInput,
 } from "@/core/domain/claude/types";
 import { ClaudeError } from "@/lib/error";
@@ -11,19 +10,13 @@ import { ClaudeError } from "@/lib/error";
 export class AnthropicClaudeService implements ClaudeService {
   constructor(private readonly pathToClaudeCodeExecutable?: string) {}
 
-  private buildClaudeResponse(allMessages: SDKMessage[]): ClaudeResponse {
+  private buildQueryResult(allMessages: SDKMessage[]): ClaudeQueryResult {
     // Find the last assistant message
     const assistantMessages = allMessages.filter(
       (msg) => msg.type === "assistant",
     );
     const lastAssistantMessage =
       assistantMessages[assistantMessages.length - 1];
-
-    if (!lastAssistantMessage) {
-      throw new Error("No assistant message found in response");
-    }
-
-    const assistantMessage = lastAssistantMessage.message;
 
     // Get usage information from result messages
     const resultMessage = allMessages.find((msg) => msg.type === "result") as
@@ -45,31 +38,16 @@ export class AnthropicClaudeService implements ClaudeService {
     };
 
     return {
-      id: assistantMessage.id,
-      content: assistantMessage.content || [],
-      role: assistantMessage.role,
-      model: assistantMessage.model,
-      stop_reason: assistantMessage.stop_reason,
-      stop_sequence: assistantMessage.stop_sequence,
-      usage: {
-        input_tokens: usage.input_tokens,
-        output_tokens: usage.output_tokens,
-        cache_creation_input_tokens: usage.cache_creation_input_tokens,
-        cache_read_input_tokens: usage.cache_read_input_tokens,
-      },
+      messages: allMessages,
+      lastAssistantMessage: lastAssistantMessage?.message,
+      usage,
     };
   }
 
   async sendMessage(
     input: SendMessageInput,
-    inputMessages: ClaudeMessage[],
-  ): Promise<Result<ClaudeResponse, ClaudeError>> {
+  ): Promise<Result<ClaudeQueryResult, ClaudeError>> {
     try {
-      const allMessages = [
-        ...inputMessages,
-        { role: "user" as const, content: input.message },
-      ];
-
       const options: {
         pathToClaudeCodeExecutable?: string;
         resume?: string;
@@ -95,12 +73,9 @@ export class AnthropicClaudeService implements ClaudeService {
       }
 
       const messages: SDKMessage[] = [];
-      const prompt = allMessages
-        .map((msg) => `${msg.role}: ${msg.content}`)
-        .join("\n");
 
       for await (const message of query({
-        prompt,
+        prompt: input.message,
         options,
       })) {
         messages.push(message);
@@ -110,9 +85,9 @@ export class AnthropicClaudeService implements ClaudeService {
         throw new Error("No response received");
       }
 
-      const claudeResponse: ClaudeResponse = this.buildClaudeResponse(messages);
+      const queryResult: ClaudeQueryResult = this.buildQueryResult(messages);
 
-      return ok(claudeResponse);
+      return ok(queryResult);
     } catch (error) {
       return err(new ClaudeError("Failed to send message to Claude", error));
     }
@@ -120,15 +95,9 @@ export class AnthropicClaudeService implements ClaudeService {
 
   async sendMessageStream(
     input: SendMessageInput,
-    inputMessages: ClaudeMessage[],
     onChunk: (chunk: string) => void,
-  ): Promise<Result<ClaudeResponse, ClaudeError>> {
+  ): Promise<Result<ClaudeQueryResult, ClaudeError>> {
     try {
-      const allMessages = [
-        ...inputMessages,
-        { role: "user" as const, content: input.message },
-      ];
-
       // Build options for Claude Code SDK
       const options: {
         pathToClaudeCodeExecutable?: string;
@@ -155,16 +124,13 @@ export class AnthropicClaudeService implements ClaudeService {
       }
 
       const messages: SDKMessage[] = [];
-      const prompt = allMessages
-        .map((msg) => `${msg.role}: ${msg.content}`)
-        .join("\n");
 
       // Track accumulated content for proper incremental streaming
       const contentTrackers = new Map<string, string>(); // Track by content block type/id
       const processedBlocks = new Set<string>(); // Track which blocks we've already sent
 
       for await (const message of query({
-        prompt,
+        prompt: input.message,
         options,
       })) {
         messages.push(message);
@@ -254,9 +220,9 @@ export class AnthropicClaudeService implements ClaudeService {
         throw new Error("No response received from Claude Code SDK");
       }
 
-      const claudeResponse: ClaudeResponse = this.buildClaudeResponse(messages);
+      const queryResult: ClaudeQueryResult = this.buildQueryResult(messages);
 
-      return ok(claudeResponse);
+      return ok(queryResult);
     } catch (error) {
       return err(
         new ClaudeError("Failed to stream message from Claude", error),

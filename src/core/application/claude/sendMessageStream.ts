@@ -1,8 +1,11 @@
 import { err, ok, type Result } from "neverthrow";
 import { z } from "zod/v4";
-import type { ClaudeResponse } from "@/core/domain/claude/types";
+import type { ClaudeQueryResult } from "@/core/domain/claude/types";
 import type { Session } from "@/core/domain/session/types";
-import { sessionIdSchema } from "@/core/domain/session/types";
+import {
+  generateSessionId,
+  sessionIdSchema,
+} from "@/core/domain/session/types";
 import { ApplicationError } from "@/lib/error";
 import { validate } from "@/lib/validation";
 import type { Context } from "../context";
@@ -37,7 +40,10 @@ export async function sendMessageStream(
   input: SendMessageStreamInput,
   onChunk: (chunk: string) => void,
 ): Promise<
-  Result<{ session: Session; claudeResponse: ClaudeResponse }, ApplicationError>
+  Result<
+    { session: Session; claudeResult: ClaudeQueryResult },
+    ApplicationError
+  >
 > {
   console.log("[sendMessageStream] Starting streaming message processing", {
     sessionId: input.sessionId,
@@ -60,18 +66,21 @@ export async function sendMessageStream(
   try {
     let session: Session | null = null;
     let isNewSession = false;
+    let sessionId: string;
 
     if (params.sessionId) {
       // Existing session: fetch from database
-      const sessionId = sessionIdSchema.parse(params.sessionId);
-      const sessionResult = await context.sessionRepository.findById(sessionId);
+      const parsedSessionId = sessionIdSchema.parse(params.sessionId);
+      sessionId = parsedSessionId;
+      const sessionResult =
+        await context.sessionRepository.findById(parsedSessionId);
       if (sessionResult.isErr()) {
         const error = new ApplicationError(
           "Failed to get session",
           sessionResult.error,
         );
         console.error("[sendMessageStream] Session retrieval failed", {
-          sessionId,
+          sessionId: parsedSessionId,
           error: error.message,
           cause: error.cause,
         });
@@ -80,27 +89,26 @@ export async function sendMessageStream(
       if (!sessionResult.value) {
         const error = new ApplicationError("Session not found");
         console.error("[sendMessageStream] Session not found", {
-          sessionId,
+          sessionId: parsedSessionId,
           error: error.message,
         });
         return err(error);
       }
       session = sessionResult.value;
     } else {
-      // New session: don't save to DB yet, just prepare session object
+      // New session: generate session ID and prepare to create in DB after Claude call
       isNewSession = true;
-      // We'll create the session object after getting the session ID from Claude response
+      sessionId = generateSessionId();
     }
 
     // Send to Claude with streaming
     const claudeResult = await context.claudeService.sendMessageStream(
       {
         message: params.message,
-        sessionId: params.sessionId, // undefined for new sessions
+        sessionId: isNewSession ? undefined : sessionId, // Use our generated session ID for new sessions, existing for resume
         cwd: params.cwd || (session ? session.cwd : undefined),
         allowedTools: params.allowedTools,
       },
-      [], // No previous messages needed as per requirements
       onChunk,
     );
     if (claudeResult.isErr()) {
@@ -109,18 +117,17 @@ export async function sendMessageStream(
         claudeResult.error,
       );
       console.error("[sendMessageStream] Claude API streaming call failed", {
-        sessionId: params.sessionId || "new",
+        sessionId: sessionId,
         error: error.message,
         cause: error.cause,
       });
       return err(error);
     }
 
-    const claudeResponse = claudeResult.value;
+    const queryResult = claudeResult.value;
 
     if (isNewSession) {
-      // Extract session ID from Claude response and create session in DB
-      const sessionId = sessionIdSchema.parse(claudeResponse.id); // Parse as branded type
+      // Create session in database with our generated session ID
 
       // Get default project for new sessions
       const projectsResult = await context.projectRepository.list({
@@ -138,7 +145,7 @@ export async function sendMessageStream(
         return err(error);
       }
 
-      // Create session in database with Claude's session ID
+      // Create session in database with our generated session ID
       if (!params.cwd) {
         const error = new ApplicationError(
           "cwd is required when creating a new session",
@@ -149,8 +156,9 @@ export async function sendMessageStream(
         return err(error);
       }
 
+      const parsedSessionId = sessionIdSchema.parse(sessionId);
       const createSessionResult = await context.sessionRepository.upsert({
-        id: sessionId,
+        id: parsedSessionId,
         projectId: projectsResult.value.items[0].id,
         name: null,
         cwd: params.cwd,
@@ -175,7 +183,7 @@ export async function sendMessageStream(
 
     return ok({
       session,
-      claudeResponse,
+      claudeResult: queryResult,
     });
   } catch (error) {
     const appError = new ApplicationError(

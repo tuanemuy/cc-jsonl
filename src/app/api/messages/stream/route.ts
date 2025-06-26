@@ -70,17 +70,18 @@ export async function GET(request: NextRequest) {
             })}\n\n`;
             controller.enqueue(encoder.encode(errorData));
           } else {
-            const { session, claudeResponse } = result.value;
+            const { session, claudeResult } = result.value;
             const completeData = `data: ${JSON.stringify({
               type: "complete",
               sessionId: session.id,
               projectId: session.projectId,
-              content: claudeResponse.content,
+              content: claudeResult.lastAssistantMessage?.content || [],
               metadata: {
-                id: claudeResponse.id,
-                model: claudeResponse.model,
-                stop_reason: claudeResponse.stop_reason,
-                usage: claudeResponse.usage,
+                id: claudeResult.lastAssistantMessage?.id || "",
+                model: claudeResult.lastAssistantMessage?.model || "",
+                stop_reason:
+                  claudeResult.lastAssistantMessage?.stop_reason || null,
+                usage: claudeResult.usage,
               },
             })}\n\n`;
             controller.enqueue(encoder.encode(completeData));

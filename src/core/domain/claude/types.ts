@@ -1,3 +1,4 @@
+import type { SDKMessage } from "@anthropic-ai/claude-code";
 import { z } from "zod/v4";
 
 export const sendMessageInputSchema = z.object({
@@ -8,13 +9,31 @@ export const sendMessageInputSchema = z.object({
 });
 export type SendMessageInput = z.infer<typeof sendMessageInputSchema>;
 
+// Use SDK types directly instead of custom types
+export type ClaudeSDKMessage = SDKMessage;
+
+// Result type that contains all SDK messages
+export const claudeQueryResultSchema = z.object({
+  messages: z.array(z.any()), // SDKMessage array
+  lastAssistantMessage: z.any().optional(), // Optional assistant message
+  usage: z
+    .object({
+      input_tokens: z.number(),
+      output_tokens: z.number(),
+      cache_creation_input_tokens: z.number().optional(),
+      cache_read_input_tokens: z.number().optional(),
+    })
+    .optional(),
+});
+export type ClaudeQueryResult = z.infer<typeof claudeQueryResultSchema>;
+
+// Legacy types - deprecated, use SDK types instead
 export const claudeMessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
   content: z.string(),
 });
 export type ClaudeMessage = z.infer<typeof claudeMessageSchema>;
 
-// Content block schemas based on Anthropic SDK
 export const textBlockSchema = z.object({
   type: z.literal("text"),
   text: z.string(),
@@ -36,7 +55,6 @@ export const contentBlockSchema = z.union([
   textBlockSchema,
   toolUseBlockSchema,
   thinkingBlockSchema,
-  // Allow other content types as well
   z
     .object({
       type: z.string(),
@@ -64,7 +82,6 @@ export const claudeResponseSchema = z.object({
 });
 export type ClaudeResponse = z.infer<typeof claudeResponseSchema>;
 
-// Helper type definitions
 export type TextBlock = z.infer<typeof textBlockSchema>;
 export type ToolUseBlock = z.infer<typeof toolUseBlockSchema>;
 export type ThinkingBlock = z.infer<typeof thinkingBlockSchema>;

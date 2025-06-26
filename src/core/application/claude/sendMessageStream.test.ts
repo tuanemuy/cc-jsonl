@@ -55,8 +55,8 @@ describe("sendMessageStream", () => {
       if (result.isOk()) {
         expect(result.value.session).toBeDefined();
         expect(result.value.session.projectId).toBe(project.id);
-        expect(result.value.claudeResponse).toBeDefined();
-        expect(result.value.claudeResponse.content).toBeDefined();
+        expect(result.value.claudeResult).toBeDefined();
+        expect(result.value.claudeResult.lastAssistantMessage).toBeDefined();
 
         // Check that onChunk was called with streaming data
         expect(onChunkSpy).toHaveBeenCalled();
@@ -101,7 +101,7 @@ describe("sendMessageStream", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         expect(result.value.session.id).toBe("session-123");
-        expect(result.value.claudeResponse).toBeDefined();
+        expect(result.value.claudeResult).toBeDefined();
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -126,13 +126,14 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        // Mock streams "You said: Multi word message" as separate chunks
+        // Mock streams "You said: Multi word message" as separate chunks in NDJSON format
         const chunks = onChunkSpy.mock.calls.map((call) => call[0]);
-        expect(chunks.some((chunk) => chunk.includes("You"))).toBe(true);
-        expect(chunks.some((chunk) => chunk.includes("said:"))).toBe(true);
-        expect(chunks.some((chunk) => chunk.includes("Multi"))).toBe(true);
-        expect(chunks.some((chunk) => chunk.includes("word"))).toBe(true);
-        expect(chunks.some((chunk) => chunk.includes("message"))).toBe(true);
+        const joinedChunks = chunks.join("");
+        expect(joinedChunks.includes("You")).toBe(true);
+        expect(joinedChunks.includes("said:")).toBe(true);
+        expect(joinedChunks.includes("Multi")).toBe(true);
+        expect(joinedChunks.includes("word")).toBe(true);
+        expect(joinedChunks.includes("message")).toBe(true);
       }
     });
 
@@ -225,8 +226,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.claudeResponse).toBeDefined();
-        expect(result.value.claudeResponse.content).toBeDefined();
+        expect(result.value.claudeResult).toBeDefined();
+        expect(result.value.claudeResult.lastAssistantMessage).toBeDefined();
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -257,8 +258,19 @@ describe("sendMessageStream", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         expect(chunks.length).toBeGreaterThan(0);
-        const fullStreamedText = chunks.join("");
-        expect(fullStreamedText.trim()).toBe("You said: Test streaming");
+        // Parse NDJSON chunks and extract text content
+        const textChunks = chunks
+          .map((chunk) => {
+            try {
+              const parsed = JSON.parse(chunk);
+              return parsed.type === "text" ? parsed.text : "";
+            } catch {
+              return "";
+            }
+          })
+          .filter((text) => text.length > 0);
+        const combinedText = textChunks.join("").trim();
+        expect(combinedText).toBe("You said: Test streaming");
       }
     });
   });
@@ -411,8 +423,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.claudeResponse).toBeDefined();
-        expect(result.value.claudeResponse.content).toBeDefined();
+        expect(result.value.claudeResult).toBeDefined();
+        expect(result.value.claudeResult.lastAssistantMessage).toBeDefined();
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -438,8 +450,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.claudeResponse).toBeDefined();
-        expect(result.value.claudeResponse.content).toBeDefined();
+        expect(result.value.claudeResult).toBeDefined();
+        expect(result.value.claudeResult.lastAssistantMessage).toBeDefined();
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -465,7 +477,7 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.claudeResponse).toBeDefined();
+        expect(result.value.claudeResult).toBeDefined();
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -491,8 +503,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.claudeResponse).toBeDefined();
-        expect(result.value.claudeResponse.content).toBeDefined();
+        expect(result.value.claudeResult).toBeDefined();
+        expect(result.value.claudeResult.lastAssistantMessage).toBeDefined();
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -519,8 +531,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.claudeResponse).toBeDefined();
-        expect(result.value.claudeResponse.content).toBeDefined();
+        expect(result.value.claudeResult).toBeDefined();
+        expect(result.value.claudeResult.lastAssistantMessage).toBeDefined();
       }
     });
 
@@ -545,8 +557,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.claudeResponse).toBeDefined();
-        expect(result.value.claudeResponse.content).toBeDefined();
+        expect(result.value.claudeResult).toBeDefined();
+        expect(result.value.claudeResult.lastAssistantMessage).toBeDefined();
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });

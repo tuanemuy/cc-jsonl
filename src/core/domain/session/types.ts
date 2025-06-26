@@ -1,3 +1,4 @@
+import { v7 as uuidv7 } from "uuid";
 import { z } from "zod/v4";
 import { paginationSchema } from "@/lib/pagination";
 import { type ProjectId, projectIdSchema } from "../project/types";
@@ -46,4 +47,8 @@ export type ListSessionQuery = z.infer<typeof listSessionQuerySchema>;
 
 export function getSessionDisplayName(name: string | null): string {
   return name || "Untitled Session";
+}
+
+export function generateSessionId(): SessionId {
+  return sessionIdSchema.parse(uuidv7());
 }
