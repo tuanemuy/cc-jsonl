@@ -8,7 +8,9 @@ import { DrizzleSqliteProjectRepository } from "@/core/adapters/drizzleSqlite/pr
 import { DrizzleSqliteSessionRepository } from "@/core/adapters/drizzleSqlite/sessionRepository";
 import { MockClaudeService } from "@/core/adapters/mock/claudeService";
 import { NodeFsFileReader } from "@/core/adapters/nodeFs/fileReader";
+import { NodeFsFileSystemManager } from "@/core/adapters/nodeFs/fileSystemManager";
 import type { Context } from "@/core/application/context";
+import type { FileSystemManager } from "@/core/domain/watcher/ports/fileSystemManager";
 import type { FileWatcher } from "@/core/domain/watcher/ports/fileWatcher";
 import type { LogParser } from "@/core/domain/watcher/ports/logParser";
 
@@ -24,6 +26,7 @@ export type WatcherEnv = z.infer<typeof watcherEnvSchema>;
 
 export type WatcherContext = Context & {
   fileWatcher: FileWatcher;
+  fileSystemManager: FileSystemManager;
   logParser: LogParser;
 };
 
@@ -43,6 +46,7 @@ export function getWatcherContext(): {
   const fileReader = new NodeFsFileReader();
   const logParser = new ClaudeLogParser(fileReader);
   const fileWatcher = new ChokidarFileWatcher();
+  const fileSystemManager = new NodeFsFileSystemManager();
 
   const context: WatcherContext = {
     projectRepository: new DrizzleSqliteProjectRepository(db),
@@ -51,6 +55,7 @@ export function getWatcherContext(): {
     claudeService: new MockClaudeService(),
     logFileTrackingRepository: new DrizzleSqliteLogFileTrackingRepository(db),
     fileWatcher,
+    fileSystemManager,
     logParser,
   };
 

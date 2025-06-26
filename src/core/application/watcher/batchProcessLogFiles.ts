@@ -1,6 +1,5 @@
 import path from "node:path";
 import { err, ok, type Result } from "neverthrow";
-import { sessionIdSchema } from "@/core/domain/session/types";
 import type { FileSystemManager } from "@/core/domain/watcher/ports/fileSystemManager";
 import type { LogParser } from "@/core/domain/watcher/ports/logParser";
 import {
@@ -12,23 +11,23 @@ import {
 import type { Context } from "../context";
 import { processLogFile } from "./processLogFile";
 
-export type BatchProcessDirectoryError = {
-  type: "BATCH_PROCESS_DIRECTORY_ERROR";
+export type BatchProcessLogFilesError = {
+  type: "BATCH_PROCESS_LOG_FILES_ERROR";
   message: string;
   cause?: unknown;
 };
 
-export async function batchProcessDirectory(
+export async function batchProcessLogFiles(
   context: Context & {
     logParser: LogParser;
     fileSystemManager: FileSystemManager;
   },
   input: BatchProcessInput,
-): Promise<Result<BatchProcessResult, BatchProcessDirectoryError>> {
+): Promise<Result<BatchProcessResult, BatchProcessLogFilesError>> {
   const parseResult = batchProcessInputSchema.safeParse(input);
   if (!parseResult.success) {
     return err({
-      type: "BATCH_PROCESS_DIRECTORY_ERROR",
+      type: "BATCH_PROCESS_LOG_FILES_ERROR",
       message: "Invalid input",
       cause: parseResult.error,
     });
@@ -51,7 +50,7 @@ export async function batchProcessDirectory(
     );
     if (filesResult.isErr()) {
       return err({
-        type: "BATCH_PROCESS_DIRECTORY_ERROR",
+        type: "BATCH_PROCESS_LOG_FILES_ERROR",
         message: "Failed to find matching files",
         cause: filesResult.error,
       });
@@ -85,26 +84,21 @@ export async function batchProcessDirectory(
 
       const batchPromises = batch.map(
         async (filePath): Promise<BatchProcessFileResult> => {
-          if (skipExisting) {
-            const alreadyProcessedResult = await checkIfFileAlreadyProcessed(
-              context,
-              filePath,
-            );
-            if (alreadyProcessedResult.isOk() && alreadyProcessedResult.value) {
-              console.log(`Skipping already processed file: ${filePath}`);
+          const result = await processLogFile(context, {
+            filePath,
+            skipTracking: !skipExisting,
+          });
+
+          if (result.isOk()) {
+            if (result.value.skipped) {
+              console.log(`Skipped already processed file: ${filePath}`);
               return {
                 filePath,
                 status: "skipped",
                 entriesProcessed: 0,
               };
             }
-          }
 
-          const result = await processLogFile(context, {
-            filePath,
-            skipTracking: false,
-          });
-          if (result.isOk()) {
             console.log(
               `Successfully processed: ${filePath} (${result.value.entriesProcessed} entries)`,
             );
@@ -114,6 +108,7 @@ export async function batchProcessDirectory(
               entriesProcessed: result.value.entriesProcessed,
             };
           }
+
           const errorMessage = result.error.message;
           console.error(`Failed to process: ${filePath} - ${errorMessage}`);
           errors.push({ filePath, error: errorMessage });
@@ -159,11 +154,11 @@ export async function batchProcessDirectory(
     });
   } catch (error) {
     const batchError = {
-      type: "BATCH_PROCESS_DIRECTORY_ERROR" as const,
+      type: "BATCH_PROCESS_LOG_FILES_ERROR" as const,
       message: `Error during batch processing of ${targetDirectory}`,
       cause: error,
     };
-    console.error("[batchProcessDirectory] Unexpected error occurred", {
+    console.error("[batchProcessLogFiles] Unexpected error occurred", {
       targetDirectory,
       error: batchError.message,
       cause: batchError.cause,
@@ -245,69 +240,4 @@ async function walkDirectory(
   }
 
   return ok(undefined);
-}
-
-async function checkIfFileAlreadyProcessed(
-  context: Context,
-  filePath: string,
-): Promise<Result<boolean, { message: string; cause?: unknown }>> {
-  try {
-    // Check if messages exist for this file's session
-    // This is a simplified check - in a more sophisticated implementation,
-    // we might track processed files in a separate table
-
-    // Extract potential session ID from file path
-    const basename = path.basename(filePath, path.extname(filePath));
-    const sessionIdMatch = basename.match(/session-(.+)/);
-
-    if (!sessionIdMatch) {
-      // Cannot determine session ID, assume not processed
-      return ok(false);
-    }
-
-    const potentialSessionId = sessionIdMatch[1];
-
-    // Check if session exists with messages
-    const sessionsResult = await context.sessionRepository.list({
-      pagination: { page: 1, limit: 1, order: "asc", orderBy: "createdAt" },
-    });
-
-    if (sessionsResult.isErr()) {
-      // If we can't check, assume not processed to be safe
-      return ok(false);
-    }
-
-    const sessionIdParseResult = sessionIdSchema.safeParse(potentialSessionId);
-    if (!sessionIdParseResult.success) {
-      return ok(false);
-    }
-
-    const validSessionId = sessionIdParseResult.data;
-    const sessionExists = sessionsResult.value.items.some(
-      (s) => s.id === validSessionId,
-    );
-
-    if (!sessionExists) {
-      return ok(false);
-    }
-
-    // Check if messages exist for this session
-    const messagesResult = await context.messageRepository.list({
-      pagination: { page: 1, limit: 1, order: "asc", orderBy: "createdAt" },
-      filter: { sessionId: validSessionId },
-    });
-
-    if (messagesResult.isErr()) {
-      return ok(false);
-    }
-
-    return ok(messagesResult.value.items.length > 0);
-  } catch (error) {
-    // If we can't check, assume not processed to be safe
-    console.warn(
-      `Warning: Could not check if file is already processed: ${filePath}`,
-      error,
-    );
-    return ok(false);
-  }
 }
