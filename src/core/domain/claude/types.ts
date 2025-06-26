@@ -12,25 +12,11 @@ export type SendMessageInput = z.infer<typeof sendMessageInputSchema>;
 // Use SDK types directly instead of custom types
 export type ClaudeSDKMessage = SDKMessage;
 
-// Extract content block types from SDK Message
-type MessageContent = SDKMessage extends {
-  type: "assistant" | "user";
-  message: { content: infer U };
-}
-  ? U
-  : never;
-type SDKContentBlock = MessageContent extends Array<infer V> ? V : never;
+// Extract content block types from SDK Message - removed unused types
 
-// Custom chunk types for streaming
-export type TextChunk = { type: "text"; text: string };
-export type ThinkingChunk = { type: "thinking"; content: string };
-
-// Union type for all possible chunk data
-export type ChunkData =
-  | TextChunk // Custom text chunks for incremental streaming
-  | ThinkingChunk // Custom thinking chunks for incremental streaming
-  | SDKContentBlock // Original SDK content blocks (tool_use, tool_result, image, etc.)
-  | SDKMessage; // Complete SDK messages (system, result, etc.)
+// ChunkData is simply an SDKMessage
+// The SDK already provides messages in the appropriate granularity for streaming
+export type ChunkData = SDKMessage;
 
 // Result type that contains all SDK messages
 export const claudeQueryResultSchema = z.object({

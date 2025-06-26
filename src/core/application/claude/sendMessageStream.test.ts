@@ -128,19 +128,21 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        // Mock streams "You said: Multi word message" as separate chunk objects
+        // Mock now sends SDKMessages, not text chunks
         const chunks = onChunkSpy.mock.calls.map(
           (call) => call[0] as ChunkData,
         );
-        const textChunks = chunks
-          .filter((chunk: any) => chunk.type === "text")
-          .map((chunk: any) => chunk.text);
-        const joinedText = textChunks.join("");
-        expect(joinedText.includes("You")).toBe(true);
-        expect(joinedText.includes("said:")).toBe(true);
-        expect(joinedText.includes("Multi")).toBe(true);
-        expect(joinedText.includes("word")).toBe(true);
-        expect(joinedText.includes("message")).toBe(true);
+        // Find the assistant message
+        const assistantMessage = chunks.find(
+          (chunk: any) => chunk.type === "assistant",
+        );
+        expect(assistantMessage).toBeDefined();
+        if (assistantMessage && "message" in assistantMessage) {
+          const content = assistantMessage.message?.content?.[0];
+          if (content && typeof content === "object" && "text" in content) {
+            expect(content.text).toBe("You said: Multi word message");
+          }
+        }
       }
     });
 
@@ -266,13 +268,19 @@ describe("sendMessageStream", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         expect(chunks.length).toBeGreaterThan(0);
-        // Extract text content from chunk objects
-        const textChunks = chunks
-          .filter((chunk: any) => chunk.type === "text")
-          .map((chunk: any) => chunk.text)
-          .filter((text) => text.length > 0);
-        const combinedText = textChunks.join("").trim();
-        expect(combinedText).toBe("You said: Test streaming");
+        // Find the assistant message in the SDKMessages
+        const assistantMessage = chunks.find(
+          (chunk: any) => chunk.type === "assistant",
+        );
+        expect(assistantMessage).toBeDefined();
+        let textContent = "";
+        if (assistantMessage && "message" in assistantMessage) {
+          const content = assistantMessage.message?.content?.[0];
+          if (content && typeof content === "object" && "text" in content) {
+            textContent = content.text || "";
+          }
+        }
+        expect(textContent).toBe("You said: Test streaming");
       }
     });
   });

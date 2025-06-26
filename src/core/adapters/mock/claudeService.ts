@@ -72,18 +72,8 @@ export class MockClaudeService implements ClaudeService {
     }
 
     const responseText = `You said: ${input.message}`;
-    const chunks = responseText.split(" ");
 
-    console.log("[Mock Claude] Will send chunks:", chunks);
-
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = `${chunks[i]} `;
-      console.log("[Mock Claude] Sending chunk:", chunk);
-      onChunk({ type: "text", text: chunk });
-      await new Promise((resolve) => setTimeout(resolve, 100)); // Slower for testing
-    }
-
-    const result: SDKMessage[] = this.mockResult || [
+    const messages: SDKMessage[] = this.mockResult || [
       {
         type: "assistant",
         message: {
@@ -119,7 +109,15 @@ export class MockClaudeService implements ClaudeService {
       } as SDKMessage,
     ];
 
-    return ok(result);
+    // Stream each message sequentially
+    for (const message of messages) {
+      console.log("[Mock Claude] Sending message:", message.type);
+      onChunk(message);
+      await new Promise((resolve) => setTimeout(resolve, 100)); // Simulate streaming delay
+    }
+
+    console.log("[Mock Claude] Completed streaming. Returning messages.");
+    return ok(messages);
   }
 
   // Test utility methods

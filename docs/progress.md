@@ -6,6 +6,36 @@ Document current progress, issues, and next steps here.
 
 ### 2025-06-26
 
+- **Fixed Issue #35: sendMessageStreamの問題点の改善 (Improved sendMessageStream implementation)**
+  - Task: Address architectural issues identified in PR #41
+  - Problems Identified:
+    - Session ID confusion between application UUIDs and Claude SDK session IDs
+    - Use of `Math.random()` for content block IDs causing potential collisions
+    - Missing session updates after successful Claude communication
+    - Overly complex streaming implementation with unnecessary content tracking
+  - Solutions Implemented:
+    - Added `claudeSessionId` field to Session type to separate concerns
+    - Removed `Math.random()` usage (no longer needed with simplified streaming)
+    - Added session update after successful Claude communication
+    - Simplified `claudeService` to directly pass SDK messages as chunks
+  - Architecture Changes:
+    - Updated `Session` type with nullable `claudeSessionId` field
+    - Modified all repository implementations (SQLite, PgLite, Mock)
+    - Simplified `ChunkData` type to be just `SDKMessage`
+    - Removed unnecessary content tracking and incremental streaming logic
+  - Files Modified:
+    - `src/core/domain/session/types.ts`: Added claudeSessionId field
+    - `src/core/adapters/drizzleSqlite/schema.ts`: Added database column
+    - `src/core/adapters/drizzlePglite/schema.ts`: Added database column
+    - `src/core/adapters/*/sessionRepository.ts`: Updated all implementations
+    - `src/core/adapters/anthropic/claudeService.ts`: Simplified streaming
+    - `src/core/domain/claude/types.ts`: Simplified ChunkData type
+    - `src/core/application/claude/sendMessageStream.ts`: Added session updates
+  - Testing: All 20 test cases pass, type checking successful
+  - Key Insight: SDK already provides messages in appropriate granularity for streaming
+
+### 2025-06-26
+
 - **Completed Issue #39: CLIの実装 (CLI Implementation) + Unified Development CLI**
   - Task: Implement CLI using Gunshi library and create unified development tool
   - Implementation Phase 1 - Gunshi Migration:
