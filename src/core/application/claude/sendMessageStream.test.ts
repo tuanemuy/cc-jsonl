@@ -82,6 +82,7 @@ describe("sendMessageStream", () => {
         projectId: project.id,
         name: null,
         cwd: "/tmp",
+        claudeSessionId: null,
         lastMessageAt: null,
         createdAt: new Date("2024-01-01T10:00:00Z"),
         updatedAt: new Date("2024-01-01T10:00:00Z"),
@@ -128,7 +129,9 @@ describe("sendMessageStream", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         // Mock streams "You said: Multi word message" as separate chunk objects
-        const chunks = onChunkSpy.mock.calls.map((call) => call[0] as ChunkData);
+        const chunks = onChunkSpy.mock.calls.map(
+          (call) => call[0] as ChunkData,
+        );
         const textChunks = chunks
           .filter((chunk: any) => chunk.type === "text")
           .map((chunk: any) => chunk.text);
@@ -154,6 +157,7 @@ describe("sendMessageStream", () => {
         projectId: project.id,
         name: null,
         cwd: "/tmp",
+        claudeSessionId: null,
         lastMessageAt: null,
         createdAt: new Date("2024-01-01T10:00:00Z"),
         updatedAt: new Date("2024-01-01T10:00:00Z"),

@@ -1,12 +1,12 @@
 import type { SDKMessage } from "@anthropic-ai/claude-code";
 import { err, ok, type Result } from "neverthrow";
 import { z } from "zod/v4";
+import type { ChunkData } from "@/core/domain/claude/types";
 import type { Session } from "@/core/domain/session/types";
 import {
   generateSessionId,
   sessionIdSchema,
 } from "@/core/domain/session/types";
-import type { ChunkData } from "@/core/domain/claude/types";
 import { ApplicationError } from "@/lib/error";
 import { validate } from "@/lib/validation";
 import type { Context } from "../context";
@@ -41,10 +41,7 @@ export async function sendMessageStream(
   input: SendMessageStreamInput,
   onChunk: (chunk: ChunkData) => void,
 ): Promise<
-  Result<
-    { session: Session; messages: SDKMessage[] },
-    ApplicationError
-  >
+  Result<{ session: Session; messages: SDKMessage[] }, ApplicationError>
 > {
   console.log("[sendMessageStream] Starting streaming message processing", {
     sessionId: input.sessionId,
@@ -106,7 +103,7 @@ export async function sendMessageStream(
     const claudeResult = await context.claudeService.sendMessageStream(
       {
         message: params.message,
-        sessionId: isNewSession ? undefined : sessionId, // Use our generated session ID for new sessions, existing for resume
+        sessionId: session?.claudeSessionId || undefined, // Use Claude's session ID for resuming, undefined for new sessions
         cwd: params.cwd || (session ? session.cwd : undefined),
         allowedTools: params.allowedTools,
       },
@@ -163,6 +160,7 @@ export async function sendMessageStream(
         projectId: projectsResult.value.items[0].id,
         name: null,
         cwd: params.cwd,
+        claudeSessionId: null, // Will be updated after successful communication
       });
       if (createSessionResult.isErr()) {
         const error = new ApplicationError(
@@ -180,6 +178,27 @@ export async function sendMessageStream(
 
     if (!session) {
       return err(new ApplicationError("Session was not created or found"));
+    }
+
+    // Update session after successful Claude communication
+    const updateSessionResult = await context.sessionRepository.upsert({
+      id: session.id,
+      projectId: session.projectId,
+      name: session.name,
+      cwd: session.cwd,
+      claudeSessionId: session.claudeSessionId, // Keep existing Claude session ID
+    });
+    if (updateSessionResult.isErr()) {
+      console.warn(
+        "[sendMessageStream] Failed to update session lastMessageAt",
+        {
+          sessionId: session.id,
+          error: updateSessionResult.error.message,
+        },
+      );
+      // Don't fail the entire operation for session update failure
+    } else {
+      session = updateSessionResult.value;
     }
 
     return ok({

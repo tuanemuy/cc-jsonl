@@ -1,7 +1,7 @@
 import type { SDKMessage } from "@anthropic-ai/claude-code";
 import { err, ok, type Result } from "neverthrow";
 import type { ClaudeService } from "@/core/domain/claude/ports/claudeService";
-import type { SendMessageInput, ChunkData } from "@/core/domain/claude/types";
+import type { ChunkData, SendMessageInput } from "@/core/domain/claude/types";
 import { ClaudeError } from "@/lib/error";
 
 export class MockClaudeService implements ClaudeService {

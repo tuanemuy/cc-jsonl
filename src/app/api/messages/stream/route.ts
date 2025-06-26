@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
             controller.enqueue(encoder.encode(errorData));
           } else {
             const { session, messages } = result.value;
-            
+
             // Find the last assistant message from SDK messages
             const assistantMessages = messages.filter(
               (msg) => msg.type === "assistant",
@@ -81,7 +81,9 @@ export async function GET(request: NextRequest) {
               assistantMessages[assistantMessages.length - 1];
 
             // Get usage information from result messages
-            const resultMessage = messages.find((msg) => msg.type === "result") as
+            const resultMessage = messages.find(
+              (msg) => msg.type === "result",
+            ) as
               | {
                   usage?: {
                     input_tokens: number;
@@ -98,7 +100,7 @@ export async function GET(request: NextRequest) {
               cache_creation_input_tokens: 0,
               cache_read_input_tokens: 0,
             };
-            
+
             const completeData = `data: ${JSON.stringify({
               type: "complete",
               sessionId: session.id,
@@ -107,8 +109,7 @@ export async function GET(request: NextRequest) {
               metadata: {
                 id: lastAssistantMessage?.message?.id || "",
                 model: lastAssistantMessage?.message?.model || "",
-                stop_reason:
-                  lastAssistantMessage?.message?.stop_reason || null,
+                stop_reason: lastAssistantMessage?.message?.stop_reason || null,
                 usage,
               },
             })}\n\n`;

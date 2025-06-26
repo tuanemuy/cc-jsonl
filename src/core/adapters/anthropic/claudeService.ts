@@ -1,12 +1,11 @@
 import { query, type SDKMessage } from "@anthropic-ai/claude-code";
 import { err, ok, type Result } from "neverthrow";
 import type { ClaudeService } from "@/core/domain/claude/ports/claudeService";
-import type { SendMessageInput, ChunkData } from "@/core/domain/claude/types";
+import type { ChunkData, SendMessageInput } from "@/core/domain/claude/types";
 import { ClaudeError } from "@/lib/error";
 
 export class AnthropicClaudeService implements ClaudeService {
   constructor(private readonly pathToClaudeCodeExecutable?: string) {}
-
 
   async sendMessage(
     input: SendMessageInput,
@@ -21,7 +20,7 @@ export class AnthropicClaudeService implements ClaudeService {
         pathToClaudeCodeExecutable: this.pathToClaudeCodeExecutable,
       };
 
-      // Add session resume if sessionId is provided
+      // Add session resume if Claude session ID is provided
       if (input.sessionId) {
         options.resume = input.sessionId;
       }
@@ -70,7 +69,7 @@ export class AnthropicClaudeService implements ClaudeService {
         pathToClaudeCodeExecutable: this.pathToClaudeCodeExecutable,
       };
 
-      // Add session resume if sessionId is provided
+      // Add session resume if Claude session ID is provided
       if (input.sessionId) {
         options.resume = input.sessionId;
       }
@@ -98,9 +97,12 @@ export class AnthropicClaudeService implements ClaudeService {
         messages.push(message);
 
         if (message.type === "assistant" && message.message?.content) {
-          for (const contentBlock of message.message.content) {
+          for (const [
+            blockIndex,
+            contentBlock,
+          ] of message.message.content.entries()) {
             if (contentBlock.type === "text") {
-              const blockId = `text-${Math.random()}`;
+              const blockId = `text-${blockIndex}`;
               const previousContent = contentTrackers.get(blockId) || "";
               const currentContent = contentBlock.text;
 
@@ -113,9 +115,9 @@ export class AnthropicClaudeService implements ClaudeService {
                 onChunk({ type: "text", text: incrementalText });
               }
             } else if (contentBlock.type === "thinking") {
-              const blockId = `thinking-${Math.random()}`;
+              const blockId = `thinking-${blockIndex}`;
               const previousContent = contentTrackers.get(blockId) || "";
-              const currentContent = contentBlock.content;
+              const currentContent = (contentBlock as any).content;
 
               if (currentContent.length > previousContent.length) {
                 const incrementalThinking = currentContent.slice(
@@ -131,7 +133,7 @@ export class AnthropicClaudeService implements ClaudeService {
             } else {
               // Handle all other content block types (tool_use, image, document, tool_result, etc.)
               // Only send once per block
-              const blockKey = `${contentBlock.type}-${JSON.stringify(contentBlock)}`;
+              const blockKey = `${contentBlock.type}-${blockIndex}`;
               if (!processedBlocks.has(blockKey)) {
                 processedBlocks.add(blockKey);
                 onChunk(contentBlock);

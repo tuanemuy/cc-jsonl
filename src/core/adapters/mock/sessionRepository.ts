@@ -35,6 +35,8 @@ export class MockSessionRepository implements SessionRepository {
         projectId: params.projectId || null,
         name: params.name || null,
         cwd: params.cwd,
+        claudeSessionId:
+          params.claudeSessionId || existingSession.claudeSessionId,
         updatedAt: new Date(),
       };
 
@@ -49,6 +51,7 @@ export class MockSessionRepository implements SessionRepository {
       projectId: params.projectId || null,
       name: params.name || null,
       cwd: params.cwd,
+      claudeSessionId: params.claudeSessionId || null,
       lastMessageAt: null,
       createdAt: now,
       updatedAt: now,

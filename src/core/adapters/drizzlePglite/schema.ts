@@ -26,6 +26,7 @@ export const sessions = pgTable("sessions", {
   }),
   name: text("name"),
   cwd: text("cwd").notNull(),
+  claudeSessionId: text("claude_session_id"),
   lastMessageAt: timestamp("last_message_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
