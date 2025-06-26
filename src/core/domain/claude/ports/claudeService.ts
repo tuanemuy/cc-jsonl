@@ -1,14 +1,15 @@
+import type { SDKMessage } from "@anthropic-ai/claude-code";
 import type { Result } from "neverthrow";
 import type { ClaudeError } from "@/lib/error";
-import type { ClaudeQueryResult, SendMessageInput } from "../types";
+import type { SendMessageInput, ChunkData } from "../types";
 
 export interface ClaudeService {
   sendMessage(
     input: SendMessageInput,
-  ): Promise<Result<ClaudeQueryResult, ClaudeError>>;
+  ): Promise<Result<SDKMessage[], ClaudeError>>;
 
   sendMessageStream(
     input: SendMessageInput,
-    onChunk: (chunk: string) => void,
-  ): Promise<Result<ClaudeQueryResult, ClaudeError>>;
+    onChunk: (chunk: ChunkData) => void,
+  ): Promise<Result<SDKMessage[], ClaudeError>>;
 }

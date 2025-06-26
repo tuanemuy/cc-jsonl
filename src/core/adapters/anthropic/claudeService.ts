@@ -1,52 +1,16 @@
 import { query, type SDKMessage } from "@anthropic-ai/claude-code";
 import { err, ok, type Result } from "neverthrow";
 import type { ClaudeService } from "@/core/domain/claude/ports/claudeService";
-import type {
-  ClaudeQueryResult,
-  SendMessageInput,
-} from "@/core/domain/claude/types";
+import type { SendMessageInput, ChunkData } from "@/core/domain/claude/types";
 import { ClaudeError } from "@/lib/error";
 
 export class AnthropicClaudeService implements ClaudeService {
   constructor(private readonly pathToClaudeCodeExecutable?: string) {}
 
-  private buildQueryResult(allMessages: SDKMessage[]): ClaudeQueryResult {
-    // Find the last assistant message
-    const assistantMessages = allMessages.filter(
-      (msg) => msg.type === "assistant",
-    );
-    const lastAssistantMessage =
-      assistantMessages[assistantMessages.length - 1];
-
-    // Get usage information from result messages
-    const resultMessage = allMessages.find((msg) => msg.type === "result") as
-      | {
-          usage?: {
-            input_tokens: number;
-            output_tokens: number;
-            cache_creation_input_tokens?: number;
-            cache_read_input_tokens?: number;
-          };
-        }
-      | undefined;
-
-    const usage = resultMessage?.usage || {
-      input_tokens: 0,
-      output_tokens: 0,
-      cache_creation_input_tokens: 0,
-      cache_read_input_tokens: 0,
-    };
-
-    return {
-      messages: allMessages,
-      lastAssistantMessage: lastAssistantMessage?.message,
-      usage,
-    };
-  }
 
   async sendMessage(
     input: SendMessageInput,
-  ): Promise<Result<ClaudeQueryResult, ClaudeError>> {
+  ): Promise<Result<SDKMessage[], ClaudeError>> {
     try {
       const options: {
         pathToClaudeCodeExecutable?: string;
@@ -85,9 +49,7 @@ export class AnthropicClaudeService implements ClaudeService {
         throw new Error("No response received");
       }
 
-      const queryResult: ClaudeQueryResult = this.buildQueryResult(messages);
-
-      return ok(queryResult);
+      return ok(messages);
     } catch (error) {
       return err(new ClaudeError("Failed to send message to Claude", error));
     }
@@ -95,8 +57,8 @@ export class AnthropicClaudeService implements ClaudeService {
 
   async sendMessageStream(
     input: SendMessageInput,
-    onChunk: (chunk: string) => void,
-  ): Promise<Result<ClaudeQueryResult, ClaudeError>> {
+    onChunk: (chunk: ChunkData) => void,
+  ): Promise<Result<SDKMessage[], ClaudeError>> {
     try {
       // Build options for Claude Code SDK
       const options: {
@@ -147,11 +109,8 @@ export class AnthropicClaudeService implements ClaudeService {
                   previousContent.length,
                 );
                 contentTrackers.set(blockId, currentContent);
-                // Send as NDJSON
-                onChunk(
-                  JSON.stringify({ type: "text", text: incrementalText }) +
-                    "\n",
-                );
+                // Send content block object directly
+                onChunk({ type: "text", text: incrementalText });
               }
             } else if (contentBlock.type === "thinking") {
               const blockId = `thinking-${Math.random()}`;
@@ -163,13 +122,11 @@ export class AnthropicClaudeService implements ClaudeService {
                   previousContent.length,
                 );
                 contentTrackers.set(blockId, currentContent);
-                // Send as NDJSON
-                onChunk(
-                  `${JSON.stringify({
-                    type: "thinking",
-                    content: incrementalThinking,
-                  })}\n`,
-                );
+                // Send content block object directly
+                onChunk({
+                  type: "thinking",
+                  content: incrementalThinking,
+                });
               }
             } else {
               // Handle all other content block types (tool_use, image, document, tool_result, etc.)
@@ -177,7 +134,7 @@ export class AnthropicClaudeService implements ClaudeService {
               const blockKey = `${contentBlock.type}-${JSON.stringify(contentBlock)}`;
               if (!processedBlocks.has(blockKey)) {
                 processedBlocks.add(blockKey);
-                onChunk(`${JSON.stringify(contentBlock)}\n`);
+                onChunk(contentBlock);
               }
             }
           }
@@ -190,29 +147,25 @@ export class AnthropicClaudeService implements ClaudeService {
             for (const contentBlock of message.message.content) {
               if (contentBlock.type === "text") {
                 // Send text content
-                onChunk(
-                  `${JSON.stringify({ type: "text", text: contentBlock.text })}\n`,
-                );
+                onChunk({ type: "text", text: contentBlock.text });
               } else if (contentBlock.type === "tool_result") {
                 // Send tool_result as-is
-                onChunk(`${JSON.stringify(contentBlock)}\n`);
+                onChunk(contentBlock);
               } else {
                 // Send other content types as-is
-                onChunk(`${JSON.stringify(contentBlock)}\n`);
+                onChunk(contentBlock);
               }
             }
           } else if (typeof message.message.content === "string") {
             // Handle string content
-            onChunk(
-              `${JSON.stringify({ type: "text", text: message.message.content })}\n`,
-            );
+            onChunk({ type: "text", text: message.message.content });
           }
         } else if (message.type === "system" && message.subtype === "init") {
-          // Stream system initialization message as NDJSON
-          onChunk(`${JSON.stringify(message)}\n`);
+          // Stream system initialization message
+          onChunk(message);
         } else if (message.type === "result") {
-          // Stream result message as NDJSON
-          onChunk(`${JSON.stringify(message)}\n`);
+          // Stream result message
+          onChunk(message);
         }
       }
 
@@ -220,9 +173,7 @@ export class AnthropicClaudeService implements ClaudeService {
         throw new Error("No response received from Claude Code SDK");
       }
 
-      const queryResult: ClaudeQueryResult = this.buildQueryResult(messages);
-
-      return ok(queryResult);
+      return ok(messages);
     } catch (error) {
       return err(
         new ClaudeError("Failed to stream message from Claude", error),

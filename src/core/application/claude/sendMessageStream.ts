@@ -1,11 +1,12 @@
+import type { SDKMessage } from "@anthropic-ai/claude-code";
 import { err, ok, type Result } from "neverthrow";
 import { z } from "zod/v4";
-import type { ClaudeQueryResult } from "@/core/domain/claude/types";
 import type { Session } from "@/core/domain/session/types";
 import {
   generateSessionId,
   sessionIdSchema,
 } from "@/core/domain/session/types";
+import type { ChunkData } from "@/core/domain/claude/types";
 import { ApplicationError } from "@/lib/error";
 import { validate } from "@/lib/validation";
 import type { Context } from "../context";
@@ -38,10 +39,10 @@ export type SendMessageStreamInput = z.infer<
 export async function sendMessageStream(
   context: Context,
   input: SendMessageStreamInput,
-  onChunk: (chunk: string) => void,
+  onChunk: (chunk: ChunkData) => void,
 ): Promise<
   Result<
-    { session: Session; claudeResult: ClaudeQueryResult },
+    { session: Session; messages: SDKMessage[] },
     ApplicationError
   >
 > {
@@ -124,7 +125,7 @@ export async function sendMessageStream(
       return err(error);
     }
 
-    const queryResult = claudeResult.value;
+    const messages = claudeResult.value;
 
     if (isNewSession) {
       // Create session in database with our generated session ID
@@ -183,7 +184,7 @@ export async function sendMessageStream(
 
     return ok({
       session,
-      claudeResult: queryResult,
+      messages,
     });
   } catch (error) {
     const appError = new ApplicationError(

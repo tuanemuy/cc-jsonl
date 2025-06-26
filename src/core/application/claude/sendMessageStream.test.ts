@@ -4,6 +4,7 @@ import { MockMessageRepository } from "@/core/adapters/mock/messageRepository";
 import { MockProjectRepository } from "@/core/adapters/mock/projectRepository";
 import { MockSessionRepository } from "@/core/adapters/mock/sessionRepository";
 import type { Context } from "@/core/application/context";
+import type { ChunkData } from "@/core/domain/claude/types";
 import type { Message, MessageId } from "@/core/domain/message/types";
 import type { Project, ProjectId } from "@/core/domain/project/types";
 import type { Session, SessionId } from "@/core/domain/session/types";
@@ -55,8 +56,8 @@ describe("sendMessageStream", () => {
       if (result.isOk()) {
         expect(result.value.session).toBeDefined();
         expect(result.value.session.projectId).toBe(project.id);
-        expect(result.value.claudeResult).toBeDefined();
-        expect(result.value.claudeResult.lastAssistantMessage).toBeDefined();
+        expect(result.value.messages).toBeDefined();
+        expect(result.value.messages.length).toBeGreaterThan(0);
 
         // Check that onChunk was called with streaming data
         expect(onChunkSpy).toHaveBeenCalled();
@@ -101,7 +102,7 @@ describe("sendMessageStream", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         expect(result.value.session.id).toBe("session-123");
-        expect(result.value.claudeResult).toBeDefined();
+        expect(result.value.messages).toBeDefined();
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -126,14 +127,17 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        // Mock streams "You said: Multi word message" as separate chunks in NDJSON format
-        const chunks = onChunkSpy.mock.calls.map((call) => call[0]);
-        const joinedChunks = chunks.join("");
-        expect(joinedChunks.includes("You")).toBe(true);
-        expect(joinedChunks.includes("said:")).toBe(true);
-        expect(joinedChunks.includes("Multi")).toBe(true);
-        expect(joinedChunks.includes("word")).toBe(true);
-        expect(joinedChunks.includes("message")).toBe(true);
+        // Mock streams "You said: Multi word message" as separate chunk objects
+        const chunks = onChunkSpy.mock.calls.map((call) => call[0] as ChunkData);
+        const textChunks = chunks
+          .filter((chunk: any) => chunk.type === "text")
+          .map((chunk: any) => chunk.text);
+        const joinedText = textChunks.join("");
+        expect(joinedText.includes("You")).toBe(true);
+        expect(joinedText.includes("said:")).toBe(true);
+        expect(joinedText.includes("Multi")).toBe(true);
+        expect(joinedText.includes("word")).toBe(true);
+        expect(joinedText.includes("message")).toBe(true);
       }
     });
 
@@ -226,8 +230,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.claudeResult).toBeDefined();
-        expect(result.value.claudeResult.lastAssistantMessage).toBeDefined();
+        expect(result.value.messages).toBeDefined();
+        expect(result.value.messages.length).toBeGreaterThan(0);
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -248,8 +252,8 @@ describe("sendMessageStream", () => {
         cwd: "/test/workspace",
       };
 
-      const chunks: string[] = [];
-      const chunkCollector = (chunk: string) => {
+      const chunks: ChunkData[] = [];
+      const chunkCollector = (chunk: ChunkData) => {
         chunks.push(chunk);
       };
 
@@ -258,16 +262,10 @@ describe("sendMessageStream", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         expect(chunks.length).toBeGreaterThan(0);
-        // Parse NDJSON chunks and extract text content
+        // Extract text content from chunk objects
         const textChunks = chunks
-          .map((chunk) => {
-            try {
-              const parsed = JSON.parse(chunk);
-              return parsed.type === "text" ? parsed.text : "";
-            } catch {
-              return "";
-            }
-          })
+          .filter((chunk: any) => chunk.type === "text")
+          .map((chunk: any) => chunk.text)
           .filter((text) => text.length > 0);
         const combinedText = textChunks.join("").trim();
         expect(combinedText).toBe("You said: Test streaming");
@@ -423,8 +421,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.claudeResult).toBeDefined();
-        expect(result.value.claudeResult.lastAssistantMessage).toBeDefined();
+        expect(result.value.messages).toBeDefined();
+        expect(result.value.messages.length).toBeGreaterThan(0);
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -450,8 +448,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.claudeResult).toBeDefined();
-        expect(result.value.claudeResult.lastAssistantMessage).toBeDefined();
+        expect(result.value.messages).toBeDefined();
+        expect(result.value.messages.length).toBeGreaterThan(0);
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -477,7 +475,7 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.claudeResult).toBeDefined();
+        expect(result.value.messages).toBeDefined();
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -503,8 +501,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.claudeResult).toBeDefined();
-        expect(result.value.claudeResult.lastAssistantMessage).toBeDefined();
+        expect(result.value.messages).toBeDefined();
+        expect(result.value.messages.length).toBeGreaterThan(0);
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });
@@ -531,8 +529,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.claudeResult).toBeDefined();
-        expect(result.value.claudeResult.lastAssistantMessage).toBeDefined();
+        expect(result.value.messages).toBeDefined();
+        expect(result.value.messages.length).toBeGreaterThan(0);
       }
     });
 
@@ -557,8 +555,8 @@ describe("sendMessageStream", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.claudeResult).toBeDefined();
-        expect(result.value.claudeResult.lastAssistantMessage).toBeDefined();
+        expect(result.value.messages).toBeDefined();
+        expect(result.value.messages.length).toBeGreaterThan(0);
         expect(onChunkSpy).toHaveBeenCalled();
       }
     });

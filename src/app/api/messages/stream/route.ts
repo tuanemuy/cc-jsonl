@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getServerContext } from "@/actions/context";
 import { sendMessageStream } from "@/core/application/claude/sendMessageStream";
+import type { ChunkData } from "@/core/domain/claude/types";
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
               cwd: cwd || undefined,
               allowedTools,
             },
-            (chunk: string) => {
+            (chunk: ChunkData) => {
               try {
                 const data = `data: ${JSON.stringify({ type: "chunk", content: chunk })}\n\n`;
                 controller.enqueue(encoder.encode(data));
@@ -70,18 +71,45 @@ export async function GET(request: NextRequest) {
             })}\n\n`;
             controller.enqueue(encoder.encode(errorData));
           } else {
-            const { session, claudeResult } = result.value;
+            const { session, messages } = result.value;
+            
+            // Find the last assistant message from SDK messages
+            const assistantMessages = messages.filter(
+              (msg) => msg.type === "assistant",
+            );
+            const lastAssistantMessage =
+              assistantMessages[assistantMessages.length - 1];
+
+            // Get usage information from result messages
+            const resultMessage = messages.find((msg) => msg.type === "result") as
+              | {
+                  usage?: {
+                    input_tokens: number;
+                    output_tokens: number;
+                    cache_creation_input_tokens?: number;
+                    cache_read_input_tokens?: number;
+                  };
+                }
+              | undefined;
+
+            const usage = resultMessage?.usage || {
+              input_tokens: 0,
+              output_tokens: 0,
+              cache_creation_input_tokens: 0,
+              cache_read_input_tokens: 0,
+            };
+            
             const completeData = `data: ${JSON.stringify({
               type: "complete",
               sessionId: session.id,
               projectId: session.projectId,
-              content: claudeResult.lastAssistantMessage?.content || [],
+              content: lastAssistantMessage?.message?.content || [],
               metadata: {
-                id: claudeResult.lastAssistantMessage?.id || "",
-                model: claudeResult.lastAssistantMessage?.model || "",
+                id: lastAssistantMessage?.message?.id || "",
+                model: lastAssistantMessage?.message?.model || "",
                 stop_reason:
-                  claudeResult.lastAssistantMessage?.stop_reason || null,
-                usage: claudeResult.usage,
+                  lastAssistantMessage?.message?.stop_reason || null,
+                usage,
               },
             })}\n\n`;
             controller.enqueue(encoder.encode(completeData));
