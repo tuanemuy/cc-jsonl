@@ -2,8 +2,11 @@
 
 import "dotenv/config";
 import { spawn } from "node:child_process";
+import * as os from "node:os";
+import * as path from "node:path";
 import { cli, define } from "gunshi";
 import { batchProcessLogFiles } from "@/core/application/watcher";
+import { type Config, hasConfig, saveConfig } from "./config";
 import { getWatcherContext } from "./watcherContext";
 
 let isRunning = false;
@@ -129,6 +132,15 @@ const batchCommand = define({
     },
   },
   run: async (ctx) => {
+    if (!hasConfig() && !process.env.DATABASE_FILE_NAME) {
+      console.error(
+        "No configuration found. Please run 'setup' command first.",
+      );
+      console.error("");
+      console.error("Example: npm run cli setup");
+      process.exit(1);
+    }
+
     const { targetDirectory, maxConcurrency, skipExisting, pattern } =
       ctx.values;
     const { targetDir: defaultTargetDir } = getWatcherContext();
@@ -211,6 +223,15 @@ const watchCommand = define({
     },
   },
   run: async (ctx) => {
+    if (!hasConfig() && !process.env.DATABASE_FILE_NAME) {
+      console.error(
+        "No configuration found. Please run 'setup' command first.",
+      );
+      console.error("");
+      console.error("Example: npm run cli setup");
+      process.exit(1);
+    }
+
     const { targetDirectory, maxConcurrency, skipExisting, pattern, interval } =
       ctx.values;
     const { targetDir: defaultTargetDir } = getWatcherContext();
@@ -305,6 +326,92 @@ const startCommand = define({
   },
 });
 
+const setupCommand = define({
+  name: "setup",
+  description: "Initialize configuration and run database migrations",
+  args: {
+    databaseFile: {
+      type: "string",
+      short: "d",
+      description:
+        "Database file path (default: ~/.local/share/cc-jsonl/data.db)",
+    },
+    watchDir: {
+      type: "string",
+      short: "w",
+      description:
+        "Directory to watch for log files (default: current directory)",
+    },
+    force: {
+      type: "boolean",
+      short: "f",
+      default: false,
+      description: "Force overwrite existing configuration",
+    },
+  },
+  run: async (ctx) => {
+    const { databaseFile, watchDir, force } = ctx.values;
+
+    if (hasConfig() && !force) {
+      console.error("Configuration already exists. Use --force to overwrite.");
+      process.exit(1);
+    }
+
+    const defaultDbPath = path.join(
+      os.homedir(),
+      ".local",
+      "share",
+      "cc-jsonl",
+      "data.db",
+    );
+    const defaultWatchDir = process.cwd();
+
+    const config: Config = {
+      databaseFileName: (databaseFile as string) || defaultDbPath,
+      watchTargetDir: (watchDir as string) || defaultWatchDir,
+    };
+
+    console.log("Setting up Claude Code Watcher...");
+    console.log("");
+    console.log("Configuration:");
+    console.log(`  Database file: ${config.databaseFileName}`);
+    console.log(`  Watch directory: ${config.watchTargetDir}`);
+    console.log("");
+
+    try {
+      saveConfig(config);
+      console.log("✅ Configuration saved successfully!");
+
+      // Create database directory if it doesn't exist
+      const dbDir = path.dirname(config.databaseFileName);
+      const fs = await import("node:fs");
+      if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
+      }
+
+      console.log("");
+      console.log("Running database migrations...");
+
+      const exitCode = await spawnCommand("npm", ["run", "db:migrate"]);
+
+      if (exitCode !== 0) {
+        console.error("❌ Database migration failed!");
+        process.exit(1);
+      }
+
+      console.log("✅ Database migrations completed successfully!");
+      console.log("");
+      console.log("Setup completed! You can now run:");
+      console.log("  npm run logs:batch  - Process files once");
+      console.log("  npm run logs:watch  - Process files periodically");
+      console.log("  npm run start:prod  - Start production server");
+    } catch (error) {
+      console.error("Setup failed:", error);
+      process.exit(1);
+    }
+  },
+});
+
 const mainCommand = define({
   name: "claude-code-watcher",
   description: "CLI for Claude Code production server and log processing",
@@ -312,6 +419,7 @@ const mainCommand = define({
     console.log("Claude Code Unified CLI");
     console.log("");
     console.log("Available commands:");
+    console.log("  setup   Initialize configuration and database");
     console.log("  start   Start production server");
     console.log("  batch   Process log files once");
     console.log("  watch   Process log files periodically");
@@ -323,6 +431,9 @@ const mainCommand = define({
 async function main() {
   try {
     const subCommands = new Map();
+    // Setup command
+    subCommands.set("setup", setupCommand);
+
     // Watcher commands
     subCommands.set("batch", batchCommand);
     subCommands.set("watch", watchCommand);

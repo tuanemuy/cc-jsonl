@@ -13,6 +13,7 @@ import type { Context } from "@/core/application/context";
 import type { FileSystemManager } from "@/core/domain/watcher/ports/fileSystemManager";
 import type { FileWatcher } from "@/core/domain/watcher/ports/fileWatcher";
 import type { LogParser } from "@/core/domain/watcher/ports/logParser";
+import { getConfigOrEnv } from "./config";
 
 export const watcherEnvSchema = z.object({
   WATCH_TARGET_DIR: z.string().min(1),
@@ -34,10 +35,17 @@ export function getWatcherContext(): {
   context: WatcherContext;
   targetDir: string;
 } {
-  const env = watcherEnvSchema.safeParse(process.env);
+  const configOrEnv = getConfigOrEnv();
+
+  const envData = {
+    WATCH_TARGET_DIR: configOrEnv.watchTargetDir,
+    DATABASE_FILE_NAME: configOrEnv.databaseFileName,
+  };
+
+  const env = watcherEnvSchema.safeParse(envData);
   if (!env.success) {
     throw new Error(
-      `Invalid environment variables: ${JSON.stringify(env.error.errors)}`,
+      `Invalid configuration: ${JSON.stringify(env.error.errors)}`,
     );
   }
 

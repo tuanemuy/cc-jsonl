@@ -13,6 +13,7 @@
     "build:watcher": "tsdown",
     "postinstall": "tsdown",
     "start:prod": "node dist/cli.mjs start",
+    "setup": "node dist/cli.mjs setup",
     "logs:batch": "node dist/cli.mjs batch",
     "logs:watch": "node dist/cli.mjs watch",
     "cli": "node dist/cli.mjs",

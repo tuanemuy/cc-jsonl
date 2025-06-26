@@ -6,6 +6,47 @@ Document current progress, issues, and next steps here.
 
 ### 2025-06-26
 
+- **Completed Issue #42: セットアップコマンドの追加 (Add Setup Command)**
+  - Task: Add setup command to CLI for initial configuration and migrations
+  - Problems Addressed:
+    - Environment variables were the only way to configure the application
+    - No easy initialization process for new users
+    - Manual database migration required
+  - Implementation:
+    - Created configuration file loader with XDG Base Directory support
+    - Configuration file location: `$XDG_CONFIG_HOME/cc-jsonl/settings.json` or `~/.config/cc-jsonl/settings.json`
+    - Added `setup` command to CLI with options for database file and watch directory
+    - Integrated automatic database migration during setup
+    - Added initialization checks to `batch` and `watch` commands
+  - Files Created:
+    - `src/watcher/config.ts`: Configuration file management with XDG support
+  - Files Modified:
+    - `src/watcher/cli.ts`: Added setup command and initialization checks
+    - `src/watcher/watcherContext.ts`: Updated to use configuration file or environment variables
+    - `drizzle.config.ts`: Updated to use configuration file or environment variables
+    - `.env.example`: Added documentation about setup command
+    - `package.json`: Added `npm run setup` script
+  - Key Features:
+    - **Setup Command:** `npm run setup` or `npm run cli setup`
+    - **Configuration Options:** `--databaseFile`, `--watchDir`, `--force`
+    - **Default Paths:** Database at `~/.local/share/cc-jsonl/data.db`, watch current directory
+    - **Automatic Migration:** Runs database migrations after saving configuration
+    - **Development Support:** Falls back to `.env` variables if no config file exists
+  - Usage Example:
+    ```bash
+    # Initialize with defaults
+    npm run setup
+    
+    # Initialize with custom paths
+    npm run setup -- --databaseFile /custom/path/db.sqlite --watchDir /logs
+    
+    # Force overwrite existing config
+    npm run setup -- --force
+    ```
+  - Testing: TypeScript checks pass, linter and formatter applied
+
+### 2025-06-26
+
 - **Fixed Issue #35: sendMessageStreamの問題点の改善 (Improved sendMessageStream implementation)**
   - Task: Address architectural issues identified in PR #41
   - Problems Identified:
