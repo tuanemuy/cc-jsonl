@@ -1,86 +1,57 @@
 #!/usr/bin/env node
 
 import "dotenv/config";
-import { parseArgs } from "node:util";
+import { cli, define } from "gunshi";
 import { batchProcessLogFiles } from "@/core/application/watcher";
 import { getWatcherContext } from "./watcherContext";
 
-function parseArguments() {
-  const { values, positionals } = parseArgs({
-    args: process.argv.slice(2),
-    options: {
-      help: {
-        type: "boolean",
-        short: "h",
-        default: false,
-      },
-      maxConcurrency: {
-        type: "string",
-        short: "c",
-        default: "5",
-      },
-      skipExisting: {
-        type: "boolean",
-        short: "s",
-        default: true,
-      },
-      pattern: {
-        type: "string",
-        short: "p",
-        default: "**/*.jsonl",
-      },
+const batchCommand = define({
+  name: "batch",
+  description: "Process Claude Code log files once and exit",
+  args: {
+    targetDirectory: {
+      type: "string",
+      description:
+        "Directory to process (uses WATCH_TARGET_DIR if not specified)",
     },
-    allowPositionals: true,
-  });
-
-  if (values.help) {
-    console.log(`
-Usage: node batchProcessor.mjs [options] [target-directory]
-
-Options:
-  -h, --help              Show this help message
-  -c, --maxConcurrency    Maximum number of files to process concurrently (default: 5)
-  -s, --skipExisting      Skip files that have already been processed (default: true)
-      --no-skipExisting   Force processing of all files
-  -p, --pattern          File pattern to match (default: **/*.jsonl)
-
-Arguments:
-  target-directory        Directory to process (uses WATCH_TARGET_DIR if not specified)
-
-Examples:
-  node batchProcessor.mjs /path/to/logs
-  node batchProcessor.mjs -c 10 --no-skipExisting /path/to/logs
-  node batchProcessor.mjs --pattern "*.jsonl" /path/to/logs
-`);
-    process.exit(0);
-  }
-
-  return {
-    maxConcurrency: Number(values.maxConcurrency),
-    skipExisting: values.skipExisting,
-    pattern: values.pattern,
-    targetDirectory: positionals[0],
-  };
-}
-
-async function main() {
-  try {
-    const args = parseArguments();
+    maxConcurrency: {
+      type: "number",
+      short: "c",
+      default: 5,
+      description: "Maximum number of files to process concurrently",
+    },
+    skipExisting: {
+      type: "boolean",
+      short: "s",
+      default: true,
+      description: "Skip files that have already been processed",
+    },
+    pattern: {
+      type: "string",
+      short: "p",
+      default: "**/*.jsonl",
+      description: "File pattern to match",
+    },
+  },
+  run: async (ctx) => {
+    const { targetDirectory, maxConcurrency, skipExisting, pattern } =
+      ctx.values;
     const { context, targetDir: defaultTargetDir } = getWatcherContext();
 
-    const targetDir = args.targetDirectory || defaultTargetDir;
+    const targetDir =
+      (targetDirectory as string | undefined) || defaultTargetDir;
 
     console.log("Starting batch processing of log files...");
     console.log(`Target directory: ${targetDir}`);
-    console.log(`Pattern: ${args.pattern}`);
-    console.log(`Max concurrency: ${args.maxConcurrency}`);
-    console.log(`Skip existing: ${args.skipExisting}`);
+    console.log(`Pattern: ${pattern}`);
+    console.log(`Max concurrency: ${maxConcurrency}`);
+    console.log(`Skip existing: ${skipExisting}`);
 
     const batchConfig = {
       targetDirectory: targetDir,
-      pattern: args.pattern,
-      maxConcurrency: args.maxConcurrency,
-      skipExisting: args.skipExisting,
+      pattern: pattern as string,
+      maxConcurrency: maxConcurrency as number,
+      skipExisting: skipExisting as boolean,
     };
 
     const result = await batchProcessLogFiles(context, batchConfig);
@@ -106,6 +77,16 @@ async function main() {
     }
 
     process.exit(0);
+  },
+});
+
+async function main() {
+  try {
+    await cli(process.argv.slice(2), batchCommand, {
+      name: "claude-code-batch",
+      version: "1.0.0",
+      description: "Claude Code log file batch processor",
+    });
   } catch (error) {
     console.error("Failed to run batch processor:", error);
     process.exit(1);

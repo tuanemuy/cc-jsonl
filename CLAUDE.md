@@ -9,6 +9,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
+### Unified CLI (Recommended)
+Use the unified `claude-code-watcher` CLI for production and log processing:
+
+**Production Server:**
+- `node dist/cli.mjs start [--port 3000]` - Start production server
+
+**Log Processing:**
+- `node dist/cli.mjs batch [options] [directory]` - Process log files once
+- `node dist/cli.mjs watch [options] [directory]` - Process log files periodically
+
+**Build CLI:**
+- `pnpm run build:watcher` - Build CLI tools (required before first use)
+
+### Legacy npm Commands
 - `pnpm lint` - Lint code with Biome
 - `pnpm lint:fix` - Lint code with Biome and fix issues
 - `pnpm format` - Format code with Biome
@@ -17,6 +31,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Workflow
 
+**Unified CLI Workflow (Recommended):**
+1. Build CLI: `pnpm run build:watcher`
+2. Start production: `node dist/cli.mjs start [--port 3000]`
+3. Process logs: `node dist/cli.mjs batch` / `node dist/cli.mjs watch`
+
+**Code Quality:**
 - Run `pnpm typecheck`, `pnpm run lint:fix` and `pnpm run format` after making changes to ensure code quality and consistency.
 - Update `docs/progress.md` with current progress and any issues encountered.
 
