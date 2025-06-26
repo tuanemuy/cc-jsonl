@@ -1,13 +1,94 @@
 #!/usr/bin/env node
 
 import "dotenv/config";
+import { parseArgs } from "node:util";
 import { batchProcessLogFiles } from "@/core/application/watcher";
 import { getWatcherContext } from "./watcherContext";
 
 let isRunning = false;
 let intervalId: NodeJS.Timeout | null = null;
 
-async function runBatchProcessing() {
+interface ProcessorConfig {
+  targetDirectory: string;
+  pattern: string;
+  maxConcurrency: number;
+  skipExisting: boolean;
+  intervalMinutes: number;
+}
+
+function parseArguments(): ProcessorConfig {
+  const { values, positionals } = parseArgs({
+    args: process.argv.slice(2),
+    options: {
+      help: {
+        type: "boolean",
+        short: "h",
+        default: false,
+      },
+      maxConcurrency: {
+        type: "string",
+        short: "c",
+        default: "5",
+      },
+      skipExisting: {
+        type: "boolean",
+        short: "s",
+        default: true,
+      },
+      pattern: {
+        type: "string",
+        short: "p",
+        default: "**/*.jsonl",
+      },
+      interval: {
+        type: "string",
+        short: "i",
+        default: "60",
+      },
+    },
+    allowPositionals: true,
+  });
+
+  if (values.help) {
+    console.log(`
+Usage: node periodicBatchProcessor.mjs [options] [target-directory]
+
+Options:
+  -h, --help              Show this help message
+  -c, --maxConcurrency    Maximum number of files to process concurrently (default: 5)
+  -s, --skipExisting      Skip files that have already been processed (default: true)
+      --no-skipExisting   Force processing of all files
+  -p, --pattern          File pattern to match (default: **/*.jsonl)
+  -i, --interval         Processing interval in minutes (default: 60)
+
+Arguments:
+  target-directory        Directory to process (uses WATCH_TARGET_DIR if not specified)
+
+Examples:
+  node periodicBatchProcessor.mjs /path/to/logs
+  node periodicBatchProcessor.mjs -i 30 -c 10 /path/to/logs
+  node periodicBatchProcessor.mjs --no-skipExisting --interval 15 /path/to/logs
+
+Note:
+  The processor runs immediately on startup, then at the specified interval.
+  Use Ctrl+C (SIGINT) or SIGTERM to stop gracefully.
+`);
+    process.exit(0);
+  }
+
+  const { targetDir: defaultTargetDir } = getWatcherContext();
+  const targetDir = positionals[0] || defaultTargetDir;
+
+  return {
+    targetDirectory: targetDir,
+    pattern: values.pattern || "**/*.jsonl",
+    maxConcurrency: Number(values.maxConcurrency) || 5,
+    skipExisting: values.skipExisting !== false,
+    intervalMinutes: Number(values.interval) || 60,
+  };
+}
+
+async function runBatchProcessing(config: ProcessorConfig) {
   if (isRunning) {
     console.log("Batch processing already running, skipping this cycle");
     return;
@@ -15,17 +96,17 @@ async function runBatchProcessing() {
 
   isRunning = true;
   try {
-    const { context, targetDir } = getWatcherContext();
+    const { context } = getWatcherContext();
 
     console.log(
       `[${new Date().toISOString()}] Starting periodic batch processing...`,
     );
 
     const batchConfig = {
-      targetDirectory: targetDir,
-      pattern: "**/*.jsonl",
-      maxConcurrency: Number(process.env.BATCH_MAX_CONCURRENCY) || 5,
-      skipExisting: (process.env.BATCH_SKIP_EXISTING || "true") === "true",
+      targetDirectory: config.targetDirectory,
+      pattern: config.pattern,
+      maxConcurrency: config.maxConcurrency,
+      skipExisting: config.skipExisting,
     };
 
     const result = await batchProcessLogFiles(context, batchConfig);
@@ -64,33 +145,27 @@ async function runBatchProcessing() {
 
 async function main() {
   try {
-    // Parse interval from environment variable (in minutes, default to 60)
-    const intervalMinutes = Number(process.env.BATCH_INTERVAL_MINUTES) || 60;
-    const intervalMs = intervalMinutes * 60 * 1000;
+    const config = parseArguments();
+    const intervalMs = config.intervalMinutes * 60 * 1000;
 
-    console.log(
-      `Starting periodic batch processor with ${intervalMinutes} minute intervals`,
-    );
-    console.log("Environment variables:");
-    console.log(`  BATCH_INTERVAL_MINUTES: ${intervalMinutes}`);
-    console.log(
-      `  BATCH_MAX_CONCURRENCY: ${Number(process.env.BATCH_MAX_CONCURRENCY) || 5}`,
-    );
-    console.log(
-      `  BATCH_SKIP_EXISTING: ${process.env.BATCH_SKIP_EXISTING || "true"}`,
-    );
+    console.log("Starting periodic batch processor with configuration:");
+    console.log(`  Target directory: ${config.targetDirectory}`);
+    console.log(`  Pattern: ${config.pattern}`);
+    console.log(`  Max concurrency: ${config.maxConcurrency}`);
+    console.log(`  Skip existing: ${config.skipExisting}`);
+    console.log(`  Interval: ${config.intervalMinutes} minutes`);
 
     // Run once immediately on startup
     console.log("Running initial batch processing...");
-    await runBatchProcessing();
+    await runBatchProcessing(config);
 
     // Set up periodic execution
     intervalId = setInterval(async () => {
-      await runBatchProcessing();
+      await runBatchProcessing(config);
     }, intervalMs);
 
     console.log(
-      `Periodic batch processor started. Next run in ${intervalMinutes} minutes.`,
+      `Periodic batch processor started. Next run in ${config.intervalMinutes} minutes.`,
     );
 
     // Handle graceful shutdown
