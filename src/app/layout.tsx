@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import NextTopLoader from "nextjs-toploader";
+import { Toaster } from "@/components/ui/sonner";
 import "@/styles/index.css";
 
 export const metadata: Metadata = {
-  title: "Claude Code Chat Logs",
+  title: "Claude Code JSONL",
   description: "Browse and interact with your Claude Code chat sessions",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
 };
 
 export default function RootLayout({
@@ -13,8 +15,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja">
-      <body>{children}</body>
+    <html lang="ja" suppressHydrationWarning>
+      <body>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <NextTopLoader color="#0586ff" showSpinner={false} />
+          {children}
+          <Toaster />
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

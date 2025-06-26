@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@import "./themes/default.css";
+@import "./themes/claude.css";
 @import "./typography.css";
 
 @layer base {
@@ -19,6 +19,10 @@
     }
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground;
 
@@ -28,34 +32,5 @@
     line-break: strict;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
-  }
-
-  /* Improve touch targets */
-  button,
-  a,
-  input,
-  textarea {
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  /* Smooth scrolling */
-  html {
-    scroll-behavior: smooth;
-  }
-
-  /* Prevent text selection on UI elements */
-  button,
-  nav {
-    user-select: none;
-  }
-
-  /* Optimize animations */
-  @media (prefers-reduced-motion: reduce) {
-    * {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-    }
   }
 }
