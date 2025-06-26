@@ -164,6 +164,7 @@ describe("processLogFile", () => {
         projectId: existingProject.id,
         name: null,
         cwd: "/workspace",
+        claudeSessionId: null,
         lastMessageAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),

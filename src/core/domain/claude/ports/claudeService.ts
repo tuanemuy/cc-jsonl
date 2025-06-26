@@ -1,16 +1,14 @@
 import type { Result } from "neverthrow";
 import type { ClaudeError } from "@/lib/error";
-import type { ClaudeMessage, ClaudeResponse, SendMessageInput } from "../types";
+import type { ChunkData, SDKMessage, SendMessageInput } from "../types";
 
 export interface ClaudeService {
   sendMessage(
     input: SendMessageInput,
-    messages: ClaudeMessage[],
-  ): Promise<Result<ClaudeResponse, ClaudeError>>;
+  ): Promise<Result<SDKMessage[], ClaudeError>>;
 
   sendMessageStream(
     input: SendMessageInput,
-    messages: ClaudeMessage[],
-    onChunk: (chunk: string) => void,
-  ): Promise<Result<ClaudeResponse, ClaudeError>>;
+    onChunk: (chunk: ChunkData) => void,
+  ): Promise<Result<SDKMessage[], ClaudeError>>;
 }

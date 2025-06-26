@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.31",
+    "@anthropic-ai/sdk": "^0.55.0",
     "@electric-sql/pglite": "^0.3.3",
     "@hookform/resolvers": "^5.1.1",
     "@libsql/client": "^0.15.9",

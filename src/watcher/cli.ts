@@ -307,8 +307,7 @@ const startCommand = define({
 
 const mainCommand = define({
   name: "claude-code-watcher",
-  description:
-    "CLI for Claude Code production server and log processing",
+  description: "CLI for Claude Code production server and log processing",
   run: (_ctx) => {
     console.log("Claude Code Unified CLI");
     console.log("");
@@ -334,8 +333,7 @@ async function main() {
     await cli(process.argv.slice(2), mainCommand, {
       name: "claude-code-watcher",
       version: "1.0.0",
-      description:
-        "CLI for Claude Code production server and log processing",
+      description: "CLI for Claude Code production server and log processing",
       subCommands,
     });
   } catch (error) {

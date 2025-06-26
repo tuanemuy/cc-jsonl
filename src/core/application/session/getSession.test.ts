@@ -25,6 +25,7 @@ describe("getSession", () => {
     projectId: projectId as ProjectId,
     name: null,
     cwd: "/tmp",
+    claudeSessionId: null,
     lastMessageAt: null,
     createdAt,
     updatedAt: createdAt,
