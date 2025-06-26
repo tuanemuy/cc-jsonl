@@ -1,285 +1,285 @@
 # Claude Code Watcher
 
-Claude Code のログファイルを処理し、プロダクションサーバーを管理するための統合CLIツールです。
+A unified CLI tool for processing Claude Code log files and managing production servers.
 
-## 主な機能
+## Key Features
 
-- 🚀 **プロダクションサーバー管理** - Next.jsアプリケーションを本番環境で実行
-- 📊 **ログファイル処理** - Claude Codeのセッションログを効率的に処理
-- ⚡ **柔軟な実行モード** - 1回のみ実行（batch）または定期的な監視（watch）
-- 📖 **わかりやすいヘルプ** - すべてのコマンドで詳細なヘルプを表示
-- 🎯 **簡単インストール** - `npm install` だけですぐに使用開始
+- 🚀 **Production Server Management** - Run Next.js applications in production
+- 📊 **Log File Processing** - Efficiently process Claude Code session logs
+- ⚡ **Flexible Execution Modes** - One-time execution (batch) or continuous monitoring (watch)
+- 📖 **Clear Help Documentation** - Detailed help for all commands
+- 🎯 **Easy Installation** - Ready to use immediately after `npm install`
 
-## クイックスタート
+## Quick Start
 
 ```bash
-# 1. インストール（CLIが自動でビルドされます）
+# 1. Install (CLI builds automatically)
 npm install
 
-# 2. プロダクションサーバーを起動
+# 2. Start production server
 npm run start:prod
 
-# 3. ログファイルを1回だけ処理
+# 3. Process log files once
 npm run logs:batch -- /path/to/claude-logs
 
-# 4. ログファイルを定期的に監視・処理
+# 4. Monitor and process log files continuously
 npm run logs:watch -- /path/to/claude-logs
 ```
 
-## インストール
+## Installation
 
-### 必要な環境
-- Node.js 22.x 以上
-- npm または pnpm
+### Prerequisites
+- Node.js 22.x or higher
+- npm or pnpm
 
-### セットアップ
+### Setup
 ```bash
-# プロジェクトをクローンしてインストール
+# Clone project and install
 git clone <repository-url>
 cd claude-code-web
-npm install  # CLIが自動的にビルドされます
+npm install  # CLI builds automatically
 
-# インストール確認
+# Verify installation
 npm run cli -- --version
 ```
 
-## 使用方法
+## Usage
 
-### プロダクションサーバーの起動
+### Starting Production Server
 
-Webアプリケーションを本番環境で実行：
+Run the web application in production environment:
 
 ```bash
-# デフォルトポート（3000）で起動
+# Start on default port (3000)
 npm run start:prod
 
-# カスタムポートで起動
+# Start on custom port
 npm run start:prod -- --port 8080
 npm run start:prod -- -p 3001
 ```
 
-### ログファイル処理
+### Log File Processing
 
-#### 1回のみ実行（Batch）
-溜まったログファイルを一度だけ処理して終了 - 過去ログの整理に最適：
+#### One-Time Execution (Batch)
+Process accumulated log files once and exit - perfect for cleaning up past logs:
 
 ```bash
-# 基本的な使用方法
+# Basic usage
 npm run logs:batch -- /path/to/claude-logs
 
-# オプション付きで実行
+# With options
 npm run logs:batch -- -c 10 -p "*.jsonl" /path/to/claude-logs
 
-# 処理済みファイルもすべて再処理
+# Reprocess all files including already processed ones
 npm run logs:batch -- --no-skipExisting /path/to/claude-logs
 
-# 特定パターンのファイルのみ処理
+# Process only specific pattern files
 npm run logs:batch -- --pattern "session-*.jsonl" /path/to/claude-logs
 ```
 
-#### 定期監視（Watch）
-ディレクトリを定期的に監視して新しいファイルを自動処理 - リアルタイム処理に最適：
+#### Continuous Monitoring (Watch)
+Monitor directory periodically and automatically process new files - ideal for real-time processing:
 
 ```bash
-# 基本的な使用方法 - 60分ごとにチェック（デフォルト）
+# Basic usage - check every 60 minutes (default)
 npm run logs:watch -- /path/to/claude-logs
 
-# 30分ごとにチェック
+# Check every 30 minutes
 npm run logs:watch -- -i 30 /path/to/claude-logs
 
-# 高頻度処理設定 - 5分ごとに20並列で処理
+# High-frequency processing - 20 parallel processes every 5 minutes
 npm run logs:watch -- -c 20 -i 5 /path/to/claude-logs
 
-# 特定パターンで15分ごとに監視
+# Monitor specific patterns every 15 minutes
 npm run logs:watch -- -p "**/*.jsonl" -i 15 /path/to/claude-logs
 ```
 
-## コマンドリファレンス
+## Command Reference
 
-### 利用可能なコマンド
+### Available Commands
 
-| コマンド | 説明 | 使用方法 |
+| Command | Description | Usage |
 |---------|-------------|-------|
-| `start` | プロダクションサーバーを起動 | `npm run start:prod -- [オプション]` |
-| `batch` | ログファイルを1回処理して終了 | `npm run logs:batch -- [オプション] [ディレクトリ]` |
-| `watch` | ログファイルを定期的に処理 | `npm run logs:watch -- [オプション] [ディレクトリ]` |
+| `start` | Start production server | `npm run start:prod -- [options]` |
+| `batch` | Process log files once and exit | `npm run logs:batch -- [options] [directory]` |
+| `watch` | Process log files periodically | `npm run logs:watch -- [options] [directory]` |
 
-### 共通オプション
+### Global Options
 
-| オプション | 短縮 | 説明 | デフォルト |
+| Option | Short | Description | Default |
 |--------|-------|-------------|---------|
-| `--help` | `-h` | ヘルプメッセージを表示 | - |
-| `--version` | `-v` | バージョンを表示 | - |
+| `--help` | `-h` | Show help message | - |
+| `--version` | `-v` | Show version | - |
 
-### プロダクションサーバーオプション
+### Production Server Options
 
-| オプション | 短縮 | 説明 | デフォルト |
+| Option | Short | Description | Default |
 |--------|-------|-------------|---------|
-| `--port` | `-p` | サーバーポート | 3000 |
+| `--port` | `-p` | Server port | 3000 |
 
-### ログ処理オプション
+### Log Processing Options
 
-| オプション | 短縮 | 説明 | デフォルト |
+| Option | Short | Description | Default |
 |--------|-------|-------------|---------|
-| `--targetDirectory` | - | 処理対象ディレクトリ | WATCH_TARGET_DIR環境変数 |
-| `--maxConcurrency` | `-c` | 最大並列処理数 | 5 |
-| `--skipExisting` | `-s` | 処理済みファイルをスキップ | true |
-| `--pattern` | `-p` | ファイルパターン | `**/*.jsonl` |
-| `--interval` | `-i` | 処理間隔（watchのみ、分） | 60 |
+| `--targetDirectory` | - | Target directory to process | WATCH_TARGET_DIR env var |
+| `--maxConcurrency` | `-c` | Maximum concurrent processing | 5 |
+| `--skipExisting` | `-s` | Skip already processed files | true |
+| `--pattern` | `-p` | File pattern to match | `**/*.jsonl` |
+| `--interval` | `-i` | Processing interval (watch only, minutes) | 60 |
 
-## 設定
+## Configuration
 
-### 環境変数
+### Environment Variables
 
 ```bash
-# ログ処理のデフォルトディレクトリを設定
+# Set default directory for log processing
 export WATCH_TARGET_DIR=/path/to/claude-logs
 
-# 環境変数を使用（ディレクトリを指定しない場合）
-npm run logs:batch  # WATCH_TARGET_DIRを使用
+# Use environment variable (when directory is not specified)
+npm run logs:batch  # Uses WATCH_TARGET_DIR
 
-# 環境変数を上書き
+# Override environment variable
 npm run logs:batch -- /custom/path
 ```
 
-### .envファイルでの設定
-プロジェクトルートに `.env` ファイルを作成：
+### .env File Configuration
+Create a `.env` file in the project root:
 
 ```env
 WATCH_TARGET_DIR=/home/user/claude-code-logs
 ```
 
-## 実用的な使用例
+## Practical Usage Examples
 
-### 本番サーバーの運用
+### Production Server Operations
 ```bash
-# インストールと本番サーバー起動
+# Install and start production server
 npm install
 npm run start:prod -- --port 8080
 ```
 
-### ログ処理の運用パターン
+### Log Processing Workflows
 
-#### 過去ログの一括処理
+#### Bulk Processing of Past Logs
 ```bash
-# 大量に溜まった過去ログを一括で処理
+# Process large backlog of accumulated logs
 npm run logs:batch -- -c 15 --no-skipExisting /archive/claude-logs
 ```
 
-#### リアルタイム監視
+#### Real-time Monitoring
 ```bash
-# アクティブなログディレクトリを10分ごとに監視
+# Monitor active log directory every 10 minutes
 npm run logs:watch -- -i 10 -c 8 /active/claude-logs
 ```
 
-#### 特定ファイルの処理
+#### Selective File Processing
 ```bash
-# 2024年のセッションファイルのみ処理
+# Process only 2024 session files
 npm run logs:batch -- -p "session-2024-*.jsonl" /logs/2024
 ```
 
-#### 高性能処理
+#### High-Performance Processing
 ```bash
-# 大量データの最大効率処理
+# Maximum efficiency processing for large datasets
 npm run logs:batch -- -c 20 --pattern "*.jsonl" /massive-logs
 ```
 
-## パフォーマンス調整
+## Performance Tuning
 
-### 並列処理数の設定
-- **低並列（1-5）**: リソースが限られている場合やネットワーク制約がある場合
-- **中並列（5-10）**: 一般的な用途でバランスの取れた性能
-- **高並列（10-20）**: 高性能システムでの最大スループット
+### Concurrency Settings
+- **Low concurrency (1-5)**: For limited resources or network-constrained environments
+- **Medium concurrency (5-10)**: Balanced performance for general use cases
+- **High concurrency (10-20)**: Maximum throughput for high-performance systems
 
-### ファイルパターンの使い分け
-- `**/*.jsonl`: すべての.jsonlファイルを再帰的に検索（デフォルト）
-- `*.jsonl`: 対象ディレクトリ内のファイルのみ
-- `session-*.jsonl`: セッションファイルのみ
-- `{chat,session}-*.jsonl`: 複数パターンの指定
+### File Pattern Usage
+- `**/*.jsonl`: All .jsonl files recursively (default)
+- `*.jsonl`: Files in target directory only
+- `session-*.jsonl`: Session files only
+- `{chat,session}-*.jsonl`: Multiple pattern specification
 
-### 監視間隔の目安
-- **1-5分**: アクティブなシステムでのリアルタイム処理
-- **15-30分**: 中程度の活動量での定期監視
-- **60分以上**: 低活動量での定期処理
+### Monitoring Interval Guidelines
+- **1-5 minutes**: Real-time processing for active systems
+- **15-30 minutes**: Regular monitoring for moderate activity
+- **60+ minutes**: Periodic processing for low-activity systems
 
-## よくある問題と解決方法
+## Troubleshooting
 
-### インストール後にCLIが見つからない
+### CLI Not Found After Installation
 
 ```bash
-# CLIを手動で再ビルド
+# Manually rebuild CLI
 npm run build:watcher
 
-# ビルド確認
+# Verify build
 ls -la dist/cli.mjs
 ```
 
-### 権限エラーが発生する
+### Permission Errors
 
 ```bash
-# ファイル権限を確認
+# Check file permissions
 ls -la dist/cli.mjs
 
-# 必要に応じて実行権限を付与
+# Grant execute permission if needed
 chmod +x dist/cli.mjs
 ```
 
-### ログ処理でエラーが発生する
+### Log Processing Errors
 
 ```bash
-# ディレクトリの存在と読み取り権限を確認
+# Check directory exists and is readable
 ls -la /path/to/claude-logs
 
-# ファイルパターンが正しいか確認
+# Verify file pattern is correct
 npm run cli -- batch --help
 ```
 
-### プロダクションサーバーが起動しない
+### Production Server Won't Start
 
 ```bash
-# ポートが使用可能か確認
+# Check if port is available
 lsof -i :3000
 
-# 別のポートを使用
+# Use different port
 npm run start:prod -- --port 3001
 ```
 
-### ヘルプとデバッグ情報
+### Help and Debug Information
 
 ```bash
-# CLIのバージョンと利用可能なコマンドを表示
+# Show CLI version and available commands
 npm run cli -- --help
 
-# 個別コマンドのヘルプを表示
+# Show help for individual commands
 npm run cli -- batch --help
 npm run cli -- watch --help
 npm run cli -- start --help
 ```
 
-## よく使うコマンドパターン
+## Common Command Patterns
 
-### 初回セットアップ
+### Initial Setup
 ```bash
-npm install                           # インストール
-npm run cli -- --version            # 動作確認
+npm install                           # Install
+npm run cli -- --version            # Verify operation
 ```
 
-### 日常的な運用
+### Daily Operations
 ```bash
-npm run start:prod                   # サーバー起動（ポート3000）
-npm run logs:batch -- ~/claude-logs # 今日のログを処理
-npm run logs:watch -- ~/claude-logs # 継続監視開始
+npm run start:prod                   # Start server (port 3000)
+npm run logs:batch -- ~/claude-logs # Process today's logs
+npm run logs:watch -- ~/claude-logs # Start continuous monitoring
 ```
 
-### トラブル時の確認
+### Troubleshooting
 ```bash
-npm run cli -- --help              # 全コマンド確認
-npm run build:watcher               # CLI再ビルド
-npm run cli -- batch --help        # batch詳細ヘルプ
+npm run cli -- --help              # Check all commands
+npm run build:watcher               # Rebuild CLI
+npm run cli -- batch --help        # Detailed batch help
 ```
 
-## サポート
+## Support
 
-問題が解決しない場合や追加の機能が必要な場合は、プロジェクトのドキュメントを参照してください。
+If problems persist or additional features are needed, please refer to the project documentation.
 
-詳細な開発向け情報については、[CLAUDE.md](./CLAUDE.md) をご覧ください。
+For detailed developer information, see [CLAUDE.md](./CLAUDE.md).
