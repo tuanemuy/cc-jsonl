@@ -6,6 +6,7 @@ export default defineConfig([
       "./src/watcher/index.ts",
       "./src/watcher/batchProcessor.ts",
       "./src/watcher/periodicBatchProcessor.ts",
+      "./src/watcher/cli.ts",
     ],
     dts: true,
   },

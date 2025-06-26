@@ -1,13 +1,21 @@
 {
-  "name": "agent-web-boilerplate",
+  "name": "claude-code-watcher",
   "version": "0.1.0",
-  "description": "",
+  "description": "Unified CLI for Claude Code production server and log processing",
   "main": "./dist/index.js",
+  "bin": {
+    "claude-code-watcher": "./dist/cli.mjs"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build:web": "next build",
     "start:web": "next start",
     "build:watcher": "tsdown",
+    "postinstall": "tsdown",
+    "start:prod": "node dist/cli.mjs start",
+    "logs:batch": "node dist/cli.mjs batch",
+    "logs:watch": "node dist/cli.mjs watch",
+    "cli": "node dist/cli.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "typecheck": "tsc --noEmit",

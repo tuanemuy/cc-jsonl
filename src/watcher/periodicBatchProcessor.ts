@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import "dotenv/config";
-import { parseArgs } from "node:util";
+import { cli, define } from "gunshi";
 import { batchProcessLogFiles } from "@/core/application/watcher";
 import { getWatcherContext } from "./watcherContext";
 
@@ -16,77 +16,101 @@ interface ProcessorConfig {
   intervalMinutes: number;
 }
 
-function parseArguments(): ProcessorConfig {
-  const { values, positionals } = parseArgs({
-    args: process.argv.slice(2),
-    options: {
-      help: {
-        type: "boolean",
-        short: "h",
-        default: false,
-      },
-      maxConcurrency: {
-        type: "string",
-        short: "c",
-        default: "5",
-      },
-      skipExisting: {
-        type: "boolean",
-        short: "s",
-        default: true,
-      },
-      pattern: {
-        type: "string",
-        short: "p",
-        default: "**/*.jsonl",
-      },
-      interval: {
-        type: "string",
-        short: "i",
-        default: "60",
-      },
+const watchCommand = define({
+  name: "watch",
+  description:
+    "Process Claude Code log files periodically at specified intervals",
+  args: {
+    targetDirectory: {
+      type: "string",
+      description:
+        "Directory to process (uses WATCH_TARGET_DIR if not specified)",
     },
-    allowPositionals: true,
-  });
+    maxConcurrency: {
+      type: "number",
+      short: "c",
+      default: 5,
+      description: "Maximum number of files to process concurrently",
+    },
+    skipExisting: {
+      type: "boolean",
+      short: "s",
+      default: true,
+      description: "Skip files that have already been processed",
+    },
+    pattern: {
+      type: "string",
+      short: "p",
+      default: "**/*.jsonl",
+      description: "File pattern to match",
+    },
+    interval: {
+      type: "number",
+      short: "i",
+      default: 60,
+      description: "Processing interval in minutes",
+    },
+  },
+  run: async (ctx) => {
+    const { targetDirectory, maxConcurrency, skipExisting, pattern, interval } =
+      ctx.values;
+    const { targetDir: defaultTargetDir } = getWatcherContext();
 
-  if (values.help) {
-    console.log(`
-Usage: node periodicBatchProcessor.mjs [options] [target-directory]
+    const config: ProcessorConfig = {
+      targetDirectory:
+        (targetDirectory as string | undefined) || defaultTargetDir,
+      pattern: pattern as string,
+      maxConcurrency: maxConcurrency as number,
+      skipExisting: skipExisting as boolean,
+      intervalMinutes: interval as number,
+    };
 
-Options:
-  -h, --help              Show this help message
-  -c, --maxConcurrency    Maximum number of files to process concurrently (default: 5)
-  -s, --skipExisting      Skip files that have already been processed (default: true)
-      --no-skipExisting   Force processing of all files
-  -p, --pattern          File pattern to match (default: **/*.jsonl)
-  -i, --interval         Processing interval in minutes (default: 60)
+    const intervalMs = config.intervalMinutes * 60 * 1000;
 
-Arguments:
-  target-directory        Directory to process (uses WATCH_TARGET_DIR if not specified)
+    console.log("Starting periodic batch processor with configuration:");
+    console.log(`  Target directory: ${config.targetDirectory}`);
+    console.log(`  Pattern: ${config.pattern}`);
+    console.log(`  Max concurrency: ${config.maxConcurrency}`);
+    console.log(`  Skip existing: ${config.skipExisting}`);
+    console.log(`  Interval: ${config.intervalMinutes} minutes`);
 
-Examples:
-  node periodicBatchProcessor.mjs /path/to/logs
-  node periodicBatchProcessor.mjs -i 30 -c 10 /path/to/logs
-  node periodicBatchProcessor.mjs --no-skipExisting --interval 15 /path/to/logs
+    // Run once immediately on startup
+    console.log("Running initial batch processing...");
+    await runBatchProcessing(config);
 
-Note:
-  The processor runs immediately on startup, then at the specified interval.
-  Use Ctrl+C (SIGINT) or SIGTERM to stop gracefully.
-`);
-    process.exit(0);
-  }
+    // Set up periodic execution
+    intervalId = setInterval(async () => {
+      await runBatchProcessing(config);
+    }, intervalMs);
 
-  const { targetDir: defaultTargetDir } = getWatcherContext();
-  const targetDir = positionals[0] || defaultTargetDir;
+    console.log(
+      `Periodic batch processor started. Next run in ${config.intervalMinutes} minutes.`,
+    );
 
-  return {
-    targetDirectory: targetDir,
-    pattern: values.pattern || "**/*.jsonl",
-    maxConcurrency: Number(values.maxConcurrency) || 5,
-    skipExisting: values.skipExisting !== false,
-    intervalMinutes: Number(values.interval) || 60,
-  };
-}
+    // Handle graceful shutdown
+    process.on("SIGINT", () => {
+      console.log("\nShutting down periodic batch processor...");
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+      console.log("Periodic batch processor stopped.");
+      process.exit(0);
+    });
+
+    process.on("SIGTERM", () => {
+      console.log(
+        "\nReceived SIGTERM, shutting down periodic batch processor...",
+      );
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+      console.log("Periodic batch processor stopped.");
+      process.exit(0);
+    });
+  },
+});
 
 async function runBatchProcessing(config: ProcessorConfig) {
   if (isRunning) {
@@ -145,50 +169,10 @@ async function runBatchProcessing(config: ProcessorConfig) {
 
 async function main() {
   try {
-    const config = parseArguments();
-    const intervalMs = config.intervalMinutes * 60 * 1000;
-
-    console.log("Starting periodic batch processor with configuration:");
-    console.log(`  Target directory: ${config.targetDirectory}`);
-    console.log(`  Pattern: ${config.pattern}`);
-    console.log(`  Max concurrency: ${config.maxConcurrency}`);
-    console.log(`  Skip existing: ${config.skipExisting}`);
-    console.log(`  Interval: ${config.intervalMinutes} minutes`);
-
-    // Run once immediately on startup
-    console.log("Running initial batch processing...");
-    await runBatchProcessing(config);
-
-    // Set up periodic execution
-    intervalId = setInterval(async () => {
-      await runBatchProcessing(config);
-    }, intervalMs);
-
-    console.log(
-      `Periodic batch processor started. Next run in ${config.intervalMinutes} minutes.`,
-    );
-
-    // Handle graceful shutdown
-    process.on("SIGINT", () => {
-      console.log("\nShutting down periodic batch processor...");
-      if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-      console.log("Periodic batch processor stopped.");
-      process.exit(0);
-    });
-
-    process.on("SIGTERM", () => {
-      console.log(
-        "\nReceived SIGTERM, shutting down periodic batch processor...",
-      );
-      if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-      console.log("Periodic batch processor stopped.");
-      process.exit(0);
+    await cli(process.argv.slice(2), watchCommand, {
+      name: "claude-code-watch",
+      version: "1.0.0",
+      description: "Claude Code log file periodic processor",
     });
   } catch (error) {
     console.error("Failed to start periodic batch processor:", error);
