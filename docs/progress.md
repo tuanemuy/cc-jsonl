@@ -33,6 +33,11 @@ Document current progress, issues, and next steps here.
     - `src/core/application/claude/sendMessageStream.ts`: Added session updates
   - Testing: All 20 test cases pass, type checking successful
   - Key Insight: SDK already provides messages in appropriate granularity for streaming
+  - Frontend Updates:
+    - Updated ChatInterface.tsx to handle SDKMessage objects directly
+    - Removed NDJSON parsing logic in favor of direct SDKMessage processing
+    - MessageContent.tsx already compatible with JSON array format
+  - Created test-streaming.mjs script to verify end-to-end streaming functionality
 
 ### 2025-06-26
 

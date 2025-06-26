@@ -166,72 +166,59 @@ export function ChatInterface({
           const data = JSON.parse(event.data);
 
           if (data.type === "chunk") {
-            const lines = data.content
-              .split("\n")
-              .filter((line: string) => line.trim());
+            // data.content is now an SDKMessage object
+            const sdkMessage = data.content;
 
-            for (const line of lines) {
-              try {
-                const jsonData = JSON.parse(line);
+            setMessages((prev) => {
+              let newMessage: ChatMessage;
 
-                setMessages((prev) => {
-                  let newMessage: ChatMessage;
+              // Handle different SDKMessage types
+              if (sdkMessage.type === "assistant" && sdkMessage.message) {
+                newMessage = {
+                  id: `msg-${Date.now()}-${Math.random()}`,
+                  role: "assistant",
+                  content: JSON.stringify(sdkMessage.message.content),
+                  timestamp: new Date(),
+                  isStreaming: false,
+                };
+              } else if (sdkMessage.type === "user" && sdkMessage.message) {
+                newMessage = {
+                  id: `msg-${Date.now()}-${Math.random()}`,
+                  role: "user",
+                  content: JSON.stringify(sdkMessage.message.content),
+                  timestamp: new Date(),
+                  isStreaming: false,
+                };
+              } else if (sdkMessage.type === "system") {
+                // Handle system messages if needed
+                return prev;
+              } else if (sdkMessage.type === "result") {
+                // Handle result messages if needed
+                return prev;
+              } else {
+                // For any other types, skip
+                return prev;
+              }
 
-                  if (jsonData.role && jsonData.content) {
-                    newMessage = {
-                      id: `msg-${Date.now()}-${Math.random()}`,
-                      role: jsonData.role,
-                      content: JSON.stringify(jsonData.content),
-                      timestamp: new Date(),
-                      isStreaming: false,
-                    };
-                  } else if (jsonData.type === "text") {
-                    newMessage = {
-                      id: `text-${Date.now()}-${Math.random()}`,
-                      role: "assistant",
-                      content: JSON.stringify([
-                        { type: "text", text: jsonData.text },
-                      ]),
-                      timestamp: new Date(),
-                      isStreaming: false,
-                    };
-                  } else if (jsonData.type === "thinking") {
-                    newMessage = {
-                      id: `thinking-${Date.now()}-${Math.random()}`,
-                      role: "assistant",
-                      content: JSON.stringify([
-                        { type: "thinking", content: jsonData.content },
-                      ]),
-                      timestamp: new Date(),
-                      isStreaming: false,
-                    };
-                  } else if (jsonData.type === "tool_use") {
-                    pendingToolUsesRef.current.set(jsonData.id, jsonData);
+              // Handle tool use content blocks within messages
+              if (sdkMessage.type === "assistant" && sdkMessage.message?.content) {
+                for (const contentBlock of sdkMessage.message.content) {
+                  if (contentBlock.type === "tool_use") {
+                    pendingToolUsesRef.current.set(contentBlock.id, contentBlock);
+                  }
+                }
+              }
 
-                    newMessage = {
-                      id: `tool-${Date.now()}-${jsonData.id || Math.random()}`,
-                      role: "assistant",
-                      content: JSON.stringify([jsonData]),
-                      timestamp: new Date(),
-                      messageType: "tool_use",
-                      isStreaming: false,
-                    };
-                  } else if (jsonData.type === "tool_result") {
-                    newMessage = {
-                      id: `tool_result-${Date.now()}-${jsonData.tool_use_id || Math.random()}`,
-                      role: "tool",
-                      content: JSON.stringify([jsonData]),
-                      timestamp: new Date(),
-                      messageType: "tool_use",
-                      isStreaming: false,
-                    };
-
+              // Handle tool results from user messages
+              if (sdkMessage.type === "user" && sdkMessage.message?.content) {
+                for (const contentBlock of sdkMessage.message.content) {
+                  if (contentBlock.type === "tool_result") {
                     const pendingToolUse = pendingToolUsesRef.current.get(
-                      jsonData.tool_use_id,
+                      contentBlock.tool_use_id,
                     );
                     if (pendingToolUse) {
                       const permissionResult = detectPermissionError(
-                        jsonData,
+                        contentBlock,
                         pendingToolUse,
                       );
                       if (permissionResult.isOk() && permissionResult.value) {
@@ -241,18 +228,14 @@ export function ChatInterface({
                         setIsLoading(false);
                         return prev;
                       }
-                      pendingToolUsesRef.current.delete(jsonData.tool_use_id);
+                      pendingToolUsesRef.current.delete(contentBlock.tool_use_id);
                     }
-                  } else {
-                    return prev;
                   }
-
-                  return [...prev, newMessage];
-                });
-              } catch (e) {
-                console.error("Failed to parse NDJSON line:", e);
+                }
               }
-            }
+
+              return [...prev, newMessage];
+            });
           } else if (data.type === "complete") {
             eventSource.close();
             setIsLoading(false);
