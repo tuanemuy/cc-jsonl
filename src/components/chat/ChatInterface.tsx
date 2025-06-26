@@ -201,10 +201,16 @@ export function ChatInterface({
               }
 
               // Handle tool use content blocks within messages
-              if (sdkMessage.type === "assistant" && sdkMessage.message?.content) {
+              if (
+                sdkMessage.type === "assistant" &&
+                sdkMessage.message?.content
+              ) {
                 for (const contentBlock of sdkMessage.message.content) {
                   if (contentBlock.type === "tool_use") {
-                    pendingToolUsesRef.current.set(contentBlock.id, contentBlock);
+                    pendingToolUsesRef.current.set(
+                      contentBlock.id,
+                      contentBlock,
+                    );
                   }
                 }
               }
@@ -228,7 +234,9 @@ export function ChatInterface({
                         setIsLoading(false);
                         return prev;
                       }
-                      pendingToolUsesRef.current.delete(contentBlock.tool_use_id);
+                      pendingToolUsesRef.current.delete(
+                        contentBlock.tool_use_id,
+                      );
                     }
                   }
                 }

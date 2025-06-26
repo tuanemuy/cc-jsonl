@@ -1,4 +1,3 @@
-import type { SDKMessage } from "@anthropic-ai/claude-code";
 import { z } from "zod/v4";
 
 export const sendMessageInputSchema = z.object({
@@ -9,10 +8,44 @@ export const sendMessageInputSchema = z.object({
 });
 export type SendMessageInput = z.infer<typeof sendMessageInputSchema>;
 
-// Use SDK types directly instead of custom types
-export type ClaudeSDKMessage = SDKMessage;
-
-// Extract content block types from SDK Message - removed unused types
+// Custom SDKMessage type definition to avoid direct library dependency
+export type SDKMessage =
+  | {
+      type: "assistant";
+      message: {
+        id: string;
+        content: Array<{
+          type: string;
+          text?: string;
+          [key: string]: unknown;
+        }>;
+        role: "assistant";
+        model: string;
+        stop_reason: string | null;
+        stop_sequence: string | null;
+      };
+    }
+  | {
+      type: "result";
+      subtype: string;
+      duration_ms: number;
+      duration_api_ms: number;
+      is_error: boolean;
+      num_turns: number;
+      result: string;
+      session_id: string;
+      total_cost_usd: number;
+      usage: {
+        input_tokens: number;
+        output_tokens: number;
+        cache_creation_input_tokens: number;
+        cache_read_input_tokens: number;
+      };
+    }
+  | {
+      type: string;
+      [key: string]: unknown;
+    };
 
 // ChunkData is simply an SDKMessage
 // The SDK already provides messages in the appropriate granularity for streaming

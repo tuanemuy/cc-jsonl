@@ -1,7 +1,11 @@
-import { query, type SDKMessage } from "@anthropic-ai/claude-code";
+import { query } from "@anthropic-ai/claude-code";
 import { err, ok, type Result } from "neverthrow";
 import type { ClaudeService } from "@/core/domain/claude/ports/claudeService";
-import type { ChunkData, SendMessageInput } from "@/core/domain/claude/types";
+import type {
+  ChunkData,
+  SDKMessage,
+  SendMessageInput,
+} from "@/core/domain/claude/types";
 import { ClaudeError } from "@/lib/error";
 
 export class AnthropicClaudeService implements ClaudeService {
@@ -41,7 +45,7 @@ export class AnthropicClaudeService implements ClaudeService {
         prompt: input.message,
         options,
       })) {
-        messages.push(message);
+        messages.push(message as unknown as SDKMessage);
       }
 
       if (messages.length === 0) {
@@ -91,10 +95,11 @@ export class AnthropicClaudeService implements ClaudeService {
         prompt: input.message,
         options,
       })) {
-        messages.push(message);
+        const customMessage = message as unknown as SDKMessage;
+        messages.push(customMessage);
 
         // Send the entire message as a chunk
-        onChunk(message);
+        onChunk(customMessage);
       }
 
       if (messages.length === 0) {

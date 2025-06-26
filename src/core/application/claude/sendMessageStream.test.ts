@@ -134,11 +134,12 @@ describe("sendMessageStream", () => {
         );
         // Find the assistant message
         const assistantMessage = chunks.find(
-          (chunk: any) => chunk.type === "assistant",
+          (chunk): chunk is Extract<ChunkData, { type: "assistant" }> =>
+            chunk.type === "assistant",
         );
         expect(assistantMessage).toBeDefined();
-        if (assistantMessage && "message" in assistantMessage) {
-          const content = assistantMessage.message?.content?.[0];
+        if (assistantMessage) {
+          const content = assistantMessage.message.content[0];
           if (content && typeof content === "object" && "text" in content) {
             expect(content.text).toBe("You said: Multi word message");
           }
@@ -270,12 +271,13 @@ describe("sendMessageStream", () => {
         expect(chunks.length).toBeGreaterThan(0);
         // Find the assistant message in the SDKMessages
         const assistantMessage = chunks.find(
-          (chunk: any) => chunk.type === "assistant",
+          (chunk): chunk is Extract<ChunkData, { type: "assistant" }> =>
+            chunk.type === "assistant",
         );
         expect(assistantMessage).toBeDefined();
         let textContent = "";
-        if (assistantMessage && "message" in assistantMessage) {
-          const content = assistantMessage.message?.content?.[0];
+        if (assistantMessage) {
+          const content = assistantMessage.message.content[0];
           if (content && typeof content === "object" && "text" in content) {
             textContent = content.text || "";
           }

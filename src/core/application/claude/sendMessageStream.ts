@@ -1,7 +1,6 @@
-import type { SDKMessage } from "@anthropic-ai/claude-code";
 import { err, ok, type Result } from "neverthrow";
 import { z } from "zod/v4";
-import type { ChunkData } from "@/core/domain/claude/types";
+import type { ChunkData, SDKMessage } from "@/core/domain/claude/types";
 import type { Session } from "@/core/domain/session/types";
 import {
   generateSessionId,

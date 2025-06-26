@@ -1,7 +1,10 @@
-import type { SDKMessage } from "@anthropic-ai/claude-code";
 import { err, ok, type Result } from "neverthrow";
 import type { ClaudeService } from "@/core/domain/claude/ports/claudeService";
-import type { ChunkData, SendMessageInput } from "@/core/domain/claude/types";
+import type {
+  ChunkData,
+  SDKMessage,
+  SendMessageInput,
+} from "@/core/domain/claude/types";
 import { ClaudeError } from "@/lib/error";
 
 export class MockClaudeService implements ClaudeService {
@@ -37,7 +40,7 @@ export class MockClaudeService implements ClaudeService {
           stop_reason: "end_turn",
           stop_sequence: null,
         },
-      } as SDKMessage,
+      },
       {
         type: "result",
         subtype: "success",
@@ -54,7 +57,7 @@ export class MockClaudeService implements ClaudeService {
           cache_creation_input_tokens: 0,
           cache_read_input_tokens: 0,
         },
-      } as SDKMessage,
+      },
     ];
 
     return ok(result);
@@ -89,7 +92,7 @@ export class MockClaudeService implements ClaudeService {
           stop_reason: "end_turn",
           stop_sequence: null,
         },
-      } as SDKMessage,
+      },
       {
         type: "result",
         subtype: "success",
@@ -106,7 +109,7 @@ export class MockClaudeService implements ClaudeService {
           cache_creation_input_tokens: 0,
           cache_read_input_tokens: 0,
         },
-      } as SDKMessage,
+      },
     ];
 
     // Stream each message sequentially

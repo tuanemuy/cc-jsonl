@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getServerContext } from "@/actions/context";
 import { sendMessageStream } from "@/core/application/claude/sendMessageStream";
-import type { ChunkData } from "@/core/domain/claude/types";
+import type { ChunkData, SDKMessage } from "@/core/domain/claude/types";
 
 export async function GET(request: NextRequest) {
   try {
@@ -75,7 +75,8 @@ export async function GET(request: NextRequest) {
 
             // Find the last assistant message from SDK messages
             const assistantMessages = messages.filter(
-              (msg) => msg.type === "assistant",
+              (msg): msg is Extract<SDKMessage, { type: "assistant" }> =>
+                msg.type === "assistant",
             );
             const lastAssistantMessage =
               assistantMessages[assistantMessages.length - 1];
