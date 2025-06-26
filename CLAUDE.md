@@ -10,17 +10,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ### Unified CLI (Recommended)
-Use the unified `claude-code-watcher` CLI for production and log processing:
+After `npm install`, the CLI is automatically built and ready to use:
 
-**Production Server:**
+**Easy npm scripts:**
+- `npm run start:prod [-- --port 8080]` - Start production server
+- `npm run logs:batch [-- options]` - Process log files once (1回のみ実行)
+- `npm run logs:watch [-- options]` - Process log files periodically
+- `npm run cli [-- command]` - Run any CLI command
+
+**Direct CLI (alternative):**
 - `node dist/cli.mjs start [--port 3000]` - Start production server
-
-**Log Processing:**
 - `node dist/cli.mjs batch [options] [directory]` - Process log files once
 - `node dist/cli.mjs watch [options] [directory]` - Process log files periodically
 
-**Build CLI:**
-- `pnpm run build:watcher` - Build CLI tools (required before first use)
+**Auto-build:**
+- CLI automatically builds during `npm install` via postinstall script
+- Manual build: `npm run build:watcher` if needed
 
 ### Legacy npm Commands
 - `pnpm lint` - Lint code with Biome
