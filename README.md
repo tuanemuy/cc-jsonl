@@ -8,39 +8,44 @@ A unified CLI tool for processing Claude Code log files and managing production 
 - 📊 **Log File Processing** - Efficiently process Claude Code session logs
 - ⚡ **Flexible Execution Modes** - One-time execution (batch) or continuous monitoring (watch)
 - 📖 **Clear Help Documentation** - Detailed help for all commands
-- 🎯 **Easy Installation** - Ready to use immediately after `npm install`
+- 🎯 **Global CLI Installation** - Available system-wide after installation
 
 ## Quick Start
 
 ```bash
-# 1. Install (CLI builds automatically)
-npm install
+# 1. Install globally
+npm install -g claude-code-watcher
 
 # 2. Start production server
-npm run start:prod
+claude-code-watcher start
 
 # 3. Process log files once
-npm run logs:batch -- /path/to/claude-logs
+claude-code-watcher batch /path/to/claude-logs
 
 # 4. Monitor and process log files continuously
-npm run logs:watch -- /path/to/claude-logs
+claude-code-watcher watch /path/to/claude-logs
 ```
 
 ## Installation
 
 ### Prerequisites
 - Node.js 22.x or higher
-- npm or pnpm
+- npm or yarn
 
-### Setup
+### Global Installation (Recommended)
 ```bash
-# Clone project and install
-git clone <repository-url>
-cd claude-code-web
-npm install  # CLI builds automatically
+# Install globally for system-wide access
+npm install -g claude-code-watcher
 
 # Verify installation
-npm run cli -- --version
+claude-code-watcher --version
+```
+
+### Alternative: NPX Usage
+```bash
+# Use without installation
+npx claude-code-watcher --help
+npx claude-code-watcher start --port 8080
 ```
 
 ## Usage
@@ -51,11 +56,11 @@ Run the web application in production environment:
 
 ```bash
 # Start on default port (3000)
-npm run start:prod
+claude-code-watcher start
 
 # Start on custom port
-npm run start:prod -- --port 8080
-npm run start:prod -- -p 3001
+claude-code-watcher start --port 8080
+claude-code-watcher start -p 3001
 ```
 
 ### Log File Processing
@@ -65,16 +70,16 @@ Process accumulated log files once and exit - perfect for cleaning up past logs:
 
 ```bash
 # Basic usage
-npm run logs:batch -- /path/to/claude-logs
+claude-code-watcher batch /path/to/claude-logs
 
 # With options
-npm run logs:batch -- -c 10 -p "*.jsonl" /path/to/claude-logs
+claude-code-watcher batch -c 10 -p "*.jsonl" /path/to/claude-logs
 
 # Reprocess all files including already processed ones
-npm run logs:batch -- --no-skipExisting /path/to/claude-logs
+claude-code-watcher batch --no-skipExisting /path/to/claude-logs
 
 # Process only specific pattern files
-npm run logs:batch -- --pattern "session-*.jsonl" /path/to/claude-logs
+claude-code-watcher batch --pattern "session-*.jsonl" /path/to/claude-logs
 ```
 
 #### Continuous Monitoring (Watch)
@@ -82,16 +87,16 @@ Monitor directory periodically and automatically process new files - ideal for r
 
 ```bash
 # Basic usage - check every 60 minutes (default)
-npm run logs:watch -- /path/to/claude-logs
+claude-code-watcher watch /path/to/claude-logs
 
 # Check every 30 minutes
-npm run logs:watch -- -i 30 /path/to/claude-logs
+claude-code-watcher watch -i 30 /path/to/claude-logs
 
 # High-frequency processing - 20 parallel processes every 5 minutes
-npm run logs:watch -- -c 20 -i 5 /path/to/claude-logs
+claude-code-watcher watch -c 20 -i 5 /path/to/claude-logs
 
 # Monitor specific patterns every 15 minutes
-npm run logs:watch -- -p "**/*.jsonl" -i 15 /path/to/claude-logs
+claude-code-watcher watch -p "**/*.jsonl" -i 15 /path/to/claude-logs
 ```
 
 ## Command Reference
@@ -100,9 +105,9 @@ npm run logs:watch -- -p "**/*.jsonl" -i 15 /path/to/claude-logs
 
 | Command | Description | Usage |
 |---------|-------------|-------|
-| `start` | Start production server | `npm run start:prod -- [options]` |
-| `batch` | Process log files once and exit | `npm run logs:batch -- [options] [directory]` |
-| `watch` | Process log files periodically | `npm run logs:watch -- [options] [directory]` |
+| `start` | Start production server | `claude-code-watcher start [options]` |
+| `batch` | Process log files once and exit | `claude-code-watcher batch [options] [directory]` |
+| `watch` | Process log files periodically | `claude-code-watcher watch [options] [directory]` |
 
 ### Global Options
 
@@ -136,26 +141,28 @@ npm run logs:watch -- -p "**/*.jsonl" -i 15 /path/to/claude-logs
 export WATCH_TARGET_DIR=/path/to/claude-logs
 
 # Use environment variable (when directory is not specified)
-npm run logs:batch  # Uses WATCH_TARGET_DIR
+claude-code-watcher batch  # Uses WATCH_TARGET_DIR
 
 # Override environment variable
-npm run logs:batch -- /custom/path
+claude-code-watcher batch /custom/path
 ```
 
 ### .env File Configuration
-Create a `.env` file in the project root:
+For local development, create a `.env` file in the project root:
 
 ```env
 WATCH_TARGET_DIR=/home/user/claude-code-logs
 ```
+
+Note: This is only relevant for local development. For global CLI usage, use environment variables or command line arguments.
 
 ## Practical Usage Examples
 
 ### Production Server Operations
 ```bash
 # Install and start production server
-npm install
-npm run start:prod -- --port 8080
+npm install -g claude-code-watcher
+claude-code-watcher start --port 8080
 ```
 
 ### Log Processing Workflows
@@ -163,25 +170,25 @@ npm run start:prod -- --port 8080
 #### Bulk Processing of Past Logs
 ```bash
 # Process large backlog of accumulated logs
-npm run logs:batch -- -c 15 --no-skipExisting /archive/claude-logs
+claude-code-watcher batch -c 15 --no-skipExisting /archive/claude-logs
 ```
 
 #### Real-time Monitoring
 ```bash
 # Monitor active log directory every 10 minutes
-npm run logs:watch -- -i 10 -c 8 /active/claude-logs
+claude-code-watcher watch -i 10 -c 8 /active/claude-logs
 ```
 
 #### Selective File Processing
 ```bash
 # Process only 2024 session files
-npm run logs:batch -- -p "session-2024-*.jsonl" /logs/2024
+claude-code-watcher batch -p "session-2024-*.jsonl" /logs/2024
 ```
 
 #### High-Performance Processing
 ```bash
 # Maximum efficiency processing for large datasets
-npm run logs:batch -- -c 20 --pattern "*.jsonl" /massive-logs
+claude-code-watcher batch -c 20 --pattern "*.jsonl" /massive-logs
 ```
 
 ## Performance Tuning
@@ -207,21 +214,25 @@ npm run logs:batch -- -c 20 --pattern "*.jsonl" /massive-logs
 ### CLI Not Found After Installation
 
 ```bash
-# Manually rebuild CLI
-npm run build:watcher
+# Check global installation
+npm list -g claude-code-watcher
 
-# Verify build
-ls -la dist/cli.mjs
+# Reinstall if needed
+npm install -g claude-code-watcher
+
+# Check PATH includes npm global bin
+echo $PATH
 ```
 
 ### Permission Errors
 
 ```bash
-# Check file permissions
-ls -la dist/cli.mjs
+# On Linux/macOS, you may need sudo for global install
+sudo npm install -g claude-code-watcher
 
-# Grant execute permission if needed
-chmod +x dist/cli.mjs
+# Or configure npm to use different directory
+npm config set prefix ~/.local
+export PATH=~/.local/bin:$PATH
 ```
 
 ### Log Processing Errors
@@ -231,7 +242,7 @@ chmod +x dist/cli.mjs
 ls -la /path/to/claude-logs
 
 # Verify file pattern is correct
-npm run cli -- batch --help
+claude-code-watcher batch --help
 ```
 
 ### Production Server Won't Start
@@ -241,41 +252,67 @@ npm run cli -- batch --help
 lsof -i :3000
 
 # Use different port
-npm run start:prod -- --port 3001
+claude-code-watcher start --port 3001
 ```
 
 ### Help and Debug Information
 
 ```bash
 # Show CLI version and available commands
-npm run cli -- --help
+claude-code-watcher --help
 
 # Show help for individual commands
-npm run cli -- batch --help
-npm run cli -- watch --help
-npm run cli -- start --help
+claude-code-watcher batch --help
+claude-code-watcher watch --help
+claude-code-watcher start --help
 ```
 
 ## Common Command Patterns
 
 ### Initial Setup
 ```bash
-npm install                           # Install
-npm run cli -- --version            # Verify operation
+npm install -g claude-code-watcher   # Install globally
+claude-code-watcher --version        # Verify operation
 ```
 
 ### Daily Operations
 ```bash
-npm run start:prod                   # Start server (port 3000)
-npm run logs:batch -- ~/claude-logs # Process today's logs
-npm run logs:watch -- ~/claude-logs # Start continuous monitoring
+claude-code-watcher start            # Start server (port 3000)
+claude-code-watcher batch ~/claude-logs # Process today's logs
+claude-code-watcher watch ~/claude-logs # Start continuous monitoring
 ```
 
 ### Troubleshooting
 ```bash
-npm run cli -- --help              # Check all commands
-npm run build:watcher               # Rebuild CLI
-npm run cli -- batch --help        # Detailed batch help
+claude-code-watcher --help          # Check all commands
+claude-code-watcher batch --help    # Detailed batch help
+npm list -g claude-code-watcher     # Check installation
+```
+
+## Development
+
+### Local Development
+For developers who want to contribute or modify this tool:
+
+```bash
+# Clone and install for development
+git clone <repository-url>
+cd claude-code-web
+npm install
+
+# Build CLI locally
+npm run build:watcher
+
+# Run with npm scripts (development)
+npm run start:prod
+npm run logs:batch -- /path/to/logs
+npm run logs:watch -- /path/to/logs
+```
+
+### Publishing
+```bash
+# Publish to npm registry
+npm publish
 ```
 
 ## Support
