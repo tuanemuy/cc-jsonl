@@ -4,6 +4,7 @@ A unified CLI tool for processing Claude Code log files and managing production 
 
 ## Key Features
 
+- 🔧 **Easy Setup** - One-command initialization with XDG-compliant configuration
 - 🚀 **Production Server Management** - Run Next.js applications in production
 - 📊 **Log File Processing** - Efficiently process Claude Code session logs
 - ⚡ **Flexible Execution Modes** - One-time execution (batch) or continuous monitoring (watch)
@@ -16,14 +17,17 @@ A unified CLI tool for processing Claude Code log files and managing production 
 # 1. Install globally
 npm install -g claude-code-watcher
 
-# 2. Start production server
+# 2. Initialize configuration and database
+claude-code-watcher setup
+
+# 3. Start production server
 claude-code-watcher start
 
-# 3. Process log files once
-claude-code-watcher batch /path/to/claude-logs
+# 4. Process log files once
+claude-code-watcher batch
 
-# 4. Monitor and process log files continuously
-claude-code-watcher watch /path/to/claude-logs
+# 5. Monitor and process log files continuously
+claude-code-watcher watch
 ```
 
 ## Installation
@@ -40,6 +44,26 @@ npm install -g claude-code-watcher
 # Verify installation
 claude-code-watcher --version
 ```
+
+### Initial Setup
+
+After installation, initialize the configuration and database:
+
+```bash
+# Initialize with default settings
+claude-code-watcher setup
+
+# Initialize with custom paths
+claude-code-watcher setup --databaseFile /custom/path/data.db --watchDir /custom/logs
+
+# Force overwrite existing configuration
+claude-code-watcher setup --force
+```
+
+**Configuration locations (follows XDG Base Directory specification):**
+- **Config file**: `$XDG_CONFIG_HOME/cc-jsonl/settings.json` or `~/.config/cc-jsonl/settings.json`
+- **Default database**: `$XDG_CONFIG_HOME/cc-jsonl/data.db` or `~/.config/cc-jsonl/data.db`
+- **Default watch directory**: `$XDG_CONFIG_HOME/claude/projects` or `~/.claude/projects`
 
 ### Alternative: NPX Usage
 ```bash
@@ -105,6 +129,7 @@ claude-code-watcher watch -p "**/*.jsonl" -i 15 /path/to/claude-logs
 
 | Command | Description | Usage |
 |---------|-------------|-------|
+| `setup` | Initialize configuration and run database migrations | `claude-code-watcher setup [options]` |
 | `start` | Start production server | `claude-code-watcher start [options]` |
 | `batch` | Process log files once and exit | `claude-code-watcher batch [options] [directory]` |
 | `watch` | Process log files periodically | `claude-code-watcher watch [options] [directory]` |
@@ -116,6 +141,14 @@ claude-code-watcher watch -p "**/*.jsonl" -i 15 /path/to/claude-logs
 | `--help` | `-h` | Show help message | - |
 | `--version` | `-v` | Show version | - |
 
+### Setup Command Options
+
+| Option | Short | Description | Default |
+|--------|-------|-------------|---------|
+| `--databaseFile` | `-d` | Database file path | `$XDG_CONFIG_HOME/cc-jsonl/data.db` or `~/.config/cc-jsonl/data.db` |
+| `--watchDir` | `-w` | Directory to watch for log files | `$XDG_CONFIG_HOME/claude/projects` or `~/.claude/projects` |
+| `--force` | `-f` | Force overwrite existing configuration | false |
+
 ### Production Server Options
 
 | Option | Short | Description | Default |
@@ -126,7 +159,7 @@ claude-code-watcher watch -p "**/*.jsonl" -i 15 /path/to/claude-logs
 
 | Option | Short | Description | Default |
 |--------|-------|-------------|---------|
-| `--targetDirectory` | - | Target directory to process | WATCH_TARGET_DIR env var |
+| `--targetDirectory` | - | Target directory to process | Configured watch directory |
 | `--maxConcurrency` | `-c` | Maximum concurrent processing | 5 |
 | `--skipExisting` | `-s` | Skip already processed files | true |
 | `--pattern` | `-p` | File pattern to match | `**/*.jsonl` |
@@ -134,7 +167,31 @@ claude-code-watcher watch -p "**/*.jsonl" -i 15 /path/to/claude-logs
 
 ## Configuration
 
-### Environment Variables
+### Configuration File (Recommended)
+
+The recommended way to configure Claude Code Watcher is using the setup command, which creates a configuration file following the XDG Base Directory specification:
+
+```bash
+# Initialize configuration
+claude-code-watcher setup
+
+# View current configuration
+cat ~/.config/cc-jsonl/settings.json
+```
+
+**Configuration file format:**
+```json
+{
+  "databaseFileName": "/home/user/.config/cc-jsonl/data.db",
+  "watchTargetDir": "/home/user/.claude/projects"
+}
+```
+
+**Configuration file locations:**
+- If `$XDG_CONFIG_HOME` is set: `$XDG_CONFIG_HOME/cc-jsonl/settings.json`
+- Otherwise: `~/.config/cc-jsonl/settings.json`
+
+### Environment Variables (Development/Legacy)
 
 ```bash
 # Set default directory for log processing
@@ -154,14 +211,25 @@ For local development, create a `.env` file in the project root:
 WATCH_TARGET_DIR=/home/user/claude-code-logs
 ```
 
-Note: This is only relevant for local development. For global CLI usage, use environment variables or command line arguments.
+**Note:** Environment variables are primarily for development or when you cannot use the setup command. For production use, the `setup` command is recommended as it provides persistent configuration.
 
 ## Practical Usage Examples
 
+### First Time Setup
+```bash
+# Complete initialization process
+npm install -g claude-code-watcher
+claude-code-watcher setup
+
+# Custom setup with specific paths
+claude-code-watcher setup --databaseFile /srv/data/claude.db --watchDir /var/log/claude
+```
+
 ### Production Server Operations
 ```bash
-# Install and start production server
+# Install, setup, and start production server
 npm install -g claude-code-watcher
+claude-code-watcher setup
 claude-code-watcher start --port 8080
 ```
 
@@ -255,6 +323,23 @@ lsof -i :3000
 claude-code-watcher start --port 3001
 ```
 
+### Configuration Issues
+
+```bash
+# Re-run setup if configuration is corrupted
+claude-code-watcher setup --force
+
+# Check configuration file location
+ls -la ~/.config/cc-jsonl/settings.json
+
+# Verify database file exists
+ls -la ~/.config/cc-jsonl/data.db
+
+# Reset to defaults
+rm ~/.config/cc-jsonl/settings.json
+claude-code-watcher setup
+```
+
 ### Help and Debug Information
 
 ```bash
@@ -262,6 +347,7 @@ claude-code-watcher start --port 3001
 claude-code-watcher --help
 
 # Show help for individual commands
+claude-code-watcher setup --help
 claude-code-watcher batch --help
 claude-code-watcher watch --help
 claude-code-watcher start --help
@@ -273,13 +359,14 @@ claude-code-watcher start --help
 ```bash
 npm install -g claude-code-watcher   # Install globally
 claude-code-watcher --version        # Verify operation
+claude-code-watcher setup            # Initialize configuration and database
 ```
 
 ### Daily Operations
 ```bash
 claude-code-watcher start            # Start server (port 3000)
-claude-code-watcher batch ~/claude-logs # Process today's logs
-claude-code-watcher watch ~/claude-logs # Start continuous monitoring
+claude-code-watcher batch           # Process logs (uses configured directory)
+claude-code-watcher watch           # Start continuous monitoring
 ```
 
 ### Troubleshooting
