@@ -2,11 +2,16 @@
 
 import "dotenv/config";
 import { spawn } from "node:child_process";
-import * as os from "node:os";
 import * as path from "node:path";
 import { cli, define } from "gunshi";
 import { batchProcessLogFiles } from "@/core/application/watcher";
-import { type Config, hasConfig, saveConfig } from "./config";
+import {
+  type Config,
+  getDefaultDatabasePath,
+  getDefaultTargetDir,
+  hasConfig,
+  saveConfig,
+} from "./config";
 import { getWatcherContext } from "./watcherContext";
 
 let isRunning = false;
@@ -334,13 +339,13 @@ const setupCommand = define({
       type: "string",
       short: "d",
       description:
-        "Database file path (default: ~/.local/share/cc-jsonl/data.db)",
+        "Database file path (default: $XDG_CONFIG_HOME/cc-jsonl/data.db or ~/.config/cc-jsonl/data.db)",
     },
     watchDir: {
       type: "string",
       short: "w",
       description:
-        "Directory to watch for log files (default: current directory)",
+        "Directory to watch for log files (default: $XDG_CONFIG_HOME/claude/projects or ~/.claude/projects)",
     },
     force: {
       type: "boolean",
@@ -357,14 +362,8 @@ const setupCommand = define({
       process.exit(1);
     }
 
-    const defaultDbPath = path.join(
-      os.homedir(),
-      ".local",
-      "share",
-      "cc-jsonl",
-      "data.db",
-    );
-    const defaultWatchDir = process.cwd();
+    const defaultDbPath = getDefaultDatabasePath();
+    const defaultWatchDir = getDefaultTargetDir();
 
     const config: Config = {
       databaseFileName: (databaseFile as string) || defaultDbPath,

@@ -10,10 +10,25 @@ export const configSchema = z.object({
 
 export type Config = z.infer<typeof configSchema>;
 
-function getConfigPath(): string {
+function getConfigDir(): string {
   const xdgConfigHome = process.env.XDG_CONFIG_HOME;
-  const baseDir = xdgConfigHome || path.join(os.homedir(), ".config");
-  return path.join(baseDir, "cc-jsonl", "settings.json");
+  return xdgConfigHome || path.join(os.homedir(), ".config");
+}
+
+function getConfigPath(): string {
+  return path.join(getConfigDir(), "cc-jsonl", "settings.json");
+}
+
+export function getDefaultDatabasePath(): string {
+  return path.join(getConfigDir(), "cc-jsonl", "data.db");
+}
+
+export function getDefaultTargetDir(): string {
+  const xdgConfigHome = process.env.XDG_CONFIG_HOME;
+  if (xdgConfigHome) {
+    return path.join(xdgConfigHome, "claude", "projects");
+  }
+  return path.join(os.homedir(), ".claude", "projects");
 }
 
 export function loadConfig(): Config | null {
