@@ -669,6 +669,29 @@ async function generateAndUpdateSessionName(
   sessionId: SessionId,
 ): Promise<Result<void, ProcessLogFileError>> {
   try {
+    // First check if session already has a name
+    const sessionResult = await context.sessionRepository.findById(sessionId);
+    if (sessionResult.isErr()) {
+      return err({
+        type: "PROCESS_LOG_FILE_ERROR",
+        message: `Failed to fetch session: ${sessionResult.error.message}`,
+        cause: sessionResult.error,
+      });
+    }
+
+    const session = sessionResult.value;
+    if (!session) {
+      return err({
+        type: "PROCESS_LOG_FILE_ERROR",
+        message: `Session not found: ${sessionId}`,
+      });
+    }
+
+    // Only generate name if current name is null
+    if (session.name !== null) {
+      return ok(undefined); // Session already has a name
+    }
+
     // Generate session name from messages using adapter directly
     const messagesResult = await context.messageRepository.list({
       pagination: { page: 1, limit: 5, order: "asc", orderBy: "timestamp" },
@@ -688,10 +711,13 @@ async function generateAndUpdateSessionName(
       return ok(undefined); // No messages, no name generation needed
     }
 
-    // Find the first user message with meaningful content
+    // Find the first user message with meaningful content that doesn't start with <
     const firstUserMessage = items.find(
       (msg) =>
-        msg.role === "user" && msg.content && msg.content.trim().length > 0,
+        msg.role === "user" &&
+        msg.content &&
+        msg.content.trim().length > 0 &&
+        !msg.content.trim().startsWith("<"),
     );
 
     if (!firstUserMessage?.content) {
