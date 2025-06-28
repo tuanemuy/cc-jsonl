@@ -1,6 +1,11 @@
 import { err, ok, type Result } from "neverthrow";
 import { z } from "zod";
-import { type SessionId, sessionIdSchema } from "@/core/domain/session/types";
+import type { Project } from "@/core/domain/project/types";
+import {
+  type Session,
+  type SessionId,
+  sessionIdSchema,
+} from "@/core/domain/session/types";
 import type { LogParser } from "@/core/domain/watcher/ports/logParser";
 import type {
   AssistantLog,
@@ -112,16 +117,18 @@ export async function processLogFile(
     if (ensureProjectResult.isErr()) {
       return err(ensureProjectResult.error);
     }
+    const project = ensureProjectResult.value;
 
     const ensureSessionResult = await ensureSessionExists(
       context,
-      projectName,
+      project,
       sessionId,
       entries,
     );
     if (ensureSessionResult.isErr()) {
       return err(ensureSessionResult.error);
     }
+    const session = ensureSessionResult.value;
 
     const processEntriesResult = await processLogEntries(
       context,
@@ -132,12 +139,12 @@ export async function processLogFile(
       return err(processEntriesResult.error);
     }
 
-    // If no summary entry was found, generate session name from messages
+    // If no summary entry was found and session has no name, generate session name from messages
     const hasSummary = entries.some((entry) => entry.type === "summary");
-    if (!hasSummary) {
+    if (!hasSummary && session.name === null) {
       const generateNameResult = await generateAndUpdateSessionName(
         context,
-        sessionIdSchema.parse(sessionId),
+        session,
       );
       if (generateNameResult.isErr()) {
         console.warn("[processLogFile] Failed to generate session name", {
@@ -184,7 +191,7 @@ export async function processLogFile(
 async function ensureProjectExists(
   context: Context,
   projectName: string,
-): Promise<Result<void, ProcessLogFileError>> {
+): Promise<Result<Project, ProcessLogFileError>> {
   const existingProjects = await context.projectRepository.list({
     pagination: { page: 1, limit: 100, order: "asc", orderBy: "createdAt" },
   });
@@ -242,70 +249,65 @@ async function ensureProjectExists(
       }
     } else {
       console.log(`Created project: ${projectName}`);
+      return ok(result.value);
     }
   }
 
-  return ok(undefined);
+  // Re-fetch projects to get the created/existing project
+  const finalProjectsResult = await context.projectRepository.list({
+    pagination: { page: 1, limit: 100, order: "asc", orderBy: "createdAt" },
+  });
+
+  if (finalProjectsResult.isErr()) {
+    return err({
+      type: "PROCESS_LOG_FILE_ERROR",
+      message: `Failed to fetch project after creation: ${finalProjectsResult.error.message}`,
+      cause: finalProjectsResult.error,
+    });
+  }
+
+  const project = finalProjectsResult.value.items.find(
+    (p) => p.name === projectName,
+  );
+
+  if (!project) {
+    return err({
+      type: "PROCESS_LOG_FILE_ERROR",
+      message: `Project not found after creation: ${projectName}`,
+    });
+  }
+
+  return ok(project);
 }
 
 async function ensureSessionExists(
   context: Context,
-  projectName: string,
+  project: Project,
   sessionId: string,
   logEntries: ClaudeLogEntry[],
-): Promise<Result<void, ProcessLogFileError>> {
-  const projectsResult = await context.projectRepository.list({
-    pagination: { page: 1, limit: 100, order: "asc", orderBy: "createdAt" },
-  });
-
-  if (projectsResult.isErr()) {
-    const error = {
-      type: "PROCESS_LOG_FILE_ERROR" as const,
-      message: `Failed to list projects: ${projectsResult.error.message}`,
-      cause: projectsResult.error,
-    };
-    console.error("[ensureSessionExists] Failed to list projects", {
-      error: error.message,
-      cause: error.cause,
-    });
-    return err(error);
-  }
-
-  const project = projectsResult.value.items.find(
-    (p) => p.name === projectName,
-  );
-  if (!project) {
-    return err({
-      type: "PROCESS_LOG_FILE_ERROR",
-      message: `Project not found: ${projectName}`,
-    });
-  }
-
-  const sessionsResult = await context.sessionRepository.list({
-    pagination: { page: 1, limit: 100, order: "asc", orderBy: "createdAt" },
-    filter: { projectId: project.id },
-  });
-
-  if (sessionsResult.isErr()) {
-    const error = {
-      type: "PROCESS_LOG_FILE_ERROR" as const,
-      message: `Failed to list sessions: ${sessionsResult.error.message}`,
-      cause: sessionsResult.error,
-    };
-    console.error("[ensureSessionExists] Failed to list sessions", {
-      projectId: project.id,
-      error: error.message,
-      cause: error.cause,
-    });
-    return err(error);
-  }
-
+): Promise<Result<Session, ProcessLogFileError>> {
   const brandedSessionId = sessionIdSchema.parse(sessionId);
-  const sessionExists = sessionsResult.value.items.some(
-    (s) => s.id === brandedSessionId,
-  );
 
-  if (!sessionExists) {
+  // First try to find the session by ID
+  const findSessionResult =
+    await context.sessionRepository.findById(brandedSessionId);
+  if (findSessionResult.isErr()) {
+    const error = {
+      type: "PROCESS_LOG_FILE_ERROR" as const,
+      message: `Failed to find session: ${findSessionResult.error.message}`,
+      cause: findSessionResult.error,
+    };
+    console.error("[ensureSessionExists] Failed to find session", {
+      sessionId,
+      error: error.message,
+      cause: error.cause,
+    });
+    return err(error);
+  }
+
+  const existingSession = findSessionResult.value;
+
+  if (!existingSession) {
     // Get cwd from the first log entry that has it
     const firstEntryWithCwd = logEntries.find(
       (entry) => entry.type !== "summary" && "cwd" in entry,
@@ -333,32 +335,37 @@ async function ensureSessionExists(
           errorCause.message.includes("already exists"));
 
       if (isAlreadyExistsError) {
-        // Session was created by another concurrent operation, this is fine
+        // Session was created by another concurrent operation, try to fetch it
         console.log(
           `Session already exists (created concurrently): ${sessionId}`,
         );
-      } else {
-        const error = {
-          type: "PROCESS_LOG_FILE_ERROR" as const,
-          message: `Failed to create session: ${result.error.message}`,
-          cause: result.error,
-        };
-        console.error("[ensureSessionExists] Session creation failed", {
-          sessionId,
-          projectName,
-          error: error.message,
-          cause: error.cause,
-        });
-        return err(error);
+        const retryResult =
+          await context.sessionRepository.findById(brandedSessionId);
+        if (retryResult.isOk() && retryResult.value) {
+          return ok(retryResult.value);
+        }
       }
-    } else {
-      console.log(
-        `Created session: ${sessionId} for project: ${projectName} with cwd: ${cwd}`,
-      );
+
+      const error = {
+        type: "PROCESS_LOG_FILE_ERROR" as const,
+        message: `Failed to create session: ${result.error.message}`,
+        cause: result.error,
+      };
+      console.error("[ensureSessionExists] Session creation failed", {
+        sessionId,
+        projectName: project.name,
+        error: error.message,
+        cause: error.cause,
+      });
+      return err(error);
     }
+    console.log(
+      `Created session: ${sessionId} for project: ${project.name} with cwd: ${cwd}`,
+    );
+    return ok(result.value);
   }
 
-  return ok(undefined);
+  return ok(existingSession);
 }
 
 async function processLogEntries(
@@ -666,31 +673,10 @@ function generateSessionNameFromSummary(summaryText: string): string {
 
 async function generateAndUpdateSessionName(
   context: Context,
-  sessionId: SessionId,
+  session: Session,
 ): Promise<Result<void, ProcessLogFileError>> {
   try {
-    // First check if session already has a name
-    const sessionResult = await context.sessionRepository.findById(sessionId);
-    if (sessionResult.isErr()) {
-      return err({
-        type: "PROCESS_LOG_FILE_ERROR",
-        message: `Failed to fetch session: ${sessionResult.error.message}`,
-        cause: sessionResult.error,
-      });
-    }
-
-    const session = sessionResult.value;
-    if (!session) {
-      return err({
-        type: "PROCESS_LOG_FILE_ERROR",
-        message: `Session not found: ${sessionId}`,
-      });
-    }
-
-    // Only generate name if current name is null
-    if (session.name !== null) {
-      return ok(undefined); // Session already has a name
-    }
+    const sessionId = session.id;
 
     // Generate session name from messages using adapter directly
     const messagesResult = await context.messageRepository.list({

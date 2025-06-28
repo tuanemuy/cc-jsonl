@@ -13,6 +13,7 @@ import { RepositoryError } from "@/lib/error";
 export class MockSessionRepository implements SessionRepository {
   private sessions: Map<SessionId, Session> = new Map();
   private shouldFailList = false;
+  private shouldFailFindById = false;
 
   constructor(initialSessions: Session[] = []) {
     for (const session of initialSessions) {
@@ -64,6 +65,9 @@ export class MockSessionRepository implements SessionRepository {
   async findById(
     id: SessionId,
   ): Promise<Result<Session | null, RepositoryError>> {
+    if (this.shouldFailFindById) {
+      return err(new RepositoryError("Mock repository findById failure"));
+    }
     const session = this.sessions.get(id);
     return ok(session || null);
   }
@@ -180,6 +184,7 @@ export class MockSessionRepository implements SessionRepository {
   clear(): void {
     this.sessions.clear();
     this.shouldFailList = false;
+    this.shouldFailFindById = false;
   }
 
   getAll(): Session[] {
@@ -195,5 +200,9 @@ export class MockSessionRepository implements SessionRepository {
 
   setShouldFailList(shouldFail: boolean): void {
     this.shouldFailList = shouldFail;
+  }
+
+  setShouldFailFindById(shouldFail: boolean): void {
+    this.shouldFailFindById = shouldFail;
   }
 }

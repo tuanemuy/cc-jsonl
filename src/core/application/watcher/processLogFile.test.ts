@@ -364,8 +364,8 @@ describe("processLogFile", () => {
 
       mockLogParser.setParsedFile(filePath, parsedFile);
 
-      // プロジェクトは正常に作成されるが、セッション一覧取得でエラー
-      mockSessionRepository.setShouldFailList(true);
+      // プロジェクトは正常に作成されるが、セッション検索でエラー
+      mockSessionRepository.setShouldFailFindById(true);
 
       // Act
       const result = await processLogFile(context, {
@@ -377,7 +377,7 @@ describe("processLogFile", () => {
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error.type).toBe("PROCESS_LOG_FILE_ERROR");
-        expect(result.error.message).toContain("Failed to list sessions");
+        expect(result.error.message).toContain("Failed to find session");
       }
     });
   });
