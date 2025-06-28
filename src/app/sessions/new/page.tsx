@@ -1,4 +1,3 @@
-
 import { ChatInterface } from "@/components/chat/ChatInterface";
 import { PageLayout } from "@/components/layout/PageLayout";
 
