@@ -12,57 +12,6 @@ export class MockClaudeService implements ClaudeService {
   private mockResult: SDKMessage[] | null = null;
   private responseDelay = 0;
 
-  async sendMessage(
-    input: SendMessageInput,
-  ): Promise<Result<SDKMessage[], ClaudeError>> {
-    if (this.responseDelay > 0) {
-      await new Promise((resolve) => setTimeout(resolve, this.responseDelay));
-    }
-
-    if (this.shouldFailNext) {
-      this.shouldFailNext = false;
-      return err(new ClaudeError("Mock Claude service error"));
-    }
-
-    const result: SDKMessage[] = this.mockResult || [
-      {
-        type: "assistant",
-        message: {
-          id: "msg_123",
-          content: [
-            {
-              type: "text",
-              text: `You said: ${input.message}`,
-            },
-          ],
-          role: "assistant",
-          model: "claude-3-sonnet-20240229",
-          stop_reason: "end_turn",
-          stop_sequence: null,
-        },
-      },
-      {
-        type: "result",
-        subtype: "success",
-        duration_ms: 1000,
-        duration_api_ms: 800,
-        is_error: false,
-        num_turns: 1,
-        result: "success",
-        session_id: "test-session",
-        total_cost_usd: 0.001,
-        usage: {
-          input_tokens: 10,
-          output_tokens: 15,
-          cache_creation_input_tokens: 0,
-          cache_read_input_tokens: 0,
-        },
-      },
-    ];
-
-    return ok(result);
-  }
-
   async sendMessageStream(
     input: SendMessageInput,
     onChunk: (chunk: ChunkData) => void,

@@ -26,7 +26,6 @@ export const sessions = sqliteTable("sessions", {
   }),
   name: text("name"),
   cwd: text("cwd").notNull(),
-  claudeSessionId: text("claude_session_id"),
   lastMessageAt: integer("last_message_at", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()

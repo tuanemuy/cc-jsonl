@@ -2,10 +2,7 @@ import { err, ok, type Result } from "neverthrow";
 import { z } from "zod/v4";
 import type { ChunkData, SDKMessage } from "@/core/domain/claude/types";
 import type { Session } from "@/core/domain/session/types";
-import {
-  generateSessionId,
-  sessionIdSchema,
-} from "@/core/domain/session/types";
+import { sessionIdSchema } from "@/core/domain/session/types";
 import { ApplicationError } from "@/lib/error";
 import { validate } from "@/lib/validation";
 import type { Context } from "../context";
@@ -62,13 +59,9 @@ export async function sendMessageStream(
 
   try {
     let session: Session | null = null;
-    let isNewSession = false;
-    let sessionId: string;
-
     if (params.sessionId) {
       // Existing session: fetch from database
       const parsedSessionId = sessionIdSchema.parse(params.sessionId);
-      sessionId = parsedSessionId;
       const sessionResult =
         await context.sessionRepository.findById(parsedSessionId);
       if (sessionResult.isErr()) {
@@ -92,17 +85,13 @@ export async function sendMessageStream(
         return err(error);
       }
       session = sessionResult.value;
-    } else {
-      // New session: generate session ID and prepare to create in DB after Claude call
-      isNewSession = true;
-      sessionId = generateSessionId();
     }
 
     // Send to Claude with streaming
     const claudeResult = await context.claudeService.sendMessageStream(
       {
         message: params.message,
-        sessionId: session?.claudeSessionId || undefined, // Use Claude's session ID for resuming, undefined for new sessions
+        sessionId: session?.id || undefined, // Use session ID for resuming, undefined for new sessions
         cwd: params.cwd || (session ? session.cwd : undefined),
         allowedTools: params.allowedTools,
       },
@@ -113,35 +102,16 @@ export async function sendMessageStream(
         "Failed to send message to Claude",
         claudeResult.error,
       );
-      console.error("[sendMessageStream] Claude API streaming call failed", {
-        sessionId: sessionId,
-        error: error.message,
-        cause: error.cause,
-      });
+      console.error(
+        "[sendMessageStream] Claude API streaming call failed",
+        error,
+      );
       return err(error);
     }
 
     const messages = claudeResult.value;
 
-    if (isNewSession) {
-      // Create session in database with our generated session ID
-
-      // Get default project for new sessions
-      const projectsResult = await context.projectRepository.list({
-        pagination: { page: 1, limit: 1, order: "desc", orderBy: "createdAt" },
-      });
-      if (projectsResult.isErr() || projectsResult.value.items.length === 0) {
-        const error = new ApplicationError(
-          "No projects found",
-          projectsResult.isErr() ? projectsResult.error : undefined,
-        );
-        console.error(
-          "[sendMessageStream] No projects available for session creation",
-          { error: error.message, cause: error.cause },
-        );
-        return err(error);
-      }
-
+    if (!params.sessionId) {
       // Create session in database with our generated session ID
       if (!params.cwd) {
         const error = new ApplicationError(
@@ -153,13 +123,17 @@ export async function sendMessageStream(
         return err(error);
       }
 
+      const sessionId = claudeResult.value
+        .map((message) =>
+          message.type === "result" ? (message.session_id as string) : null,
+        )
+        .filter((id): id is string => id !== null)[0];
       const parsedSessionId = sessionIdSchema.parse(sessionId);
       const createSessionResult = await context.sessionRepository.upsert({
         id: parsedSessionId,
-        projectId: projectsResult.value.items[0].id,
+        projectId: null,
         name: null,
         cwd: params.cwd,
-        claudeSessionId: null, // Will be updated after successful communication
       });
       if (createSessionResult.isErr()) {
         const error = new ApplicationError(
@@ -185,7 +159,6 @@ export async function sendMessageStream(
       projectId: session.projectId,
       name: session.name,
       cwd: session.cwd,
-      claudeSessionId: session.claudeSessionId, // Keep existing Claude session ID
     });
     if (updateSessionResult.isErr()) {
       console.warn(

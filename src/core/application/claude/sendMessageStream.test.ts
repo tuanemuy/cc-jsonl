@@ -55,7 +55,7 @@ describe("sendMessageStream", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         expect(result.value.session).toBeDefined();
-        expect(result.value.session.projectId).toBe(project.id);
+        expect(result.value.session.projectId).toBe(null);
         expect(result.value.messages).toBeDefined();
         expect(result.value.messages.length).toBeGreaterThan(0);
 
@@ -82,7 +82,6 @@ describe("sendMessageStream", () => {
         projectId: project.id,
         name: null,
         cwd: "/tmp",
-        claudeSessionId: null,
         lastMessageAt: null,
         createdAt: new Date("2024-01-01T10:00:00Z"),
         updatedAt: new Date("2024-01-01T10:00:00Z"),
@@ -160,7 +159,6 @@ describe("sendMessageStream", () => {
         projectId: project.id,
         name: null,
         cwd: "/tmp",
-        claudeSessionId: null,
         lastMessageAt: null,
         createdAt: new Date("2024-01-01T10:00:00Z"),
         updatedAt: new Date("2024-01-01T10:00:00Z"),
@@ -330,7 +328,7 @@ describe("sendMessageStream", () => {
       }
     });
 
-    it("should fail when no projects exist and no sessionId provided", async () => {
+    it("should successfully create session with null project when no projects exist", async () => {
       const input: SendMessageStreamInput = {
         message: "Hello, streaming Claude!",
         cwd: "/test/workspace",
@@ -338,9 +336,13 @@ describe("sendMessageStream", () => {
 
       const result = await sendMessageStream(context, input, onChunkSpy);
 
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error.message).toBe("No projects found");
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.session).toBeDefined();
+        expect(result.value.session.projectId).toBe(null);
+        expect(result.value.session.cwd).toBe("/test/workspace");
+        expect(result.value.messages).toBeDefined();
+        expect(result.value.messages.length).toBeGreaterThan(0);
       }
     });
 

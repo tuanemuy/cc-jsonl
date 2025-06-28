@@ -21,7 +21,6 @@ export const sessionSchema = z.object({
   projectId: projectIdSchema.nullable(),
   name: z.string().nullable(),
   cwd: z.string(),
-  claudeSessionId: z.string().nullable(), // Claude SDK's session ID for resuming
   lastMessageAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -33,7 +32,6 @@ export const createSessionParamsSchema = z.object({
   projectId: projectIdSchema.nullable().optional(),
   name: z.string().nullable().optional(),
   cwd: z.string(),
-  claudeSessionId: z.string().nullable().optional(),
 });
 export type CreateSessionParams = z.infer<typeof createSessionParamsSchema>;
 
