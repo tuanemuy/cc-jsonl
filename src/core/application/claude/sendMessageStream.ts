@@ -1,6 +1,6 @@
 import { err, ok, type Result } from "neverthrow";
 import { z } from "zod/v4";
-import type { ClaudeResponse } from "@/core/domain/claude/types";
+import type { ChunkData, SDKMessage } from "@/core/domain/claude/types";
 import type { Session } from "@/core/domain/session/types";
 import { sessionIdSchema } from "@/core/domain/session/types";
 import { ApplicationError } from "@/lib/error";
@@ -35,9 +35,9 @@ export type SendMessageStreamInput = z.infer<
 export async function sendMessageStream(
   context: Context,
   input: SendMessageStreamInput,
-  onChunk: (chunk: string) => void,
+  onChunk: (chunk: ChunkData) => void,
 ): Promise<
-  Result<{ session: Session; claudeResponse: ClaudeResponse }, ApplicationError>
+  Result<{ session: Session; messages: SDKMessage[] }, ApplicationError>
 > {
   console.log("[sendMessageStream] Starting streaming message processing", {
     sessionId: input.sessionId,
@@ -59,19 +59,18 @@ export async function sendMessageStream(
 
   try {
     let session: Session | null = null;
-    let isNewSession = false;
-
     if (params.sessionId) {
       // Existing session: fetch from database
-      const sessionId = sessionIdSchema.parse(params.sessionId);
-      const sessionResult = await context.sessionRepository.findById(sessionId);
+      const parsedSessionId = sessionIdSchema.parse(params.sessionId);
+      const sessionResult =
+        await context.sessionRepository.findById(parsedSessionId);
       if (sessionResult.isErr()) {
         const error = new ApplicationError(
           "Failed to get session",
           sessionResult.error,
         );
         console.error("[sendMessageStream] Session retrieval failed", {
-          sessionId,
+          sessionId: parsedSessionId,
           error: error.message,
           cause: error.cause,
         });
@@ -80,27 +79,22 @@ export async function sendMessageStream(
       if (!sessionResult.value) {
         const error = new ApplicationError("Session not found");
         console.error("[sendMessageStream] Session not found", {
-          sessionId,
+          sessionId: parsedSessionId,
           error: error.message,
         });
         return err(error);
       }
       session = sessionResult.value;
-    } else {
-      // New session: don't save to DB yet, just prepare session object
-      isNewSession = true;
-      // We'll create the session object after getting the session ID from Claude response
     }
 
     // Send to Claude with streaming
     const claudeResult = await context.claudeService.sendMessageStream(
       {
         message: params.message,
-        sessionId: params.sessionId, // undefined for new sessions
+        sessionId: session?.id || undefined, // Use session ID for resuming, undefined for new sessions
         cwd: params.cwd || (session ? session.cwd : undefined),
         allowedTools: params.allowedTools,
       },
-      [], // No previous messages needed as per requirements
       onChunk,
     );
     if (claudeResult.isErr()) {
@@ -108,37 +102,17 @@ export async function sendMessageStream(
         "Failed to send message to Claude",
         claudeResult.error,
       );
-      console.error("[sendMessageStream] Claude API streaming call failed", {
-        sessionId: params.sessionId || "new",
-        error: error.message,
-        cause: error.cause,
-      });
+      console.error(
+        "[sendMessageStream] Claude API streaming call failed",
+        error,
+      );
       return err(error);
     }
 
-    const claudeResponse = claudeResult.value;
+    const messages = claudeResult.value;
 
-    if (isNewSession) {
-      // Extract session ID from Claude response and create session in DB
-      const sessionId = sessionIdSchema.parse(claudeResponse.id); // Parse as branded type
-
-      // Get default project for new sessions
-      const projectsResult = await context.projectRepository.list({
-        pagination: { page: 1, limit: 1, order: "desc", orderBy: "createdAt" },
-      });
-      if (projectsResult.isErr() || projectsResult.value.items.length === 0) {
-        const error = new ApplicationError(
-          "No projects found",
-          projectsResult.isErr() ? projectsResult.error : undefined,
-        );
-        console.error(
-          "[sendMessageStream] No projects available for session creation",
-          { error: error.message, cause: error.cause },
-        );
-        return err(error);
-      }
-
-      // Create session in database with Claude's session ID
+    if (!params.sessionId) {
+      // Create session in database with our generated session ID
       if (!params.cwd) {
         const error = new ApplicationError(
           "cwd is required when creating a new session",
@@ -149,9 +123,15 @@ export async function sendMessageStream(
         return err(error);
       }
 
+      const sessionId = claudeResult.value
+        .map((message) =>
+          message.type === "result" ? (message.session_id as string) : null,
+        )
+        .filter((id): id is string => id !== null)[0];
+      const parsedSessionId = sessionIdSchema.parse(sessionId);
       const createSessionResult = await context.sessionRepository.upsert({
-        id: sessionId,
-        projectId: projectsResult.value.items[0].id,
+        id: parsedSessionId,
+        projectId: null,
         name: null,
         cwd: params.cwd,
       });
@@ -173,9 +153,29 @@ export async function sendMessageStream(
       return err(new ApplicationError("Session was not created or found"));
     }
 
+    // Update session after successful Claude communication
+    const updateSessionResult = await context.sessionRepository.upsert({
+      id: session.id,
+      projectId: session.projectId,
+      name: session.name,
+      cwd: session.cwd,
+    });
+    if (updateSessionResult.isErr()) {
+      console.warn(
+        "[sendMessageStream] Failed to update session lastMessageAt",
+        {
+          sessionId: session.id,
+          error: updateSessionResult.error.message,
+        },
+      );
+      // Don't fail the entire operation for session update failure
+    } else {
+      session = updateSessionResult.value;
+    }
+
     return ok({
       session,
-      claudeResponse,
+      messages,
     });
   } catch (error) {
     const appError = new ApplicationError(

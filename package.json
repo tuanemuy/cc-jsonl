@@ -1,13 +1,22 @@
 {
-  "name": "agent-web-boilerplate",
+  "name": "claude-code-watcher",
   "version": "0.1.0",
-  "description": "",
+  "description": "Unified CLI for Claude Code production server and log processing",
   "main": "./dist/index.js",
+  "bin": {
+    "claude-code-watcher": "./dist/cli.mjs"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build:web": "next build",
     "start:web": "next start",
     "build:watcher": "tsdown",
+    "postinstall": "tsdown",
+    "start:prod": "node dist/cli.mjs start",
+    "setup": "node dist/cli.mjs setup",
+    "logs:batch": "node dist/cli.mjs batch",
+    "logs:watch": "node dist/cli.mjs watch",
+    "cli": "node dist/cli.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "typecheck": "tsc --noEmit",
@@ -18,6 +27,7 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.31",
+    "@anthropic-ai/sdk": "^0.55.0",
     "@electric-sql/pglite": "^0.3.3",
     "@hookform/resolvers": "^5.1.1",
     "@libsql/client": "^0.15.9",
@@ -56,6 +66,7 @@
     "drizzle-orm": "^0.44.2",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.18.1",
+    "gunshi": "^0.26.3",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.516.0",
     "neverthrow": "^8.2.0",

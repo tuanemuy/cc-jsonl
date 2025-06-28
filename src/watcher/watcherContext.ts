@@ -8,9 +8,12 @@ import { DrizzleSqliteProjectRepository } from "@/core/adapters/drizzleSqlite/pr
 import { DrizzleSqliteSessionRepository } from "@/core/adapters/drizzleSqlite/sessionRepository";
 import { MockClaudeService } from "@/core/adapters/mock/claudeService";
 import { NodeFsFileReader } from "@/core/adapters/nodeFs/fileReader";
+import { NodeFsFileSystemManager } from "@/core/adapters/nodeFs/fileSystemManager";
 import type { Context } from "@/core/application/context";
+import type { FileSystemManager } from "@/core/domain/watcher/ports/fileSystemManager";
 import type { FileWatcher } from "@/core/domain/watcher/ports/fileWatcher";
 import type { LogParser } from "@/core/domain/watcher/ports/logParser";
+import { getConfigOrEnv } from "./config";
 
 export const watcherEnvSchema = z.object({
   WATCH_TARGET_DIR: z.string().min(1),
@@ -24,6 +27,7 @@ export type WatcherEnv = z.infer<typeof watcherEnvSchema>;
 
 export type WatcherContext = Context & {
   fileWatcher: FileWatcher;
+  fileSystemManager: FileSystemManager;
   logParser: LogParser;
 };
 
@@ -31,10 +35,17 @@ export function getWatcherContext(): {
   context: WatcherContext;
   targetDir: string;
 } {
-  const env = watcherEnvSchema.safeParse(process.env);
+  const configOrEnv = getConfigOrEnv();
+
+  const envData = {
+    WATCH_TARGET_DIR: configOrEnv.watchTargetDir,
+    DATABASE_FILE_NAME: configOrEnv.databaseFileName,
+  };
+
+  const env = watcherEnvSchema.safeParse(envData);
   if (!env.success) {
     throw new Error(
-      `Invalid environment variables: ${JSON.stringify(env.error.errors)}`,
+      `Invalid configuration: ${JSON.stringify(env.error.errors)}`,
     );
   }
 
@@ -43,6 +54,7 @@ export function getWatcherContext(): {
   const fileReader = new NodeFsFileReader();
   const logParser = new ClaudeLogParser(fileReader);
   const fileWatcher = new ChokidarFileWatcher();
+  const fileSystemManager = new NodeFsFileSystemManager();
 
   const context: WatcherContext = {
     projectRepository: new DrizzleSqliteProjectRepository(db),
@@ -51,6 +63,7 @@ export function getWatcherContext(): {
     claudeService: new MockClaudeService(),
     logFileTrackingRepository: new DrizzleSqliteLogFileTrackingRepository(db),
     fileWatcher,
+    fileSystemManager,
     logParser,
   };
 
