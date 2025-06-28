@@ -113,17 +113,17 @@ Document current progress, issues, and next steps here.
   - **Usage Examples:**
     ```bash
     # Development workflow
-    claude-code-watcher dev --port 3001 --no-turbo
-    claude-code-watcher build
-    claude-code-watcher start --port 8080
+    cc-jsonl dev --port 3001 --no-turbo
+    cc-jsonl build
+    cc-jsonl start --port 8080
     
     # Database management
-    claude-code-watcher db generate
-    claude-code-watcher db migrate
+    cc-jsonl db generate
+    cc-jsonl db migrate
     
     # Log processing
-    claude-code-watcher batch -c 10 /path/to/logs
-    claude-code-watcher watch -i 30 /path/to/logs
+    cc-jsonl batch -c 10 /path/to/logs
+    cc-jsonl watch -i 30 /path/to/logs
     ```
   - Testing: All TypeScript checks pass, comprehensive CLI testing completed, all commands functional
 

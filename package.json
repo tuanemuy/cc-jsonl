@@ -1,10 +1,10 @@
 {
-  "name": "claude-code-watcher",
+  "name": "cc-jsonl",
   "version": "0.1.0",
   "description": "Unified CLI for Claude Code production server and log processing",
   "main": "./dist/index.js",
   "bin": {
-    "claude-code-watcher": "./dist/cli.mjs"
+    "cc-jsonl": "./dist/cli.mjs"
   },
   "scripts": {
     "dev": "next dev --turbopack",
