@@ -1,7 +1,7 @@
 import { Folder } from "lucide-react";
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import Link from "next/link";
 import type { Project } from "@/core/domain/project/types";
 import { formatDate } from "@/lib/date";
 

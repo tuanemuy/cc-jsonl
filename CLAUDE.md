@@ -5,45 +5,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Documents
 
 - `docs/requirements.md`: Document requirements and specifications
-- `docs/progress.md`: Document current progress, issues, and next steps
+- `docs/usecase_web.tsv`: Use case definitions for web application
+- `docs/usecase_daemon.tsv`: Use case definitions for watcher
 
 ## Development Commands
 
-### Unified CLI (Recommended)
-After `npm install`, the CLI is automatically built and ready to use:
-
-**Easy npm scripts:**
-- `npm run start:prod [-- --port 8080]` - Start production server
-- `npm run logs:batch [-- options]` - Process log files once (1回のみ実行)
-- `npm run logs:watch [-- options]` - Process log files periodically
-- `npm run cli [-- command]` - Run any CLI command
-
-**Direct CLI (alternative):**
-- `node dist/cli.mjs start [--port 3000]` - Start production server
-- `node dist/cli.mjs batch [options] [directory]` - Process log files once
-- `node dist/cli.mjs watch [options] [directory]` - Process log files periodically
-
-**Auto-build:**
-- CLI automatically builds during `npm install` via postinstall script
-- Manual build: `npm run build:watcher` if needed
-
-### Legacy npm Commands
 - `pnpm lint` - Lint code with Biome
 - `pnpm lint:fix` - Lint code with Biome and fix issues
 - `pnpm format` - Format code with Biome
 - `pnpm typecheck` - Type check code with tsc
 - `pnpm test` - Run tests with Vitest
 
-## Development Workflow
+## Code Quality 
 
-**Unified CLI Workflow (Recommended):**
-1. Build CLI: `pnpm run build:watcher`
-2. Start production: `node dist/cli.mjs start [--port 3000]`
-3. Process logs: `node dist/cli.mjs batch` / `node dist/cli.mjs watch`
-
-**Code Quality:**
-- Run `pnpm typecheck`, `pnpm run lint:fix` and `pnpm run format` after making changes to ensure code quality and consistency.
-- Update `docs/progress.md` with current progress and any issues encountered.
+Run `pnpm typecheck`, `pnpm run lint:fix` and `pnpm run format` after making changes to ensure code quality and consistency.
 
 ## Backend Architecture
 

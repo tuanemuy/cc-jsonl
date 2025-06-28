@@ -1,12 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { ChevronLeft, MessageCirclePlus } from "lucide-react";
 
 import NextLink from "next/link";
-import { Button } from "@/components/ui/button";
-import { ToggleTheme } from "@/components/navigation/ToggleTheme";
+import { useRouter } from "next/navigation";
 import { Logo } from "@/components/brand/Logo";
-import { ChevronLeft, MessageCirclePlus } from "lucide-react";
+import { ToggleTheme } from "@/components/navigation/ToggleTheme";
+import { Button } from "@/components/ui/button";
 
 interface PageLayoutProps {
   children: React.ReactNode;
@@ -37,7 +37,12 @@ export function PageLayout({
             </Button>
           )}
           {!returnTo && back && (
-            <Button onClick={() => router.back()} aria-label="Back" variant="default" size="icon">
+            <Button
+              onClick={() => router.back()}
+              aria-label="Back"
+              variant="default"
+              size="icon"
+            >
               <ChevronLeft />
             </Button>
           )}

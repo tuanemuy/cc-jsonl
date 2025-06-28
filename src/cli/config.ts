@@ -6,6 +6,7 @@ import { z } from "zod";
 export const configSchema = z.object({
   databaseFileName: z.string(),
   watchTargetDir: z.string(),
+  port: z.number().default(3000),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -66,6 +67,7 @@ export function hasConfig(): boolean {
 export function getConfigOrEnv(): {
   databaseFileName: string | undefined;
   watchTargetDir: string | undefined;
+  port: number;
 } {
   const config = loadConfig();
 
@@ -73,11 +75,13 @@ export function getConfigOrEnv(): {
     return {
       databaseFileName: config.databaseFileName,
       watchTargetDir: config.watchTargetDir,
+      port: config.port,
     };
   }
 
   return {
     databaseFileName: process.env.DATABASE_FILE_NAME,
     watchTargetDir: process.env.WATCH_TARGET_DIR,
+    port: process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 3000,
   };
 }

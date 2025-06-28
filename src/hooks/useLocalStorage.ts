@@ -10,7 +10,7 @@ export function useLocalStorage(key: string, initialValue: string) {
     } else {
       localStorage.setItem(key, initialValue);
     }
-  }, []);
+  }, [initialValue, key]);
 
   return {
     value,

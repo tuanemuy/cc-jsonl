@@ -13,7 +13,7 @@ import type { Context } from "@/core/application/context";
 import type { FileSystemManager } from "@/core/domain/watcher/ports/fileSystemManager";
 import type { FileWatcher } from "@/core/domain/watcher/ports/fileWatcher";
 import type { LogParser } from "@/core/domain/watcher/ports/logParser";
-import { getConfigOrEnv } from "./config";
+import { getConfigOrEnv } from "../cli/config";
 
 export const watcherEnvSchema = z.object({
   WATCH_TARGET_DIR: z.string().min(1),

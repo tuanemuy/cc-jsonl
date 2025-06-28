@@ -1,10 +1,9 @@
 import { notFound } from "next/navigation";
 import { listMessagesAction } from "@/actions/message";
 import { getSessionAction } from "@/actions/session";
-import type { SessionId } from "@/core/domain/session/types";
-
 import { ChatInterface } from "@/components/chat/ChatInterface";
 import { PageLayout } from "@/components/layout/PageLayout";
+import type { SessionId } from "@/core/domain/session/types";
 
 type PageProps = {
   params: Promise<{

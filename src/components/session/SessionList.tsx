@@ -1,15 +1,14 @@
 "use client";
 
-import type { Session } from "@/core/domain/session/types";
-import type { ProjectId } from "@/core/domain/project/types";
-import { useIntersection } from "@/hooks/useIntersection";
-import { useSessions } from "@/hooks/useSessions";
-
 import { MessageSquare } from "lucide-react";
 import {
   SessionListItem,
   SessionListItemSkeleton,
 } from "@/components/session/SessionListItem";
+import type { ProjectId } from "@/core/domain/project/types";
+import type { Session } from "@/core/domain/session/types";
+import { useIntersection } from "@/hooks/useIntersection";
+import { useSessions } from "@/hooks/useSessions";
 
 type Props = {
   sessions: Session[];

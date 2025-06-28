@@ -1,13 +1,12 @@
 "use client";
 
-import { useIntersection } from "@/hooks/useIntersection";
-
 import { Folder } from "lucide-react";
 import {
   ProjectListItem,
   ProjectListItemSkeleton,
 } from "@/components/project/ProjectListItem";
 import type { Project } from "@/core/domain/project/types";
+import { useIntersection } from "@/hooks/useIntersection";
 
 type Props = {
   projects: Project[];
