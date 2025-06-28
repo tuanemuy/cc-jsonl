@@ -4,7 +4,7 @@
   "description": "Unified CLI for Claude Code production server and log processing",
   "main": "./dist/index.js",
   "bin": {
-    "cc-jsonl": "./dist/cli.mjs"
+    "cc-jsonl": "./dist/cli/cli.mjs"
   },
   "scripts": {
     "dev": "next dev --turbopack",
@@ -12,11 +12,11 @@
     "start:web": "next start",
     "build:watcher": "tsdown",
     "postinstall": "tsdown",
-    "start:prod": "node dist/cli.mjs start",
-    "setup": "node dist/cli.mjs setup",
-    "logs:batch": "node dist/cli.mjs batch",
-    "logs:watch": "node dist/cli.mjs watch",
-    "cli": "node dist/cli.mjs",
+    "start:prod": "node dist/cli/cli.mjs start",
+    "setup": "node dist/cli/cli.mjs setup",
+    "logs:batch": "node dist/cli/cli.mjs batch",
+    "logs:watch": "node dist/cli/cli.mjs watch",
+    "cli": "node dist/cli/cli.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "typecheck": "tsc --noEmit",
