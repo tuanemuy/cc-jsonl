@@ -364,8 +364,8 @@ describe("processLogFile", () => {
 
       mockLogParser.setParsedFile(filePath, parsedFile);
 
-      // プロジェクトは正常に作成されるが、セッション一覧取得でエラー
-      mockSessionRepository.setShouldFailList(true);
+      // プロジェクトは正常に作成されるが、セッション検索でエラー
+      mockSessionRepository.setShouldFailFindById(true);
 
       // Act
       const result = await processLogFile(context, {
@@ -377,7 +377,7 @@ describe("processLogFile", () => {
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error.type).toBe("PROCESS_LOG_FILE_ERROR");
-        expect(result.error.message).toContain("Failed to list sessions");
+        expect(result.error.message).toContain("Failed to find session");
       }
     });
   });
@@ -821,6 +821,166 @@ describe("processLogFile", () => {
       expect(result.isOk()).toBe(true); // processLogFile は個別エントリのエラーを警告として処理
       if (result.isOk()) {
         expect(result.value.entriesProcessed).toBe(3); // 全エントリが処理されるが、無効なものは無視される
+      }
+    });
+
+    it("既存のセッション名がある場合は更新されない", async () => {
+      // Arrange
+      const filePath = "/path/to/existing-name/session.jsonl";
+      const projectId = projectIdSchema.parse("project-with-name");
+      const sessionId = sessionIdSchema.parse("session-with-name");
+
+      // 既存のプロジェクトとセッション（名前付き）を設定
+      const existingProject = {
+        id: projectId,
+        name: "existing-name-project",
+        path: "/path/to/existing-name-project",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const existingSession = {
+        id: sessionId,
+        projectId: projectId,
+        name: "Existing Session Name",
+        cwd: "/workspace",
+        claudeSessionId: null,
+        lastMessageAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockProjectRepository.setProjects([existingProject]);
+      mockSessionRepository.setSessions([existingSession]);
+
+      const userLogEntry = {
+        uuid: "user-uuid-1",
+        parentUuid: null,
+        timestamp: "2024-01-01T00:00:00Z",
+        isSidechain: false,
+        userType: "external" as const,
+        cwd: "/test",
+        sessionId: sessionId,
+        version: "1.0.0",
+        type: "user" as const,
+        message: {
+          role: "user" as const,
+          content: "This should not become the session name",
+        },
+      };
+
+      const parsedFile: ParsedLogFile = {
+        filePath,
+        projectName: existingProject.name,
+        sessionId: sessionId,
+        entries: [userLogEntry],
+      };
+
+      mockLogParser.setParsedFile(filePath, parsedFile);
+
+      // Act
+      const result = await processLogFile(context, {
+        filePath,
+        skipTracking: true,
+      });
+
+      // Assert
+      expect(result.isOk()).toBe(true);
+
+      // セッション名が変更されていないことを確認
+      const sessions = await mockSessionRepository.list({
+        pagination: { page: 1, limit: 10, order: "asc", orderBy: "createdAt" },
+        filter: { projectId: projectId },
+      });
+      expect(sessions.isOk()).toBe(true);
+      if (sessions.isOk()) {
+        expect(sessions.value.items).toHaveLength(1);
+        expect(sessions.value.items[0].name).toBe("Existing Session Name");
+      }
+    });
+
+    it("タグで始まるメッセージはセッション名生成時にスキップされる", async () => {
+      // Arrange
+      const filePath = "/path/to/tag-message/session.jsonl";
+      const userLogEntries = [
+        {
+          uuid: "user-uuid-1",
+          parentUuid: null,
+          timestamp: "2024-01-01T00:00:00Z",
+          isSidechain: false,
+          userType: "external" as const,
+          cwd: "/test",
+          sessionId: "tag-session",
+          version: "1.0.0",
+          type: "user" as const,
+          message: {
+            role: "user" as const,
+            content: "<system>This message starts with a tag</system>",
+          },
+        },
+        {
+          uuid: "user-uuid-2",
+          parentUuid: null,
+          timestamp: "2024-01-01T00:00:01Z",
+          isSidechain: false,
+          userType: "external" as const,
+          cwd: "/test",
+          sessionId: "tag-session",
+          version: "1.0.0",
+          type: "user" as const,
+          message: {
+            role: "user" as const,
+            content: "This is a normal message without tags",
+          },
+        },
+      ];
+
+      const parsedFile: ParsedLogFile = {
+        filePath,
+        projectName: "tag-project",
+        sessionId: "tag-session",
+        entries: userLogEntries,
+      };
+
+      mockLogParser.setParsedFile(filePath, parsedFile);
+
+      // Act
+      const result = await processLogFile(context, {
+        filePath,
+        skipTracking: true,
+      });
+
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.entriesProcessed).toBe(2);
+      }
+
+      // セッションが作成されて、タグで始まらないメッセージから名前が設定されたことを確認
+      const projects = await mockProjectRepository.list({
+        pagination: { page: 1, limit: 10, order: "asc", orderBy: "createdAt" },
+      });
+      expect(projects.isOk()).toBe(true);
+      if (projects.isOk()) {
+        expect(projects.value.items).toHaveLength(1);
+
+        const sessions = await mockSessionRepository.list({
+          pagination: {
+            page: 1,
+            limit: 10,
+            order: "asc",
+            orderBy: "createdAt",
+          },
+          filter: { projectId: projects.value.items[0].id },
+        });
+        expect(sessions.isOk()).toBe(true);
+        if (sessions.isOk()) {
+          expect(sessions.value.items).toHaveLength(1);
+          const session = sessions.value.items[0];
+          // セッション名が2番目のメッセージ（タグなし）から生成されていることを確認
+          expect(session.name).toBeTruthy();
+          expect(session.name).toBe("This is a normal message without tags");
+        }
       }
     });
   });
