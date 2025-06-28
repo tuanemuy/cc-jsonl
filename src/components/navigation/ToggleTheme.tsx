@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import { Button } from "@/components/ui/button";
 import { MoonStar, Sun, SunMoon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 type Theme = "system" | "light" | "dark";
 

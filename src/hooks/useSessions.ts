@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { listSessionsAction } from "@/actions/session";
-import type { Session } from "@/core/domain/session/types";
 import type { ProjectId } from "@/core/domain/project/types";
+import type { Session } from "@/core/domain/session/types";
 
 const defaultLimit = 10;
 

@@ -1,13 +1,12 @@
 "use client";
 
-import { useProjects } from "@/hooks/useProjects";
-import { useSessions } from "@/hooks/useSessions";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
-
 import { PageLayout } from "@/components/layout/PageLayout";
 import { ProjectList } from "@/components/project/ProjectList";
 import { SessionList } from "@/components/session/SessionList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useProjects } from "@/hooks/useProjects";
+import { useSessions } from "@/hooks/useSessions";
 
 export default function Home() {
   const {

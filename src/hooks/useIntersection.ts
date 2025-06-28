@@ -30,7 +30,7 @@ export function useIntersection<T extends Element>({ onIntersect }: Args) {
         observerRef.current.disconnect();
       }
     };
-  }, [observerElementRef, onIntersect]);
+  }, [onIntersect]);
 
   return { observerElementRef };
 }

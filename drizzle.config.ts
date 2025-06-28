@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { defineConfig } from "drizzle-kit";
-import { getConfigOrEnv } from "./src/watcher/config";
+import { getConfigOrEnv } from "./src/cli/config";
 
 const { databaseFileName } = getConfigOrEnv();
 

@@ -5,14 +5,15 @@ import { spawn } from "node:child_process";
 import * as path from "node:path";
 import { cli, define } from "gunshi";
 import { batchProcessLogFiles } from "@/core/application/watcher";
+import { getWatcherContext } from "../watcher/watcherContext";
 import {
   type Config,
   getDefaultDatabasePath,
   getDefaultTargetDir,
   hasConfig,
+  loadConfig,
   saveConfig,
 } from "./config";
-import { getWatcherContext } from "./watcherContext";
 
 let isRunning = false;
 let intervalId: NodeJS.Timeout | null = null;
@@ -107,6 +108,28 @@ async function runBatchProcessing(config: ProcessorConfig) {
     isRunning = false;
   }
 }
+
+const buildCommand = define({
+  name: "build",
+  description: "Build the Next.js application for production",
+  run: async () => {
+    console.log("Building Next.js application...");
+
+    try {
+      const exitCode = await spawnCommand("next", ["build"]);
+
+      if (exitCode !== 0) {
+        console.error("❌ Build failed!");
+        process.exit(1);
+      }
+
+      console.log("✅ Build completed successfully!");
+    } catch (error) {
+      console.error("Failed to build application:", error);
+      process.exit(1);
+    }
+  },
+});
 
 const batchCommand = define({
   name: "batch",
@@ -307,12 +330,18 @@ const startCommand = define({
     port: {
       type: "number",
       short: "p",
-      default: 3000,
-      description: "Port to run the production server on",
+      description:
+        "Port to run the production server on (overrides configured port)",
     },
   },
   run: async (ctx) => {
-    const { port } = ctx.values;
+    const { port: argPort } = ctx.values;
+
+    // Load configuration to get the port setting
+    const config = loadConfig();
+    const configuredPort = config?.port || 3000;
+    const port = (argPort as number | undefined) || configuredPort;
+
     const args = ["start"];
 
     if (port !== 3000) {
@@ -347,6 +376,12 @@ const setupCommand = define({
       description:
         "Directory to watch for log files (default: $XDG_CONFIG_HOME/claude/projects or ~/.claude/projects)",
     },
+    port: {
+      type: "number",
+      short: "p",
+      default: 3000,
+      description: "Port for the production server",
+    },
     force: {
       type: "boolean",
       short: "f",
@@ -355,7 +390,7 @@ const setupCommand = define({
     },
   },
   run: async (ctx) => {
-    const { databaseFile, watchDir, force } = ctx.values;
+    const { databaseFile, watchDir, port, force } = ctx.values;
 
     if (hasConfig() && !force) {
       console.error("Configuration already exists. Use --force to overwrite.");
@@ -368,6 +403,7 @@ const setupCommand = define({
     const config: Config = {
       databaseFileName: (databaseFile as string) || defaultDbPath,
       watchTargetDir: (watchDir as string) || defaultWatchDir,
+      port: (port as number) || 3000,
     };
 
     console.log("Setting up Claude Code Watcher...");
@@ -375,6 +411,7 @@ const setupCommand = define({
     console.log("Configuration:");
     console.log(`  Database file: ${config.databaseFileName}`);
     console.log(`  Watch directory: ${config.watchTargetDir}`);
+    console.log(`  Port: ${config.port}`);
     console.log("");
 
     try {
@@ -399,6 +436,18 @@ const setupCommand = define({
       }
 
       console.log("✅ Database migrations completed successfully!");
+
+      console.log("");
+      console.log("Building Next.js application...");
+
+      const buildExitCode = await spawnCommand("next", ["build"]);
+
+      if (buildExitCode !== 0) {
+        console.error("❌ Next.js build failed!");
+        process.exit(1);
+      }
+
+      console.log("✅ Next.js build completed successfully!");
       console.log("");
       console.log("Setup completed! You can now run:");
       console.log("  npm run logs:batch  - Process files once");
@@ -419,6 +468,7 @@ const mainCommand = define({
     console.log("");
     console.log("Available commands:");
     console.log("  setup   Initialize configuration and database");
+    console.log("  build   Build Next.js application");
     console.log("  start   Start production server");
     console.log("  batch   Process log files once");
     console.log("  watch   Process log files periodically");
@@ -432,6 +482,9 @@ async function main() {
     const subCommands = new Map();
     // Setup command
     subCommands.set("setup", setupCommand);
+
+    // Build command
+    subCommands.set("build", buildCommand);
 
     // Watcher commands
     subCommands.set("batch", batchCommand);
