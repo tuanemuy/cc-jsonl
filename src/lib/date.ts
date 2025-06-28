@@ -2,16 +2,16 @@ import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 
 export function formatDate(date: Date): string {
   if (isToday(date)) {
-    return `Today at ${format(date, "h:mm a")}`;
+    return `Today at ${format(date, "HH:mm")}`;
   }
   if (isYesterday(date)) {
-    return `Yesterday at ${format(date, "h:mm a")}`;
+    return `Yesterday at ${format(date, "HH:mm")}`;
   }
-  return format(date, "MMM d, yyyy");
+  return format(date, "PP 'at' HH:mm");
 }
 
 export function formatTime(date: Date): string {
-  return format(date, "h:mm a");
+  return format(date, "HH:mm");
 }
 
 export function formatRelativeTime(date: Date): string {
@@ -19,5 +19,5 @@ export function formatRelativeTime(date: Date): string {
 }
 
 export function formatFullDateTime(date: Date): string {
-  return format(date, "MMM d, yyyy 'at' h:mm a");
+  return format(date, "PP 'at' HH:mm");
 }

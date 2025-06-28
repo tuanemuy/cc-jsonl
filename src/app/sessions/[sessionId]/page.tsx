@@ -1,20 +1,21 @@
 import { notFound } from "next/navigation";
 import { listMessagesAction } from "@/actions/message";
 import { getSessionAction } from "@/actions/session";
+import type { SessionId } from "@/core/domain/session/types";
+
 import { ChatInterface } from "@/components/chat/ChatInterface";
-import { sessionIdSchema } from "@/core/domain/session/types";
+import { PageLayout } from "@/components/layout/PageLayout";
 
 type PageProps = {
   params: Promise<{
-    sessionId: string;
+    sessionId: SessionId;
   }>;
 };
 
 export default async function SessionPage({ params }: PageProps) {
-  const { sessionId: sessionIdParam } = await params;
-  const sessionId = sessionIdSchema.parse(sessionIdParam);
+  const { sessionId } = await params;
 
-  const session = await getSessionAction(sessionIdParam);
+  const session = await getSessionAction(sessionId);
   if (!session) {
     notFound();
   }
@@ -25,14 +26,12 @@ export default async function SessionPage({ params }: PageProps) {
   });
 
   return (
-    <div className="flex h-screen">
-      <main className="flex-1 flex flex-col">
-        <ChatInterface
-          sessionId={sessionId}
-          projectId={session.projectId || undefined}
-          initialMessages={messages.items}
-        />
-      </main>
-    </div>
+    <PageLayout back>
+      <ChatInterface
+        sessionId={sessionId}
+        projectId={session.projectId || undefined}
+        initialMessages={messages.items}
+      />
+    </PageLayout>
   );
 }
