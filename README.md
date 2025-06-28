@@ -1,4 +1,4 @@
-# cc-jsonl
+# CC.jsonl
 
 A unified CLI tool for processing Claude Code log files and managing production servers.
 
