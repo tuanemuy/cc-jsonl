@@ -359,14 +359,6 @@ export function ChatInterface({
 
   return (
     <div className="h-full flex flex-col bg-background">
-      {/* Header */}
-      <div className="px-4 py-3 sm:px-6 sm:py-4 border-b bg-muted/30">
-        <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
-          <Bot className="h-4 w-4 sm:h-5 sm:w-5" />
-          Chat with Claude
-        </h3>
-      </div>
-
       {/* Messages Area */}
       <div className="flex-1 overflow-hidden">
         <div
@@ -427,11 +419,11 @@ export function ChatInterface({
       </div>
 
       {/* Input Form */}
-      <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
+      <div className="border-t bg-muted">
+        <form onSubmit={handleSubmit} className="px-4 sm:px-6 py-4 space-y-4">
           {/* CWD Input for new sessions */}
           {!currentSessionId && (
-            <div className="max-w-4xl mx-auto">
+            <div className="w-full">
               <Label htmlFor="cwd" className="text-sm font-medium">
                 Working Directory
               </Label>
@@ -440,18 +432,20 @@ export function ChatInterface({
                 value={currentCwd}
                 onChange={(e) => setCurrentCwd(e.target.value)}
                 placeholder="/path/to/your/project"
-                className="mt-1"
+                className="mt-2 bg-background"
                 disabled={isLoading}
               />
             </div>
           )}
 
-          <div className="flex gap-2 sm:gap-3 max-w-4xl mx-auto">
+          <div className="flex items-end gap-2 sm:gap-3 w-full">
             <Textarea
+              name="message"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message..."
-              className="flex-1 min-h-[56px] sm:min-h-[60px] resize-none text-sm sm:text-base"
+              rows={5}
+              className="h-[5.75rem] leading-[1.75] resize-none bg-background"
               onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -471,8 +465,8 @@ export function ChatInterface({
                   isLoading ||
                   (!currentSessionId && !currentCwd.trim())
                 }
-                size="lg"
-                className="px-4 sm:px-5 h-[56px] sm:h-[60px] rounded-full shadow-sm"
+                size="icon"
+                className="size-10 rounded-full"
               >
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
