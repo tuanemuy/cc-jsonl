@@ -210,27 +210,29 @@ describe("createSession", () => {
         expect(result1.value.id).not.toBe(result2.value.id);
       }
     });
-  });
 
-  describe("異常系", () => {
-    it("プロジェクトIDが未定義ではセッションを作成できない", async () => {
+    it("プロジェクトIDが未定義でもセッションを作成できる", async () => {
       // Arrange
-      const input = {} as CreateSessionInput;
+      const input = {
+        cwd: "/tmp",
+      } as CreateSessionInput;
 
       // Act
       const result = await createSession(context, input);
 
       // Assert
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error.message).toBe("Invalid session input");
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.projectId).toBe(null);
+        expect(result.value.cwd).toBe("/tmp");
       }
     });
 
-    it("プロジェクトIDがnullではセッションを作成できない", async () => {
+    it("プロジェクトIDがnullでもセッションを作成できる", async () => {
       // Arrange
       const input = {
         projectId: null,
+        cwd: "/tmp",
         // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
 
@@ -238,16 +240,20 @@ describe("createSession", () => {
       const result = await createSession(context, input);
 
       // Assert
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error.message).toBe("Invalid session input");
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.projectId).toBe(null);
+        expect(result.value.cwd).toBe("/tmp");
       }
     });
+  });
 
+  describe("異常系", () => {
     it("プロジェクトIDが数値型ではセッションを作成できない", async () => {
       // Arrange
       const input = {
         projectId: 123,
+        cwd: "/tmp",
         // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
 
@@ -373,6 +379,7 @@ describe("createSession", () => {
       // Arrange
       const input = {
         projectId: {},
+        cwd: "/tmp",
         // biome-ignore lint/suspicious/noExplicitAny: Testing type validation
       } as any;
 

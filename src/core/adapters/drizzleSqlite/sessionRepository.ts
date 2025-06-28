@@ -26,7 +26,6 @@ export class DrizzleSqliteSessionRepository implements SessionRepository {
             projectId: params.projectId || null,
             name: params.name || null,
             cwd: params.cwd,
-            claudeSessionId: params.claudeSessionId || null,
           };
       const result = await this.db
         .insert(sessions)
@@ -37,7 +36,6 @@ export class DrizzleSqliteSessionRepository implements SessionRepository {
             projectId: params.projectId || null,
             name: params.name || null,
             cwd: params.cwd,
-            claudeSessionId: params.claudeSessionId || null,
             updatedAt: new Date(),
           },
         })

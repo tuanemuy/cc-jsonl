@@ -123,7 +123,6 @@ export async function processLogFile(
       context,
       project,
       sessionId,
-      entries,
     );
     if (ensureSessionResult.isErr()) {
       return err(ensureSessionResult.error);
@@ -193,7 +192,8 @@ async function ensureProjectExists(
   projectName: string,
 ): Promise<Result<Project, ProcessLogFileError>> {
   const existingProjects = await context.projectRepository.list({
-    pagination: { page: 1, limit: 100, order: "asc", orderBy: "createdAt" },
+    pagination: { page: 1, limit: 1, order: "asc", orderBy: "createdAt" },
+    filter: { path: projectName },
   });
 
   if (existingProjects.isErr()) {
@@ -209,9 +209,7 @@ async function ensureProjectExists(
     return err(error);
   }
 
-  const projectExists = existingProjects.value.items.some(
-    (p) => p.name === projectName,
-  );
+  const projectExists = existingProjects.value.items.at(0);
 
   if (!projectExists) {
     const result = await context.projectRepository.upsert({
@@ -284,7 +282,6 @@ async function ensureSessionExists(
   context: Context,
   project: Project,
   sessionId: string,
-  logEntries: ClaudeLogEntry[],
 ): Promise<Result<Session, ProcessLogFileError>> {
   const brandedSessionId = sessionIdSchema.parse(sessionId);
 
@@ -308,20 +305,11 @@ async function ensureSessionExists(
   const existingSession = findSessionResult.value;
 
   if (!existingSession) {
-    // Get cwd from the first log entry that has it
-    const firstEntryWithCwd = logEntries.find(
-      (entry) => entry.type !== "summary" && "cwd" in entry,
-    );
-    const cwd =
-      firstEntryWithCwd && "cwd" in firstEntryWithCwd
-        ? firstEntryWithCwd.cwd
-        : "/tmp";
-
     const result = await context.sessionRepository.upsert({
       id: brandedSessionId,
       projectId: project.id,
       name: null,
-      cwd,
+      cwd: "/tmp",
     });
     if (result.isErr()) {
       // Check if the error is due to session already existing (race condition)
@@ -359,9 +347,7 @@ async function ensureSessionExists(
       });
       return err(error);
     }
-    console.log(
-      `Created session: ${sessionId} for project: ${project.name} with cwd: ${cwd}`,
-    );
+    console.log(`Created session: ${sessionId} for project: ${project.name}`);
     return ok(result.value);
   }
 
