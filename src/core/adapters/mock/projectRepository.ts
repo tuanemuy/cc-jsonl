@@ -13,6 +13,7 @@ export class MockProjectRepository implements ProjectRepository {
   private projects: Map<ProjectId, Project> = new Map();
   private nextId = 1;
   private shouldFailList = false;
+  private shouldFailUpsert = false;
 
   constructor(initialProjects: Project[] = []) {
     for (const project of initialProjects) {
@@ -23,6 +24,10 @@ export class MockProjectRepository implements ProjectRepository {
   async upsert(
     params: CreateProjectParams,
   ): Promise<Result<Project, RepositoryError>> {
+    if (this.shouldFailUpsert) {
+      return err(new RepositoryError("Mock repository upsert failure"));
+    }
+
     // Check if project with same path already exists
     const existingProject = Array.from(this.projects.values()).find(
       (project) => project.path === params.path,
@@ -153,6 +158,7 @@ export class MockProjectRepository implements ProjectRepository {
     this.projects.clear();
     this.nextId = 1;
     this.shouldFailList = false;
+    this.shouldFailUpsert = false;
   }
 
   getAll(): Project[] {
@@ -168,5 +174,9 @@ export class MockProjectRepository implements ProjectRepository {
 
   setShouldFailList(shouldFail: boolean): void {
     this.shouldFailList = shouldFail;
+  }
+
+  setShouldFailUpsert(shouldFail: boolean): void {
+    this.shouldFailUpsert = shouldFail;
   }
 }
