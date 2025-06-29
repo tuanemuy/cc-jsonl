@@ -152,7 +152,7 @@ describe("processLogFile", () => {
       const existingProject = {
         id: projectIdSchema.parse("existing-project-id"),
         name: projectName,
-        path: "/path/to/existing-project",
+        path: projectName, // path should match the projectName for upsert to work correctly
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -317,7 +317,7 @@ describe("processLogFile", () => {
       };
 
       mockLogParser.setParsedFile(filePath, parsedFile);
-      mockProjectRepository.setShouldFailList(true);
+      mockProjectRepository.setShouldFailUpsert(true);
 
       // Act
       const result = await processLogFile(context, {
@@ -329,7 +329,9 @@ describe("processLogFile", () => {
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error.type).toBe("PROCESS_LOG_FILE_ERROR");
-        expect(result.error.message).toContain("Failed to list projects");
+        expect(result.error.message).toContain(
+          "Failed to ensure project exists",
+        );
       }
     });
 
@@ -593,7 +595,7 @@ describe("processLogFile", () => {
       const existingProject = {
         id: projectId,
         name: "existing-name-project",
-        path: "/path/to/existing-name-project",
+        path: "existing-name-project", // path should match the projectName for upsert to work correctly
         createdAt: new Date(),
         updatedAt: new Date(),
       };

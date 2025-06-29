@@ -191,91 +191,27 @@ async function ensureProjectExists(
   context: Context,
   projectName: string,
 ): Promise<Result<Project, ProcessLogFileError>> {
-  const existingProjects = await context.projectRepository.list({
-    pagination: { page: 1, limit: 1, order: "asc", orderBy: "createdAt" },
-    filter: { path: projectName },
+  const result = await context.projectRepository.upsert({
+    name: projectName,
+    path: projectName,
   });
 
-  if (existingProjects.isErr()) {
+  if (result.isErr()) {
     const error = {
       type: "PROCESS_LOG_FILE_ERROR" as const,
-      message: `Failed to list projects: ${existingProjects.error.message}`,
-      cause: existingProjects.error,
+      message: `Failed to ensure project exists: ${result.error.message}`,
+      cause: result.error,
     };
-    console.error("[ensureProjectExists] Failed to list projects", {
+    console.error("[ensureProjectExists] Project upsert failed", {
+      projectName,
       error: error.message,
       cause: error.cause,
     });
     return err(error);
   }
 
-  const projectExists = existingProjects.value.items.at(0);
-
-  if (!projectExists) {
-    const result = await context.projectRepository.upsert({
-      name: projectName,
-      path: projectName,
-    });
-    if (result.isErr()) {
-      // Check if the error is due to project already existing (race condition)
-      const errorCause = result.error.cause;
-      const isAlreadyExistsError =
-        result.error.message.includes("already exists") ||
-        (errorCause &&
-          typeof errorCause === "object" &&
-          "message" in errorCause &&
-          typeof errorCause.message === "string" &&
-          errorCause.message.includes("already exists"));
-
-      if (isAlreadyExistsError) {
-        // Project was created by another concurrent operation, this is fine
-        console.log(
-          `Project already exists (created concurrently): ${projectName}`,
-        );
-      } else {
-        const error = {
-          type: "PROCESS_LOG_FILE_ERROR" as const,
-          message: `Failed to create project: ${result.error.message}`,
-          cause: result.error,
-        };
-        console.error("[ensureProjectExists] Project creation failed", {
-          projectName,
-          error: error.message,
-          cause: error.cause,
-        });
-        return err(error);
-      }
-    } else {
-      console.log(`Created project: ${projectName}`);
-      return ok(result.value);
-    }
-  }
-
-  // Re-fetch projects to get the created/existing project
-  const finalProjectsResult = await context.projectRepository.list({
-    pagination: { page: 1, limit: 100, order: "asc", orderBy: "createdAt" },
-  });
-
-  if (finalProjectsResult.isErr()) {
-    return err({
-      type: "PROCESS_LOG_FILE_ERROR",
-      message: `Failed to fetch project after creation: ${finalProjectsResult.error.message}`,
-      cause: finalProjectsResult.error,
-    });
-  }
-
-  const project = finalProjectsResult.value.items.find(
-    (p) => p.name === projectName,
-  );
-
-  if (!project) {
-    return err({
-      type: "PROCESS_LOG_FILE_ERROR",
-      message: `Project not found after creation: ${projectName}`,
-    });
-  }
-
-  return ok(project);
+  console.log(`Ensured project exists: ${projectName}`);
+  return ok(result.value);
 }
 
 async function ensureSessionExists(
