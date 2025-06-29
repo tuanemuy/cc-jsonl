@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot, Loader2, Send, Settings, User, Wrench } from "lucide-react";
+import { Bot, Loader2, Send, Settings, User, Wrench, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,9 @@ export function ChatInterface({
   const [permissionRequest, setPermissionRequest] =
     useState<PermissionRequest | null>(null);
   const [showPermissionDialog, setShowPermissionDialog] = useState(false);
+  const [abortController, setAbortController] =
+    useState<AbortController | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
   const pendingToolUsesRef = useRef<
     Map<
       string,
@@ -146,6 +149,10 @@ export function ChatInterface({
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
+    // Create new AbortController for this request
+    const controller = new AbortController();
+    setAbortController(controller);
+
     try {
       const url = new URL("/api/messages/stream", window.location.origin);
       url.searchParams.set("message", message);
@@ -160,6 +167,7 @@ export function ChatInterface({
       }
 
       const eventSource = new EventSource(url.toString());
+      eventSourceRef.current = eventSource;
 
       eventSource.onmessage = (event) => {
         try {
@@ -246,7 +254,9 @@ export function ChatInterface({
             });
           } else if (data.type === "complete") {
             eventSource.close();
+            eventSourceRef.current = null;
             setIsLoading(false);
+            setAbortController(null);
 
             if (!currentSessionId && data.sessionId) {
               setCurrentSessionId(data.sessionId);
@@ -268,7 +278,9 @@ export function ChatInterface({
             };
             setMessages((prev) => [...prev, errorMessage]);
             eventSource.close();
+            eventSourceRef.current = null;
             setIsLoading(false);
+            setAbortController(null);
           }
         } catch (e) {
           console.error("Failed to parse SSE data:", e);
@@ -277,7 +289,9 @@ export function ChatInterface({
 
       eventSource.onerror = () => {
         eventSource.close();
+        eventSourceRef.current = null;
         setIsLoading(false);
+        setAbortController(null);
       };
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -292,7 +306,35 @@ export function ChatInterface({
       };
       setMessages((prev) => [...prev, errorMessage]);
       setIsLoading(false);
+      setAbortController(null);
     }
+  };
+
+  const handleAbort = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+    }
+    setIsLoading(false);
+
+    // Add abort message
+    const abortMessage: ChatMessage = {
+      id: `abort-${Date.now()}`,
+      role: "assistant",
+      content: JSON.stringify([
+        {
+          type: "text",
+          text: "Request was cancelled by user.",
+        },
+      ]),
+      timestamp: new Date(),
+      isStreaming: false,
+    };
+    setMessages((prev) => [...prev, abortMessage]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -447,34 +489,56 @@ export function ChatInterface({
               rows={5}
               className="h-[5.75rem] leading-[1.75] resize-none bg-background"
               onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (
+                  e.key === "Enter" &&
+                  (e.ctrlKey || e.metaKey) &&
+                  !e.shiftKey
+                ) {
                   e.preventDefault();
                   handleSubmit({ preventDefault: () => {} } as React.FormEvent);
                 }
               }}
               disabled={isLoading}
             />
-            <motion.div
-              whileTap={{ scale: 0.9 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            >
-              <Button
-                type="submit"
-                disabled={
-                  !input.trim() ||
-                  isLoading ||
-                  (!currentSessionId && !currentCwd.trim())
-                }
-                size="icon"
-                className="size-10 rounded-full"
+            <div className="flex gap-2">
+              {isLoading && (
+                <motion.div
+                  whileTap={{ scale: 0.9 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                >
+                  <Button
+                    type="button"
+                    onClick={handleAbort}
+                    size="icon"
+                    variant="destructive"
+                    className="size-10 rounded-full"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </motion.div>
+              )}
+              <motion.div
+                whileTap={{ scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
               >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </motion.div>
+                <Button
+                  type="submit"
+                  disabled={
+                    !input.trim() ||
+                    isLoading ||
+                    (!currentSessionId && !currentCwd.trim())
+                  }
+                  size="icon"
+                  className="size-10 rounded-full"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </motion.div>
+            </div>
           </div>
         </form>
       </div>
