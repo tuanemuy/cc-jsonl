@@ -9,9 +9,6 @@ import type { Context } from "@/core/application/context";
 
 export const envSchema = z.object({
   DATABASE_FILE_NAME: z.string(),
-  // TURSO_DATABASE_URL: z.string(),
-  // TURSO_AUTH_TOKEN: z.string(),
-  // PGLITE_DATABASE_DIR: z.string(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -23,8 +20,6 @@ function getContext(): Context {
       `Invalid environment variables: ${JSON.stringify(env.error.errors)}`,
     );
   }
-
-  console.log(env.data.DATABASE_FILE_NAME);
 
   const db = getDatabase(env.data.DATABASE_FILE_NAME);
 
