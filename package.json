@@ -1,6 +1,6 @@
 {
   "name": "cc-jsonl",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Unified CLI for Claude Code production server and log processing",
   "author": "maku.",
   "license": "MIT",
