@@ -112,31 +112,6 @@ async function runBatchProcessing(config: ProcessorConfig) {
   }
 }
 
-const buildCommand = define({
-  name: "build",
-  description: "Build the Next.js application for production",
-  run: async () => {
-    console.log("Building Next.js application...");
-
-    try {
-      const projectRoot = getProjectRoot();
-      const exitCode = await spawnCommand("next", ["build"], {
-        cwd: projectRoot,
-      });
-
-      if (exitCode !== 0) {
-        console.error("❌ Build failed!");
-        process.exit(1);
-      }
-
-      console.log("✅ Build completed successfully!");
-    } catch (error) {
-      console.error("Failed to build application:", error);
-      process.exit(1);
-    }
-  },
-});
-
 const batchCommand = define({
   name: "batch",
   description: "Process Claude Code log files once and exit",
@@ -450,19 +425,6 @@ const setupCommand = define({
       console.log("✅ Database migrations completed successfully!");
 
       console.log("");
-      console.log("Building Next.js application...");
-
-      const buildExitCode = await spawnCommand("npm", ["run", "build:web"], {
-        cwd: projectRoot,
-      });
-
-      if (buildExitCode !== 0) {
-        console.error("❌ Next.js build failed!");
-        process.exit(1);
-      }
-
-      console.log("✅ Next.js build completed successfully!");
-      console.log("");
       console.log("Setup completed! You can now run:");
       console.log("  npm run logs:batch  - Process files once");
       console.log("  npm run logs:watch  - Process files periodically");
@@ -482,7 +444,6 @@ const mainCommand = define({
     console.log("");
     console.log("Available commands:");
     console.log("  setup   Initialize configuration and database");
-    console.log("  build   Build Next.js application");
     console.log("  start   Start production server");
     console.log("  batch   Process log files once");
     console.log("  watch   Process log files periodically");
@@ -496,9 +457,6 @@ async function main() {
     const subCommands = new Map();
     // Setup command
     subCommands.set("setup", setupCommand);
-
-    // Build command
-    subCommands.set("build", buildCommand);
 
     // Watcher commands
     subCommands.set("batch", batchCommand);
