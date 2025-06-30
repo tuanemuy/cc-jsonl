@@ -1,4 +1,4 @@
-import { and, eq, like, type SQL, sql } from "drizzle-orm";
+import { and, asc, desc, eq, like, type SQL, sql } from "drizzle-orm";
 import { err, ok, type Result } from "neverthrow";
 import type { ProjectRepository } from "@/core/domain/project/ports/projectRepository";
 import {
@@ -143,6 +143,28 @@ export class DrizzleSqliteProjectRepository implements ProjectRepository {
       conditions.push(like(projects.path, `%${filter.path}%`));
     }
 
+    // Build order clause
+    const getOrderColumn = (orderBy: string) => {
+      switch (orderBy) {
+        case "id":
+          return projects.id;
+        case "name":
+          return projects.name;
+        case "path":
+          return projects.path;
+        case "createdAt":
+          return projects.createdAt;
+        case "updatedAt":
+          return projects.updatedAt;
+        default:
+          return projects.name; // Default to name ordering
+      }
+    };
+
+    const orderColumn = getOrderColumn(pagination.orderBy);
+    const orderClause =
+      pagination.order === "desc" ? desc(orderColumn) : asc(orderColumn);
+
     try {
       let whereClause: SQL | undefined;
       if (conditions.length === 1) {
@@ -157,9 +179,15 @@ export class DrizzleSqliteProjectRepository implements ProjectRepository {
               .select()
               .from(projects)
               .where(whereClause)
+              .orderBy(orderClause)
               .limit(limit)
               .offset(offset)
-          : this.db.select().from(projects).limit(limit).offset(offset),
+          : this.db
+              .select()
+              .from(projects)
+              .orderBy(orderClause)
+              .limit(limit)
+              .offset(offset),
         whereClause
           ? this.db
               .select({ count: sql<number>`count(*)` })
