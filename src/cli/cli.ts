@@ -348,17 +348,19 @@ const startCommand = define({
     const configuredPort = config?.port || 3000;
     const port = (argPort as number | undefined) || configuredPort;
 
-    const args = ["start"];
+    const args = ["run", "start:web"];
 
     if (port !== 3000) {
-      args.push("--port", String(port));
+      args.push("--", "--port", String(port));
     }
 
     console.log(`Starting production server on port ${port}...`);
 
     try {
       const projectRoot = getProjectRoot();
-      const exitCode = await spawnCommand("next", args, { cwd: projectRoot });
+      const exitCode = await spawnCommand("npm", args, {
+        cwd: projectRoot,
+      });
       process.exit(exitCode);
     } catch (error) {
       console.error("Failed to start production server:", error);
@@ -450,7 +452,7 @@ const setupCommand = define({
       console.log("");
       console.log("Building Next.js application...");
 
-      const buildExitCode = await spawnCommand("next", ["build"], {
+      const buildExitCode = await spawnCommand("npm", ["run", "build:web"], {
         cwd: projectRoot,
       });
 
