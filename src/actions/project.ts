@@ -62,7 +62,7 @@ export async function listProjectsAction(query?: ListProjectQuery) {
       page: 1,
       limit: 100,
       order: "desc" as const,
-      orderBy: "updatedAt",
+      orderBy: "path",
     },
   };
   const result = await listProjects(context, query || defaultQuery);

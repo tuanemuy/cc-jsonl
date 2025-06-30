@@ -27,8 +27,8 @@ export function useSessions({ limit: limitValue, projectId }: Args) {
         pagination: {
           page: p,
           limit,
-          order: "asc",
-          orderBy: "path",
+          order: "desc",
+          orderBy: "lastMessageAt",
         },
         filter: projectId && {
           projectId,
