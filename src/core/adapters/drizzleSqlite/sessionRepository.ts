@@ -1,4 +1,4 @@
-import { and, eq, type SQL, sql } from "drizzle-orm";
+import { and, asc, desc, eq, type SQL, sql } from "drizzle-orm";
 import { err, ok, type Result } from "neverthrow";
 import type { SessionRepository } from "@/core/domain/session/ports/sessionRepository";
 import {
@@ -181,6 +181,45 @@ export class DrizzleSqliteSessionRepository implements SessionRepository {
       conditions.push(eq(sessions.projectId, filter.projectId));
     }
 
+    // Build order clause
+    const getOrderColumn = (orderBy: string) => {
+      switch (orderBy) {
+        case "id":
+          return sessions.id;
+        case "projectId":
+          return sessions.projectId;
+        case "name":
+          return sessions.name;
+        case "cwd":
+          return sessions.cwd;
+        case "lastMessageAt":
+          return sessions.lastMessageAt;
+        case "createdAt":
+          return sessions.createdAt;
+        case "updatedAt":
+          return sessions.updatedAt;
+        default:
+          return sessions.lastMessageAt; // Default to lastMessageAt ordering
+      }
+    };
+
+    const orderColumn = getOrderColumn(pagination.orderBy);
+    let orderClause: SQL;
+
+    // Special handling for lastMessageAt to put nulls last when descending, first when ascending
+    if (pagination.orderBy === "lastMessageAt") {
+      if (pagination.order === "desc") {
+        // For desc order: non-null values first (newest messages first), then nulls
+        orderClause = sql`${orderColumn} DESC NULLS LAST`;
+      } else {
+        // For asc order: nulls first, then non-null values (oldest messages first)
+        orderClause = sql`${orderColumn} ASC NULLS FIRST`;
+      }
+    } else {
+      orderClause =
+        pagination.order === "desc" ? desc(orderColumn) : asc(orderColumn);
+    }
+
     try {
       let whereClause: SQL | undefined;
       if (conditions.length === 1) {
@@ -195,9 +234,15 @@ export class DrizzleSqliteSessionRepository implements SessionRepository {
               .select()
               .from(sessions)
               .where(whereClause)
+              .orderBy(orderClause)
               .limit(limit)
               .offset(offset)
-          : this.db.select().from(sessions).limit(limit).offset(offset),
+          : this.db
+              .select()
+              .from(sessions)
+              .orderBy(orderClause)
+              .limit(limit)
+              .offset(offset),
         whereClause
           ? this.db
               .select({ count: sql<number>`count(*)` })
