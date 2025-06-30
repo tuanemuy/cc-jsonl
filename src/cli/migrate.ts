@@ -1,5 +1,4 @@
 import * as path from "node:path";
-import "dotenv/config";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { getDatabase } from "@/core/adapters/drizzleSqlite/client";
 import { getConfigOrEnv } from "./config";
