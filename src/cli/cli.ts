@@ -154,7 +154,7 @@ const batchCommand = define({
         "No configuration found. Please run 'setup' command first.",
       );
       console.error("");
-      console.error("Example: npm run cli setup");
+      console.error("Example: cc-jsonl setup");
       process.exit(1);
     }
 
@@ -245,7 +245,7 @@ const watchCommand = define({
         "No configuration found. Please run 'setup' command first.",
       );
       console.error("");
-      console.error("Example: npm run cli setup");
+      console.error("Example: cc-jsonl setup");
       process.exit(1);
     }
 
@@ -433,9 +433,9 @@ const setupCommand = define({
 
       console.log("");
       console.log("Setup completed! You can now run:");
-      console.log("  npm run logs:batch  - Process files once");
-      console.log("  npm run logs:watch  - Process files periodically");
-      console.log("  npm run start:prod  - Start production server");
+      console.log("  cc-jsonl batch  - Process files once");
+      console.log("  cc-jsonl watch  - Process files periodically");
+      console.log("  cc-jsonl start  - Start production server");
     } catch (error) {
       console.error("Setup failed:", error);
       process.exit(1);
