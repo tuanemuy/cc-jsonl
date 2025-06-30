@@ -3,7 +3,6 @@
 import "dotenv/config";
 import { spawn } from "node:child_process";
 import * as path from "node:path";
-import { fileURLToPath } from "node:url";
 import { cli, define } from "gunshi";
 import { batchProcessLogFiles } from "@/core/application/watcher";
 import { version } from "../../package.json";
@@ -16,13 +15,7 @@ import {
   loadConfig,
   saveConfig,
 } from "./config";
-
-function getProjectRoot(): string {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  // From src/cli/cli.ts, go up two levels to reach project root
-  return path.resolve(__dirname, "../..");
-}
+import { getProjectRoot } from "./util";
 
 let isRunning = false;
 let intervalId: NodeJS.Timeout | null = null;
@@ -443,7 +436,7 @@ const setupCommand = define({
       console.log("Running database migrations...");
 
       const projectRoot = getProjectRoot();
-      const exitCode = await spawnCommand("npm", ["run", "db:migrate"], {
+      const exitCode = await spawnCommand("node", ["dist/cli/migrate.mjs"], {
         cwd: projectRoot,
       });
 
