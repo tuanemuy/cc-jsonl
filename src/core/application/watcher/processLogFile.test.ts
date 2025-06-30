@@ -382,7 +382,7 @@ describe("processLogFile", () => {
   });
 
   describe("境界値テスト", () => {
-    it("システムログエントリを正常に処理できる", async () => {
+    it("システムログエントリはスキップされる", async () => {
       // Arrange
       const filePath = "/path/to/system/session.jsonl";
       const systemLogEntry = {
@@ -420,16 +420,14 @@ describe("processLogFile", () => {
         expect(result.value.entriesProcessed).toBe(1);
       }
 
-      // システムメッセージがアシスタントメッセージとして保存されることを確認
+      // システムメッセージは処理されずメッセージとして保存されないことを確認
       const messages = await mockMessageRepository.list({
         pagination: { page: 1, limit: 10, order: "asc", orderBy: "createdAt" },
         filter: { sessionId: sessionIdSchema.parse("system-session") },
       });
       expect(messages.isOk()).toBe(true);
       if (messages.isOk()) {
-        expect(messages.value.items).toHaveLength(1);
-        expect(messages.value.items[0].role).toBe("assistant");
-        expect(messages.value.items[0].content).toBe("[SYSTEM] System message");
+        expect(messages.value.items).toHaveLength(0);
       }
     });
 

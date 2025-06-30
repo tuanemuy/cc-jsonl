@@ -1,5 +1,6 @@
 import { err, ok, type Result } from "neverthrow";
 import { z } from "zod";
+import type { UserContent } from "@/core/domain/claude/types";
 import type { Project } from "@/core/domain/project/types";
 import {
   type Session,
@@ -312,20 +313,6 @@ async function processLogEntries(
             cause: result.error.cause,
           });
         }
-      } else if (entry.type === "system") {
-        const result = await processSystemEntry(
-          context,
-          brandedSessionId,
-          entry as SystemLog,
-        );
-        if (result.isErr()) {
-          console.warn("[processLogEntries] Failed to process system entry", {
-            entryType: entry.type,
-            uuid: entry.uuid,
-            error: result.error.message,
-            cause: result.error.cause,
-          });
-        }
       } else if (entry.type === "summary") {
         const result = await processSummaryEntry(
           context,
@@ -361,12 +348,35 @@ async function processMessageEntry(
   let content: string | null = null;
 
   if (entry.type === "user" && entry.message?.content) {
-    content =
+    // Use claude service to parse user content
+    const parseResult = context.claudeService.parseUserContent(
       typeof entry.message.content === "string"
         ? entry.message.content
-        : JSON.stringify(entry.message.content);
+        : JSON.stringify(entry.message.content),
+    );
+    if (parseResult.isOk()) {
+      content =
+        typeof parseResult.value === "string"
+          ? parseResult.value
+          : JSON.stringify(parseResult.value);
+    } else {
+      // Fallback to raw content if parsing fails
+      content =
+        typeof entry.message.content === "string"
+          ? entry.message.content
+          : JSON.stringify(entry.message.content);
+    }
   } else if (entry.type === "assistant" && entry.message?.content) {
-    content = JSON.stringify(entry.message.content);
+    // Use claude service to parse assistant content
+    const parseResult = context.claudeService.parseAssistantContent(
+      JSON.stringify(entry.message.content),
+    );
+    if (parseResult.isOk()) {
+      content = JSON.stringify(parseResult.value);
+    } else {
+      // Fallback to raw content if parsing fails
+      content = JSON.stringify(entry.message.content);
+    }
   }
 
   if (!entry.message?.role) {
@@ -428,74 +438,6 @@ async function processMessageEntry(
   if (timestampUpdateResult.isErr()) {
     console.warn(
       "[processMessageEntry] Failed to update session lastMessageAt",
-      {
-        sessionId,
-        timestamp: entry.timestamp,
-        error: timestampUpdateResult.error.message,
-        cause: timestampUpdateResult.error.cause,
-      },
-    );
-  }
-
-  return ok(undefined);
-}
-
-async function processSystemEntry(
-  context: Context,
-  sessionId: SessionId,
-  entry: SystemLog,
-): Promise<Result<void, ProcessLogFileError>> {
-  const result = await context.messageRepository.upsert({
-    sessionId,
-    role: "assistant",
-    content: `[SYSTEM] ${entry.content}`,
-    timestamp: new Date(entry.timestamp),
-    rawData: JSON.stringify(entry),
-    uuid: entry.uuid,
-    parentUuid: entry.parentUuid,
-    cwd: entry.cwd,
-  });
-
-  if (result.isErr()) {
-    const error = {
-      type: "PROCESS_LOG_FILE_ERROR" as const,
-      message: `Failed to create system message: ${result.error.message}`,
-      cause: result.error,
-    };
-    console.error("[processSystemEntry] System message create failed", {
-      sessionId,
-      uuid: entry.uuid,
-      error: error.message,
-      cause: error.cause,
-    });
-    return err(error);
-  }
-
-  // Update session cwd to match the latest message's cwd
-  const sessionUpdateResult = await context.sessionRepository.updateCwd(
-    sessionId,
-    entry.cwd,
-  );
-
-  if (sessionUpdateResult.isErr()) {
-    console.warn("[processSystemEntry] Failed to update session cwd", {
-      sessionId,
-      cwd: entry.cwd,
-      error: sessionUpdateResult.error.message,
-      cause: sessionUpdateResult.error.cause,
-    });
-  }
-
-  // Update session's last message timestamp
-  const timestampUpdateResult =
-    await context.sessionRepository.updateLastMessageAt(
-      sessionId,
-      new Date(entry.timestamp),
-    );
-
-  if (timestampUpdateResult.isErr()) {
-    console.warn(
-      "[processSystemEntry] Failed to update session lastMessageAt",
       {
         sessionId,
         timestamp: entry.timestamp,
@@ -619,21 +561,52 @@ async function generateAndUpdateSessionName(
       return ok(undefined); // No messages, no name generation needed
     }
 
-    // Find the first user message with meaningful content that doesn't start with <
-    const firstUserMessage = items.find(
-      (msg) =>
-        msg.role === "user" &&
-        msg.content &&
-        msg.content.trim().length > 0 &&
-        !msg.content.trim().startsWith("<"),
-    );
+    // Find the first user message with meaningful content
+    let firstUserMessage = null;
+    let processedContent = "";
 
-    if (!firstUserMessage?.content) {
+    for (const msg of items) {
+      if (msg.role === "user" && msg.content && msg.content.trim().length > 0) {
+        // Parse user content using claude service to handle string | ContentBlockParam[] properly
+        const parseResult = context.claudeService.parseUserContent(msg.content);
+
+        if (parseResult.isOk()) {
+          // Extract text from parsed content
+          const extractedText = extractTextFromUserContent(parseResult.value);
+
+          // Check if the extracted text doesn't start with < and has meaningful content
+          if (
+            extractedText.trim().length > 0 &&
+            !extractedText.trim().startsWith("<")
+          ) {
+            firstUserMessage = msg;
+            processedContent = extractedText;
+            break;
+          }
+        } else {
+          // Fallback: use raw content if parsing fails
+          const fallbackContent =
+            typeof msg.content === "string"
+              ? msg.content
+              : JSON.stringify(msg.content);
+          if (
+            fallbackContent.trim().length > 0 &&
+            !fallbackContent.trim().startsWith("<")
+          ) {
+            firstUserMessage = msg;
+            processedContent = fallbackContent;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!firstUserMessage || !processedContent) {
       return ok(undefined); // No meaningful content found
     }
 
-    // Use first line of user message, truncated
-    const firstLine = firstUserMessage.content.split("\n")[0];
+    // Use first line of processed content, truncated
+    const firstLine = processedContent.split("\n")[0]?.trim() || "";
     const sessionName = truncateSessionName(firstLine);
 
     // Only update if we got a meaningful name (not "Untitled Session")
@@ -675,4 +648,36 @@ function truncateSessionName(text: string): string {
   }
 
   return `${cleaned.substring(0, maxLength - 3)}...`;
+}
+
+function extractTextFromUserContent(content: UserContent): string {
+  if (typeof content === "string") {
+    return content;
+  }
+
+  // Handle ContentBlockParam[] case
+  if (Array.isArray(content)) {
+    const textParts: string[] = [];
+    for (const block of content) {
+      if (typeof block === "object" && block !== null) {
+        if (
+          block.type === "text" &&
+          "text" in block &&
+          typeof block.text === "string"
+        ) {
+          textParts.push(block.text);
+        } else if (
+          block.type === "tool_use" &&
+          "name" in block &&
+          typeof block.name === "string"
+        ) {
+          // For tool use blocks, include the tool name for context
+          textParts.push(`[Tool: ${block.name}]`);
+        }
+      }
+    }
+    return textParts.join(" ");
+  }
+
+  return "";
 }
