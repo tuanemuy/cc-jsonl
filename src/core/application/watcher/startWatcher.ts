@@ -32,15 +32,10 @@ export async function startWatcher(
   }
 
   try {
-    console.log("Starting Claude Code Log Watcher...");
-    console.log(`Watching directory: ${input.config.targetDirectory}`);
-    console.log(`Pattern: ${input.config.pattern}`);
-
     const result = await context.fileWatcher.start(
       input.config,
       async (event) => {
         if (event.type === "add" || event.type === "change") {
-          console.log(`File ${event.type}: ${event.filePath}`);
           const processResult = await processLogFile(context, {
             filePath: event.filePath,
           });
@@ -62,7 +57,6 @@ export async function startWatcher(
       });
     }
 
-    console.log("File watcher is ready and watching for changes...");
     return ok(undefined);
   } catch (error) {
     return err({
@@ -77,8 +71,6 @@ export async function stopWatcher(
   context: Context & { fileWatcher: FileWatcher },
 ): Promise<Result<void, StartWatcherError>> {
   try {
-    console.log("Shutting down file watcher...");
-
     const result = await context.fileWatcher.stop();
     if (result.isErr()) {
       return err({
@@ -88,7 +80,6 @@ export async function stopWatcher(
       });
     }
 
-    console.log("File watcher closed.");
     return ok(undefined);
   } catch (error) {
     return err({

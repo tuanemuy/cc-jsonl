@@ -14,12 +14,6 @@ export async function listSessions(
   context: Context,
   query: ListSessionQuery,
 ): Promise<Result<{ items: Session[]; count: number }, ApplicationError>> {
-  console.log("[listSessions] Starting session list query", {
-    projectId: query.filter?.projectId,
-    page: query.pagination?.page,
-    limit: query.pagination?.limit,
-  });
-
   const parseResult = validate(listSessionQuerySchema, query);
 
   if (parseResult.isErr()) {
@@ -27,20 +21,14 @@ export async function listSessions(
       "Invalid session query",
       parseResult.error,
     );
-    console.error("[listSessions] Query validation failed", {
-      error: error.message,
-      cause: error.cause,
-    });
+    console.error("[listSessions] Query validation failed", error);
     return err(error);
   }
 
   const result = await context.sessionRepository.list(parseResult.value);
   return result.mapErr((error) => {
     const appError = new ApplicationError("Failed to list sessions", error);
-    console.error("[listSessions] Repository operation failed", {
-      error: appError.message,
-      cause: appError.cause,
-    });
+    console.error("[listSessions] Repository operation failed", appError);
     return appError;
   });
 }

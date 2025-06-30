@@ -37,11 +37,6 @@ export async function batchProcessLogFiles(
     parseResult.data;
 
   try {
-    console.log(`Starting batch processing of directory: ${targetDirectory}`);
-    console.log(
-      `Pattern: ${pattern}, Max concurrency: ${maxConcurrency}, Skip existing: ${skipExisting}`,
-    );
-
     // Find all matching files
     const filesResult = await findMatchingFiles(
       context.fileSystemManager,
@@ -57,7 +52,6 @@ export async function batchProcessLogFiles(
     }
 
     const files = filesResult.value;
-    console.log(`Found ${files.length} files to process`);
 
     if (files.length === 0) {
       return ok({
@@ -78,9 +72,6 @@ export async function batchProcessLogFiles(
 
     for (let i = 0; i < files.length; i += maxConcurrency) {
       const batch = files.slice(i, i + maxConcurrency);
-      console.log(
-        `Processing batch ${Math.floor(i / maxConcurrency) + 1}/${Math.ceil(files.length / maxConcurrency)} (${batch.length} files)`,
-      );
 
       const batchPromises = batch.map(
         async (filePath): Promise<BatchProcessFileResult> => {
@@ -91,7 +82,6 @@ export async function batchProcessLogFiles(
 
           if (result.isOk()) {
             if (result.value.skipped) {
-              console.log(`Skipped already processed file: ${filePath}`);
               return {
                 filePath,
                 status: "skipped",
@@ -99,9 +89,6 @@ export async function batchProcessLogFiles(
               };
             }
 
-            console.log(
-              `Successfully processed: ${filePath} (${result.value.entriesProcessed} entries)`,
-            );
             return {
               filePath,
               status: "success",
@@ -110,7 +97,7 @@ export async function batchProcessLogFiles(
           }
 
           const errorMessage = result.error.message;
-          console.error(`Failed to process: ${filePath} - ${errorMessage}`);
+          console.error(`Failed to process: ${filePath}`, result.error);
           errors.push({ filePath, error: errorMessage });
           return {
             filePath,
@@ -139,10 +126,6 @@ export async function batchProcessLogFiles(
     ).length;
     const failedFiles = fileResults.filter((r) => r.status === "failed").length;
 
-    console.log(
-      `Batch processing completed: ${processedFiles} processed, ${skippedFiles} skipped, ${failedFiles} failed, ${totalEntries} total entries`,
-    );
-
     return ok({
       totalFiles: files.length,
       processedFiles,
@@ -158,11 +141,13 @@ export async function batchProcessLogFiles(
       message: `Error during batch processing of ${targetDirectory}`,
       cause: error,
     };
-    console.error("[batchProcessLogFiles] Unexpected error occurred", {
-      targetDirectory,
-      error: batchError.message,
-      cause: batchError.cause,
-    });
+    console.error(
+      "[batchProcessLogFiles] Unexpected error occurred",
+      {
+        targetDirectory,
+      },
+      batchError,
+    );
     return err(batchError);
   }
 }
@@ -210,11 +195,7 @@ async function walkDirectory(
     withFileTypes: true,
   });
   if (entriesResult.isErr()) {
-    // Log but don't fail - some directories might not be accessible
-    console.warn(
-      `Warning: Could not read directory ${dir}:`,
-      entriesResult.error,
-    );
+    // Some directories might not be accessible - continue without failing
     return ok(undefined);
   }
 

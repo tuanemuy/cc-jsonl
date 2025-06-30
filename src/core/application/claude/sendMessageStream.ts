@@ -40,19 +40,10 @@ export async function sendMessageStream(
 ): Promise<
   Result<{ session: Session; messages: SDKMessage[] }, ApplicationError>
 > {
-  console.log("[sendMessageStream] Starting streaming message processing", {
-    sessionId: input.sessionId,
-    messageLength:
-      typeof input.message === "string" ? input.message.length : undefined,
-  });
-
   const parseResult = validate(sendMessageStreamInputSchema, input);
   if (parseResult.isErr()) {
     const error = new ApplicationError("Invalid input", parseResult.error);
-    console.error("[sendMessageStream] Input validation failed", {
-      error: error.message,
-      cause: error.cause,
-    });
+    console.error("[sendMessageStream] Input validation failed", error);
     return err(error);
   }
 
@@ -70,19 +61,24 @@ export async function sendMessageStream(
           "Failed to get session",
           sessionResult.error,
         );
-        console.error("[sendMessageStream] Session retrieval failed", {
-          sessionId: parsedSessionId,
-          error: error.message,
-          cause: error.cause,
-        });
+        console.error(
+          "[sendMessageStream] Session retrieval failed",
+          {
+            sessionId: parsedSessionId,
+          },
+          error,
+        );
         return err(error);
       }
       if (!sessionResult.value) {
         const error = new ApplicationError("Session not found");
-        console.error("[sendMessageStream] Session not found", {
-          sessionId: parsedSessionId,
-          error: error.message,
-        });
+        console.error(
+          "[sendMessageStream] Session not found",
+          {
+            sessionId: parsedSessionId,
+          },
+          error,
+        );
         return err(error);
       }
       session = sessionResult.value;
@@ -118,9 +114,7 @@ export async function sendMessageStream(
         const error = new ApplicationError(
           "cwd is required when creating a new session",
         );
-        console.error("[sendMessageStream] Missing cwd for new session", {
-          error: error.message,
-        });
+        console.error("[sendMessageStream] Missing cwd for new session", error);
         return err(error);
       }
 
@@ -141,10 +135,7 @@ export async function sendMessageStream(
           "Failed to create session",
           createSessionResult.error,
         );
-        console.error("[sendMessageStream] Session creation failed", {
-          error: error.message,
-          cause: error.cause,
-        });
+        console.error("[sendMessageStream] Session creation failed", error);
         return err(error);
       }
       session = createSessionResult.value;
@@ -162,13 +153,6 @@ export async function sendMessageStream(
       cwd: session.cwd,
     });
     if (updateSessionResult.isErr()) {
-      console.warn(
-        "[sendMessageStream] Failed to update session lastMessageAt",
-        {
-          sessionId: session.id,
-          error: updateSessionResult.error.message,
-        },
-      );
       // Don't fail the entire operation for session update failure
     } else {
       session = updateSessionResult.value;
@@ -183,10 +167,7 @@ export async function sendMessageStream(
       "Unexpected error in sendMessageStream",
       error,
     );
-    console.error("[sendMessageStream] Unexpected error occurred", {
-      error: appError.message,
-      cause: appError.cause,
-    });
+    console.error("[sendMessageStream] Unexpected error occurred", appError);
     return err(appError);
   }
 }

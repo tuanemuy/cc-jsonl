@@ -14,11 +14,6 @@ export async function createMessage(
   context: Context,
   input: CreateMessageInput,
 ): Promise<Result<Message, ApplicationError>> {
-  console.log("[createMessage] Starting message creation", {
-    sessionId: input.sessionId,
-    role: input.role,
-  });
-
   const parseResult = validate(createMessageParamsSchema, input);
 
   if (parseResult.isErr()) {
@@ -26,10 +21,7 @@ export async function createMessage(
       "Invalid message input",
       parseResult.error,
     );
-    console.error("[createMessage] Validation failed", {
-      error: error.message,
-      cause: error.cause,
-    });
+    console.error("[createMessage] Validation failed", error);
     return err(error);
   }
 
@@ -48,10 +40,7 @@ export async function createMessage(
 
   return result.mapErr((error) => {
     const appError = new ApplicationError("Failed to create message", error);
-    console.error("[createMessage] Repository operation failed", {
-      error: appError.message,
-      cause: appError.cause,
-    });
+    console.error("[createMessage] Repository operation failed", appError);
     return appError;
   });
 }
