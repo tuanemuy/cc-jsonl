@@ -14,11 +14,6 @@ export async function listProjects(
   context: Context,
   query: ListProjectQuery,
 ): Promise<Result<{ items: Project[]; count: number }, ApplicationError>> {
-  console.log("[listProjects] Starting project list query", {
-    page: query.pagination?.page,
-    limit: query.pagination?.limit,
-  });
-
   const parseResult = validate(listProjectQuerySchema, query);
 
   if (parseResult.isErr()) {
@@ -26,20 +21,14 @@ export async function listProjects(
       "Invalid project query",
       parseResult.error,
     );
-    console.error("[listProjects] Query validation failed", {
-      error: error.message,
-      cause: error.cause,
-    });
+    console.error("[listProjects] Query validation failed", error);
     return err(error);
   }
 
   const result = await context.projectRepository.list(parseResult.value);
   return result.mapErr((error) => {
     const appError = new ApplicationError("Failed to list projects", error);
-    console.error("[listProjects] Repository operation failed", {
-      error: appError.message,
-      cause: appError.cause,
-    });
+    console.error("[listProjects] Repository operation failed", appError);
     return appError;
   });
 }

@@ -14,11 +14,6 @@ export async function createProject(
   context: Context,
   input: CreateProjectInput,
 ): Promise<Result<Project, ApplicationError>> {
-  console.log("[createProject] Starting project creation", {
-    name: input.name,
-    path: input.path,
-  });
-
   const parseResult = validate(createProjectParamsSchema, input);
 
   if (parseResult.isErr()) {
@@ -26,10 +21,7 @@ export async function createProject(
       "Invalid project input",
       parseResult.error,
     );
-    console.error("[createProject] Validation failed", {
-      error: error.message,
-      cause: error.cause,
-    });
+    console.error("[createProject] Validation failed", error);
     return err(error);
   }
 
@@ -38,10 +30,7 @@ export async function createProject(
   const result = await context.projectRepository.upsert(params);
   return result.mapErr((error) => {
     const appError = new ApplicationError("Failed to create project", error);
-    console.error("[createProject] Repository operation failed", {
-      error: appError.message,
-      cause: appError.cause,
-    });
+    console.error("[createProject] Repository operation failed", appError);
     return appError;
   });
 }

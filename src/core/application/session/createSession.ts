@@ -14,11 +14,6 @@ export async function createSession(
   context: Context,
   input: CreateSessionInput,
 ): Promise<Result<Session, ApplicationError>> {
-  console.log("[createSession] Starting session creation", {
-    projectId: input.projectId,
-    cwd: input.cwd,
-  });
-
   const parseResult = validate(createSessionParamsSchema, input);
 
   if (parseResult.isErr()) {
@@ -26,10 +21,7 @@ export async function createSession(
       "Invalid session input",
       parseResult.error,
     );
-    console.error("[createSession] Validation failed", {
-      error: error.message,
-      cause: error.cause,
-    });
+    console.error("[createSession] Validation failed", error);
     return err(error);
   }
 
@@ -38,10 +30,7 @@ export async function createSession(
   const result = await context.sessionRepository.upsert(params);
   return result.mapErr((error) => {
     const appError = new ApplicationError("Failed to create session", error);
-    console.error("[createSession] Repository operation failed", {
-      error: appError.message,
-      cause: appError.cause,
-    });
+    console.error("[createSession] Repository operation failed", appError);
     return appError;
   });
 }

@@ -58,24 +58,11 @@ export async function processLogFile(
       });
 
       if (statusResult.isErr()) {
-        console.warn(
-          "[processLogFile] Failed to check file processing status",
-          statusResult.error,
-        );
         // Continue processing despite status check failure
       } else if (!statusResult.value.shouldProcess) {
-        console.log(
-          `Skipping file (${statusResult.value.reason}): ${input.filePath}`,
-        );
         return ok({ entriesProcessed: 0, skipped: true });
-      } else {
-        console.log(
-          `File should be processed (${statusResult.value.reason}): ${input.filePath}`,
-        );
       }
     }
-
-    console.log(`Processing log file: ${input.filePath}`);
 
     const parsedResult = await context.logParser.parseFile(input.filePath);
     if (parsedResult.isErr()) {
@@ -84,29 +71,26 @@ export async function processLogFile(
         message: "Failed to parse log file",
         cause: parsedResult.error,
       };
-      console.error("[processLogFile] Log file parsing failed", {
-        filePath: input.filePath,
-        error: error.message,
-        cause: error.cause,
-      });
+      console.error(
+        "[processLogFile] Log file parsing failed",
+        {
+          filePath: input.filePath,
+        },
+        error,
+      );
       return err(error);
     }
 
     const { projectName, sessionId, entries } = parsedResult.value;
 
     if (entries.length === 0) {
-      console.log(`No valid log entries found in: ${input.filePath}`);
-
       // Update tracking status even if no entries were processed
       if (!skipTracking) {
         const updateResult = await updateFileProcessingStatus(context, {
           filePath: input.filePath,
         });
         if (updateResult.isErr()) {
-          console.warn(
-            "[processLogFile] Failed to update file tracking status",
-            updateResult.error,
-          );
+          // Failed to update file tracking status
         }
       }
 
@@ -146,11 +130,7 @@ export async function processLogFile(
         session,
       );
       if (generateNameResult.isErr()) {
-        console.warn("[processLogFile] Failed to generate session name", {
-          sessionId,
-          error: generateNameResult.error.message,
-          cause: generateNameResult.error.cause,
-        });
+        // Failed to generate session name
       }
     }
 
@@ -160,16 +140,9 @@ export async function processLogFile(
         filePath: input.filePath,
       });
       if (updateResult.isErr()) {
-        console.warn(
-          "[processLogFile] Failed to update file tracking status",
-          updateResult.error,
-        );
+        // Failed to update file tracking status
       }
     }
-
-    console.log(
-      `Successfully processed ${entries.length} entries from: ${input.filePath}`,
-    );
 
     return ok({ entriesProcessed: entries.length, skipped: false });
   } catch (error) {
@@ -178,11 +151,13 @@ export async function processLogFile(
       message: `Error processing log file ${input.filePath}`,
       cause: error,
     };
-    console.error("[processLogFile] Unexpected error occurred", {
-      filePath: input.filePath,
-      error: processError.message,
-      cause: processError.cause,
-    });
+    console.error(
+      "[processLogFile] Unexpected error occurred",
+      {
+        filePath: input.filePath,
+      },
+      processError,
+    );
     return err(processError);
   }
 }
@@ -202,15 +177,16 @@ async function ensureProjectExists(
       message: `Failed to ensure project exists: ${result.error.message}`,
       cause: result.error,
     };
-    console.error("[ensureProjectExists] Project upsert failed", {
-      projectName,
-      error: error.message,
-      cause: error.cause,
-    });
+    console.error(
+      "[ensureProjectExists] Project upsert failed",
+      {
+        projectName,
+      },
+      error,
+    );
     return err(error);
   }
 
-  console.log(`Ensured project exists: ${projectName}`);
   return ok(result.value);
 }
 
@@ -230,11 +206,13 @@ async function ensureSessionExists(
       message: `Failed to find session: ${findSessionResult.error.message}`,
       cause: findSessionResult.error,
     };
-    console.error("[ensureSessionExists] Failed to find session", {
-      sessionId,
-      error: error.message,
-      cause: error.cause,
-    });
+    console.error(
+      "[ensureSessionExists] Failed to find session",
+      {
+        sessionId,
+      },
+      error,
+    );
     return err(error);
   }
 
@@ -260,9 +238,6 @@ async function ensureSessionExists(
 
       if (isAlreadyExistsError) {
         // Session was created by another concurrent operation, try to fetch it
-        console.log(
-          `Session already exists (created concurrently): ${sessionId}`,
-        );
         const retryResult =
           await context.sessionRepository.findById(brandedSessionId);
         if (retryResult.isOk() && retryResult.value) {
@@ -275,15 +250,16 @@ async function ensureSessionExists(
         message: `Failed to create session: ${result.error.message}`,
         cause: result.error,
       };
-      console.error("[ensureSessionExists] Session creation failed", {
-        sessionId,
-        projectName: project.name,
-        error: error.message,
-        cause: error.cause,
-      });
+      console.error(
+        "[ensureSessionExists] Session creation failed",
+        {
+          sessionId,
+          projectName: project.name,
+        },
+        error,
+      );
       return err(error);
     }
-    console.log(`Created session: ${sessionId} for project: ${project.name}`);
     return ok(result.value);
   }
 
@@ -305,12 +281,7 @@ async function processLogEntries(
           entry as UserLog | AssistantLog,
         );
         if (result.isErr()) {
-          console.warn("[processLogEntries] Failed to process message entry", {
-            entryType: entry.type,
-            uuid: entry.uuid,
-            error: result.error.message,
-            cause: result.error.cause,
-          });
+          // Failed to process message entry
         }
       } else if (entry.type === "summary") {
         const result = await processSummaryEntry(
@@ -319,20 +290,11 @@ async function processLogEntries(
           entry as SummaryLog,
         );
         if (result.isErr()) {
-          console.warn("[processLogEntries] Failed to process summary entry", {
-            entryType: entry.type,
-            error: result.error.message,
-            cause: result.error.cause,
-          });
+          // Failed to process summary entry
         }
       }
-    } catch (error) {
-      console.warn("[processLogEntries] Failed to process log entry", {
-        entryType: entry.type,
-        uuid: "uuid" in entry ? entry.uuid : "summary",
-        error: error instanceof Error ? error.message : String(error),
-        cause: error,
-      });
+    } catch (_error) {
+      // Failed to process log entry
     }
   }
 
@@ -402,13 +364,15 @@ async function processMessageEntry(
       message: `Failed to create message: ${result.error.message}`,
       cause: result.error,
     };
-    console.error("[processMessageEntry] Message create failed", {
-      sessionId,
-      role: entry.message?.role,
-      uuid: entry.uuid,
-      error: error.message,
-      cause: error.cause,
-    });
+    console.error(
+      "[processMessageEntry] Message create failed",
+      {
+        sessionId,
+        role: entry.message?.role,
+        uuid: entry.uuid,
+      },
+      error,
+    );
     return err(error);
   }
 
@@ -419,12 +383,7 @@ async function processMessageEntry(
   );
 
   if (sessionUpdateResult.isErr()) {
-    console.warn("[processMessageEntry] Failed to update session cwd", {
-      sessionId,
-      cwd: entry.cwd,
-      error: sessionUpdateResult.error.message,
-      cause: sessionUpdateResult.error.cause,
-    });
+    // Failed to update session cwd
   }
 
   // Update session's last message timestamp
@@ -435,15 +394,7 @@ async function processMessageEntry(
     );
 
   if (timestampUpdateResult.isErr()) {
-    console.warn(
-      "[processMessageEntry] Failed to update session lastMessageAt",
-      {
-        sessionId,
-        timestamp: entry.timestamp,
-        error: timestampUpdateResult.error.message,
-        cause: timestampUpdateResult.error.cause,
-      },
-    );
+    // Failed to update session lastMessageAt
   }
 
   return ok(undefined);
@@ -458,9 +409,6 @@ async function processSummaryEntry(
     // Generate session name from summary text
     const summaryText = entry.summary;
     if (!summaryText) {
-      console.log(
-        "[processSummaryEntry] Empty summary, skipping name generation",
-      );
       return ok(undefined);
     }
 
@@ -479,18 +427,17 @@ async function processSummaryEntry(
         message: `Failed to update session name from summary: ${updateResult.error.message}`,
         cause: updateResult.error,
       };
-      console.error("[processSummaryEntry] Session name update failed", {
-        sessionId,
-        sessionName,
-        error: error.message,
-        cause: error.cause,
-      });
+      console.error(
+        "[processSummaryEntry] Session name update failed",
+        {
+          sessionId,
+          sessionName,
+        },
+        error,
+      );
       return err(error);
     }
 
-    console.log(
-      `Updated session name from summary: ${sessionId} -> "${sessionName}"`,
-    );
     return ok(undefined);
   } catch (error) {
     const processError = {
@@ -498,11 +445,13 @@ async function processSummaryEntry(
       message: `Failed to process summary entry: ${error instanceof Error ? error.message : String(error)}`,
       cause: error,
     };
-    console.error("[processSummaryEntry] Unexpected error", {
-      sessionId,
-      error: processError.message,
-      cause: processError.cause,
-    });
+    console.error(
+      "[processSummaryEntry] Unexpected error",
+      {
+        sessionId,
+      },
+      processError,
+    );
     return err(processError);
   }
 }
@@ -622,10 +571,6 @@ async function generateAndUpdateSessionName(
           cause: updateResult.error,
         });
       }
-
-      console.log(
-        `Generated and updated session name: ${sessionId} -> "${sessionName}"`,
-      );
     }
 
     return ok(undefined);
