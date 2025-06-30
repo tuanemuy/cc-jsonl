@@ -3,8 +3,10 @@
 import "dotenv/config";
 import { spawn } from "node:child_process";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import { cli, define } from "gunshi";
 import { batchProcessLogFiles } from "@/core/application/watcher";
+import { version } from "../../package.json";
 import { getWatcherContext } from "../watcher/watcherContext";
 import {
   type Config,
@@ -14,6 +16,13 @@ import {
   loadConfig,
   saveConfig,
 } from "./config";
+
+function getProjectRoot(): string {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  // From src/cli/cli.ts, go up two levels to reach project root
+  return path.resolve(__dirname, "../..");
+}
 
 let isRunning = false;
 let intervalId: NodeJS.Timeout | null = null;
@@ -29,12 +38,13 @@ interface ProcessorConfig {
 function spawnCommand(
   command: string,
   args: string[] = [],
-  options: { stdio?: "inherit" | "pipe" } = {},
+  options: { stdio?: "inherit" | "pipe"; cwd?: string } = {},
 ): Promise<number> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       stdio: options.stdio || "inherit",
       shell: true,
+      cwd: options.cwd,
     });
 
     child.on("close", (code) => {
@@ -89,7 +99,7 @@ async function runBatchProcessing(config: ProcessorConfig) {
     console.log(`[${new Date().toISOString()}] Batch processing completed:`);
     console.log(`  📁 Total files: ${stats.totalFiles}`);
     console.log(`  ✅ Processed: ${stats.processedFiles}`);
-    console.log(`  ⏭️  Skipped: ${stats.skippedFiles}`);
+    console.log(`  ⏭  Skipped: ${stats.skippedFiles}`);
     console.log(`  ❌ Failed: ${stats.failedFiles}`);
     console.log(`  📊 Total entries: ${stats.totalEntries}`);
 
@@ -116,7 +126,10 @@ const buildCommand = define({
     console.log("Building Next.js application...");
 
     try {
-      const exitCode = await spawnCommand("next", ["build"]);
+      const projectRoot = getProjectRoot();
+      const exitCode = await spawnCommand("next", ["build"], {
+        cwd: projectRoot,
+      });
 
       if (exitCode !== 0) {
         console.error("❌ Build failed!");
@@ -200,7 +213,7 @@ const batchCommand = define({
     console.log("\nBatch processing completed successfully!");
     console.log(`📁 Total files: ${stats.totalFiles}`);
     console.log(`✅ Processed: ${stats.processedFiles}`);
-    console.log(`⏭️  Skipped: ${stats.skippedFiles}`);
+    console.log(`⏭  Skipped: ${stats.skippedFiles}`);
     console.log(`❌ Failed: ${stats.failedFiles}`);
     console.log(`📊 Total entries: ${stats.totalEntries}`);
 
@@ -351,7 +364,8 @@ const startCommand = define({
     console.log(`Starting production server on port ${port}...`);
 
     try {
-      const exitCode = await spawnCommand("next", args);
+      const projectRoot = getProjectRoot();
+      const exitCode = await spawnCommand("next", args, { cwd: projectRoot });
       process.exit(exitCode);
     } catch (error) {
       console.error("Failed to start production server:", error);
@@ -428,7 +442,10 @@ const setupCommand = define({
       console.log("");
       console.log("Running database migrations...");
 
-      const exitCode = await spawnCommand("npm", ["run", "db:migrate"]);
+      const projectRoot = getProjectRoot();
+      const exitCode = await spawnCommand("npm", ["run", "db:migrate"], {
+        cwd: projectRoot,
+      });
 
       if (exitCode !== 0) {
         console.error("❌ Database migration failed!");
@@ -440,7 +457,9 @@ const setupCommand = define({
       console.log("");
       console.log("Building Next.js application...");
 
-      const buildExitCode = await spawnCommand("next", ["build"]);
+      const buildExitCode = await spawnCommand("next", ["build"], {
+        cwd: projectRoot,
+      });
 
       if (buildExitCode !== 0) {
         console.error("❌ Next.js build failed!");
@@ -495,7 +514,7 @@ async function main() {
 
     await cli(process.argv.slice(2), mainCommand, {
       name: "cc-jsonl",
-      version: "1.0.0",
+      version,
       description: "CLI for Claude Code production server and log processing",
       subCommands,
     });
