@@ -11,7 +11,6 @@ import type {
   AssistantLog,
   ClaudeLogEntry,
   SummaryLog,
-  SystemLog,
   UserLog,
 } from "@/core/domain/watcher/types";
 import type { Context } from "../context";
@@ -312,20 +311,6 @@ async function processLogEntries(
             cause: result.error.cause,
           });
         }
-      } else if (entry.type === "system") {
-        const result = await processSystemEntry(
-          context,
-          brandedSessionId,
-          entry as SystemLog,
-        );
-        if (result.isErr()) {
-          console.warn("[processLogEntries] Failed to process system entry", {
-            entryType: entry.type,
-            uuid: entry.uuid,
-            error: result.error.message,
-            cause: result.error.cause,
-          });
-        }
       } else if (entry.type === "summary") {
         const result = await processSummaryEntry(
           context,
@@ -463,74 +448,6 @@ async function processMessageEntry(
   return ok(undefined);
 }
 
-async function processSystemEntry(
-  context: Context,
-  sessionId: SessionId,
-  entry: SystemLog,
-): Promise<Result<void, ProcessLogFileError>> {
-  const result = await context.messageRepository.upsert({
-    sessionId,
-    role: "assistant",
-    content: `[SYSTEM] ${entry.content}`,
-    timestamp: new Date(entry.timestamp),
-    rawData: JSON.stringify(entry),
-    uuid: entry.uuid,
-    parentUuid: entry.parentUuid,
-    cwd: entry.cwd,
-  });
-
-  if (result.isErr()) {
-    const error = {
-      type: "PROCESS_LOG_FILE_ERROR" as const,
-      message: `Failed to create system message: ${result.error.message}`,
-      cause: result.error,
-    };
-    console.error("[processSystemEntry] System message create failed", {
-      sessionId,
-      uuid: entry.uuid,
-      error: error.message,
-      cause: error.cause,
-    });
-    return err(error);
-  }
-
-  // Update session cwd to match the latest message's cwd
-  const sessionUpdateResult = await context.sessionRepository.updateCwd(
-    sessionId,
-    entry.cwd,
-  );
-
-  if (sessionUpdateResult.isErr()) {
-    console.warn("[processSystemEntry] Failed to update session cwd", {
-      sessionId,
-      cwd: entry.cwd,
-      error: sessionUpdateResult.error.message,
-      cause: sessionUpdateResult.error.cause,
-    });
-  }
-
-  // Update session's last message timestamp
-  const timestampUpdateResult =
-    await context.sessionRepository.updateLastMessageAt(
-      sessionId,
-      new Date(entry.timestamp),
-    );
-
-  if (timestampUpdateResult.isErr()) {
-    console.warn(
-      "[processSystemEntry] Failed to update session lastMessageAt",
-      {
-        sessionId,
-        timestamp: entry.timestamp,
-        error: timestampUpdateResult.error.message,
-        cause: timestampUpdateResult.error.cause,
-      },
-    );
-  }
-
-  return ok(undefined);
-}
-
 async function processSummaryEntry(
   context: Context,
   sessionId: SessionId,
@@ -655,8 +572,27 @@ async function generateAndUpdateSessionName(
       return ok(undefined); // No meaningful content found
     }
 
-    // Use first line of user message, truncated
-    const firstLine = firstUserMessage.content.split("\n")[0];
+    // Parse user content using claude service to handle string | ContentBlockParam[] properly
+    let processedContent: string;
+    const parseResult = context.claudeService.parseUserContent(
+      firstUserMessage.content,
+    );
+
+    if (parseResult.isOk()) {
+      processedContent =
+        typeof parseResult.value === "string"
+          ? parseResult.value
+          : JSON.stringify(parseResult.value);
+    } else {
+      // Fallback to raw content if parsing fails
+      processedContent =
+        typeof firstUserMessage.content === "string"
+          ? firstUserMessage.content
+          : JSON.stringify(firstUserMessage.content);
+    }
+
+    // Use first line of processed content, truncated
+    const firstLine = processedContent.split("\n")[0];
     const sessionName = truncateSessionName(firstLine);
 
     // Only update if we got a meaningful name (not "Untitled Session")

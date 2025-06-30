@@ -83,3 +83,22 @@ export type SDKMessage =
 // ChunkData is simply an SDKMessage
 // The SDK already provides messages in the appropriate granularity for streaming
 export type ChunkData = SDKMessage;
+
+// Tool result type for handling tool execution results
+export type ToolResult = {
+  type: "tool_result";
+  tool_use_id: string;
+  content?: string | Record<string, unknown>[];
+  is_error?: boolean;
+};
+
+export function isToolResult(obj: unknown): obj is ToolResult {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    "type" in obj &&
+    obj.type === "tool_result" &&
+    "tool_use_id" in obj &&
+    typeof (obj as ToolResult).tool_use_id === "string"
+  );
+}

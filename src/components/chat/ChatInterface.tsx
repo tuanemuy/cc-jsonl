@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { detectPermissionError } from "@/core/application/authorization/detectPermissionError";
 import { formatAllowedTool } from "@/core/application/authorization/formatAllowedTool";
 import type { PermissionRequest } from "@/core/domain/authorization/types";
+import { isToolResult } from "@/core/domain/claude/types";
 import type { Message } from "@/core/domain/message/types";
 import {
   isAssistantMessage,
@@ -242,19 +243,13 @@ export function ChatInterface({
                 // Only process if content is an array (content blocks)
                 if (Array.isArray(content)) {
                   for (const contentBlock of content) {
-                    if (
-                      typeof contentBlock === "object" &&
-                      contentBlock !== null &&
-                      "type" in contentBlock &&
-                      contentBlock.type === "tool_result"
-                    ) {
-                      const toolResult = contentBlock as any; // Type assertion needed for tool_result
+                    if (isToolResult(contentBlock)) {
                       const pendingToolUse = pendingToolUsesRef.current.get(
-                        toolResult.tool_use_id,
+                        contentBlock.tool_use_id,
                       );
                       if (pendingToolUse) {
                         const permissionResult = detectPermissionError(
-                          toolResult,
+                          contentBlock,
                           pendingToolUse,
                         );
                         if (permissionResult.isOk() && permissionResult.value) {
@@ -265,7 +260,7 @@ export function ChatInterface({
                           return prev;
                         }
                         pendingToolUsesRef.current.delete(
-                          toolResult.tool_use_id,
+                          contentBlock.tool_use_id,
                         );
                       }
                     }

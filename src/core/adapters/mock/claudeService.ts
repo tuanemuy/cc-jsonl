@@ -121,7 +121,7 @@ export class MockClaudeService implements ClaudeService {
         return err(new ClaudeError("User content must be string or array"));
       }
       return ok(parsed as UserContent);
-    } catch (error) {
+    } catch (_error) {
       // If it's not valid JSON, treat it as plain text
       return ok(rawContent);
     }

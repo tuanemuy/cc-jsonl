@@ -80,9 +80,19 @@ export class AnthropicClaudeService implements ClaudeService {
     }
     if (!Array.isArray(parsed.value)) {
       return err(
-        new ClaudeError("Assistant content must be an array of messages"),
+        new ClaudeError("Assistant content must be an array of content blocks"),
       );
     }
+
+    // Validate that all items are content blocks
+    for (const item of parsed.value) {
+      if (typeof item !== "object" || item === null || !("type" in item)) {
+        return err(
+          new ClaudeError("Assistant content contains invalid content block"),
+        );
+      }
+    }
+
     return ok(parsed.value as unknown as AssistantContent);
   }
 
@@ -91,9 +101,29 @@ export class AnthropicClaudeService implements ClaudeService {
     if (parsed.isErr()) {
       return err(new ClaudeError("Invalid user content format", parsed.error));
     }
-    if (typeof parsed.value !== "string" && !Array.isArray(parsed.value)) {
-      return err(new ClaudeError("User content must be a string or array"));
+
+    if (typeof parsed.value === "string") {
+      return ok(parsed.value as unknown as UserContent);
     }
-    return ok(parsed.value as unknown as UserContent);
+
+    if (Array.isArray(parsed.value)) {
+      // Validate that all items in array are content block params
+      for (const item of parsed.value) {
+        if (typeof item !== "object" || item === null || !("type" in item)) {
+          return err(
+            new ClaudeError(
+              "User content array contains invalid content block",
+            ),
+          );
+        }
+      }
+      return ok(parsed.value as unknown as UserContent);
+    }
+
+    return err(
+      new ClaudeError(
+        "User content must be a string or array of content blocks",
+      ),
+    );
   }
 }

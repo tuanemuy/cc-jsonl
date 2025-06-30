@@ -40,22 +40,41 @@ export function parseSDKMessage(data: unknown): SDKMessage | null {
   // Basic validation for different message types
   switch (obj.type) {
     case "assistant":
-      if (obj.message && typeof obj.session_id === "string") {
+      if (
+        obj.message &&
+        typeof obj.message === "object" &&
+        obj.message !== null &&
+        typeof obj.session_id === "string"
+      ) {
         return obj as AssistantMessage;
       }
       break;
     case "user":
-      if (obj.message && typeof obj.session_id === "string") {
+      if (
+        obj.message &&
+        typeof obj.message === "object" &&
+        obj.message !== null &&
+        typeof obj.session_id === "string"
+      ) {
         return obj as UserMessage;
       }
       break;
     case "result":
-      if (typeof obj.session_id === "string") {
+      if (
+        typeof obj.session_id === "string" &&
+        typeof obj.subtype === "string" &&
+        typeof obj.duration_ms === "number" &&
+        typeof obj.is_error === "boolean"
+      ) {
         return obj as ResultMessage;
       }
       break;
     case "system":
-      if (typeof obj.session_id === "string") {
+      if (
+        typeof obj.session_id === "string" &&
+        typeof obj.subtype === "string" &&
+        typeof obj.cwd === "string"
+      ) {
         return obj as SystemMessage;
       }
       break;
