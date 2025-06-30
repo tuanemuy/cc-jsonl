@@ -31,13 +31,21 @@ interface ProcessorConfig {
 function spawnCommand(
   command: string,
   args: string[] = [],
-  options: { stdio?: "inherit" | "pipe"; cwd?: string } = {},
+  options: {
+    stdio?: "inherit" | "pipe";
+    cwd?: string;
+    env?: { [key: string]: string };
+  } = {},
 ): Promise<number> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       stdio: options.stdio || "inherit",
       shell: true,
       cwd: options.cwd,
+      env: {
+        ...process.env,
+        ...options.env,
+      },
     });
 
     child.on("close", (code) => {
@@ -323,18 +331,17 @@ const startCommand = define({
     const configuredPort = config?.port || 3000;
     const port = (argPort as number | undefined) || configuredPort;
 
-    const args = ["run", "start:web"];
-
-    if (port !== 3000) {
-      args.push("--", "--port", String(port));
-    }
-
     console.log(`Starting production server on port ${port}...`);
 
     try {
       const projectRoot = getProjectRoot();
-      const exitCode = await spawnCommand("npm", args, {
+      const exitCode = await spawnCommand("npm", ["run", "start:web"], {
         cwd: projectRoot,
+        env: {
+          PORT: String(port),
+          DATABASE_FILE_NAME:
+            config?.databaseFileName || getDefaultDatabasePath(),
+        },
       });
       process.exit(exitCode);
     } catch (error) {
