@@ -157,7 +157,7 @@ export class DrizzleSqliteProjectRepository implements ProjectRepository {
         case "updatedAt":
           return projects.updatedAt;
         default:
-          return projects.name; // Default to name ordering
+          return projects.path; // Default to path ordering
       }
     };
 
