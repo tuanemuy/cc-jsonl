@@ -1,5 +1,6 @@
 import { err, ok, type Result } from "neverthrow";
 import { z } from "zod";
+import type { UserContent } from "@/core/domain/claude/types";
 import type { Project } from "@/core/domain/project/types";
 import {
   type Session,
@@ -11,6 +12,7 @@ import type {
   AssistantLog,
   ClaudeLogEntry,
   SummaryLog,
+  SystemLog,
   UserLog,
 } from "@/core/domain/watcher/types";
 import type { Context } from "../context";
@@ -559,40 +561,52 @@ async function generateAndUpdateSessionName(
       return ok(undefined); // No messages, no name generation needed
     }
 
-    // Find the first user message with meaningful content that doesn't start with <
-    const firstUserMessage = items.find(
-      (msg) =>
-        msg.role === "user" &&
-        msg.content &&
-        msg.content.trim().length > 0 &&
-        !msg.content.trim().startsWith("<"),
-    );
+    // Find the first user message with meaningful content
+    let firstUserMessage = null;
+    let processedContent = "";
 
-    if (!firstUserMessage?.content) {
+    for (const msg of items) {
+      if (msg.role === "user" && msg.content && msg.content.trim().length > 0) {
+        // Parse user content using claude service to handle string | ContentBlockParam[] properly
+        const parseResult = context.claudeService.parseUserContent(msg.content);
+
+        if (parseResult.isOk()) {
+          // Extract text from parsed content
+          const extractedText = extractTextFromUserContent(parseResult.value);
+
+          // Check if the extracted text doesn't start with < and has meaningful content
+          if (
+            extractedText.trim().length > 0 &&
+            !extractedText.trim().startsWith("<")
+          ) {
+            firstUserMessage = msg;
+            processedContent = extractedText;
+            break;
+          }
+        } else {
+          // Fallback: use raw content if parsing fails
+          const fallbackContent =
+            typeof msg.content === "string"
+              ? msg.content
+              : JSON.stringify(msg.content);
+          if (
+            fallbackContent.trim().length > 0 &&
+            !fallbackContent.trim().startsWith("<")
+          ) {
+            firstUserMessage = msg;
+            processedContent = fallbackContent;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!firstUserMessage || !processedContent) {
       return ok(undefined); // No meaningful content found
     }
 
-    // Parse user content using claude service to handle string | ContentBlockParam[] properly
-    let processedContent: string;
-    const parseResult = context.claudeService.parseUserContent(
-      firstUserMessage.content,
-    );
-
-    if (parseResult.isOk()) {
-      processedContent =
-        typeof parseResult.value === "string"
-          ? parseResult.value
-          : JSON.stringify(parseResult.value);
-    } else {
-      // Fallback to raw content if parsing fails
-      processedContent =
-        typeof firstUserMessage.content === "string"
-          ? firstUserMessage.content
-          : JSON.stringify(firstUserMessage.content);
-    }
-
     // Use first line of processed content, truncated
-    const firstLine = processedContent.split("\n")[0];
+    const firstLine = processedContent.split("\n")[0]?.trim() || "";
     const sessionName = truncateSessionName(firstLine);
 
     // Only update if we got a meaningful name (not "Untitled Session")
@@ -634,4 +648,36 @@ function truncateSessionName(text: string): string {
   }
 
   return `${cleaned.substring(0, maxLength - 3)}...`;
+}
+
+function extractTextFromUserContent(content: UserContent): string {
+  if (typeof content === "string") {
+    return content;
+  }
+
+  // Handle ContentBlockParam[] case
+  if (Array.isArray(content)) {
+    const textParts: string[] = [];
+    for (const block of content) {
+      if (typeof block === "object" && block !== null) {
+        if (
+          block.type === "text" &&
+          "text" in block &&
+          typeof block.text === "string"
+        ) {
+          textParts.push(block.text);
+        } else if (
+          block.type === "tool_use" &&
+          "name" in block &&
+          typeof block.name === "string"
+        ) {
+          // For tool use blocks, include the tool name for context
+          textParts.push(`[Tool: ${block.name}]`);
+        }
+      }
+    }
+    return textParts.join(" ");
+  }
+
+  return "";
 }
