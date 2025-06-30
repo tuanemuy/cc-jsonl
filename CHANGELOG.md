@@ -1,0 +1,39 @@
+# Changelog
+
+## [v1.0.31](https://github.com/tuanemuy/cc-jsonl/commits/v1.0.31) - 2025-06-30
+- Add claude GitHub actions 1750304025129 by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/1
+- Add claude GitHub actions 1750304025112 by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/2
+- docs: create comprehensive requirements definition document by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/4
+- docs: update file format from JSON to JSON Lines and extension from .json* to .jsonl by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/6
+- feat: implement core backend architecture with hexagonal design by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/7
+- feat: comprehensive backend implementation with hexagonal architecture by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/11
+- feat: enhance session model with improved features and routing by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/12
+- feat: enhance streaming display with comprehensive content type support by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/19
+- feat: remove Claude Code Action GitHub workflows by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/22
+- feat: implement new session creation workflow and add new chat button by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/23
+- fix: 最新のメッセージの日時が間違っている問題を修正 by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/27
+- Fix file tracking comparison and simplify tracking schema by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/28
+- feat: refactor application services to eliminate inter-service dependencies by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/29
+- feat: add authorization system for tool permissions by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/30
+- feat: add batch processing application service and entry points by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/38
+- feat: implement Gunshi-based unified CLI with production server integration by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/40
+- Fix sendMessageStream usecase complexity and ID confusion by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/41
+- feat: add setup command to CLI for configuration and migration by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/43
+- fix: セッション名の変更条件を修正 by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/45
+- refactor: eliminate claudeSessionId and unify session identification by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/48
+- Fix issue #36: Improve UI with infinite scroll, navigation and styling overhaul by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/47
+- CLI機能のリファクタリング (Issue #49) by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/50
+- fix: resolve React hook dependency linting errors by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/51
+- feat: add GitHub Actions CI workflow for automated testing and building by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/52
+- feat: rename package from claude-code-watcher to cc-jsonl by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/54
+- fix: correct CLI binary and npm script paths by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/55
+- feat: improve message sending functionality (closes #32) by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/56
+- fix: optimize ensureProjectExists to use only upsert (closes #58) by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/59
+- feat: improve type safety with enhanced Claude domain types by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/60
+- fix: implement proper ordering for projects and sessions (closes #61) by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/62
+- fix: correct order condition logic for lastMessageAt ordering by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/63
+- fix: improve ordering consistency across projects and sessions by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/64
+- feat: prepare package for publishing by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/65
+- fix: replace Node.js glob with tinyglobby for better glob handling by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/66
+- chore: release v1.0.1 by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/67
+- feat: add GitHub Actions workflows for CI/CD by @tuanemuy in https://github.com/tuanemuy/cc-jsonl/pull/68
