@@ -348,15 +348,17 @@ const startCommand = define({
     const configuredPort = config?.port || 3000;
     const port = (argPort as number | undefined) || configuredPort;
 
+    const args = ["run", "start:web"];
+
     if (port !== 3000) {
-      args.push("--port", String(port));
+      args.push("--", "--port", String(port));
     }
 
     console.log(`Starting production server on port ${port}...`);
 
     try {
       const projectRoot = getProjectRoot();
-      const exitCode = await spawnCommand("npm", ["run", "start:web"], {
+      const exitCode = await spawnCommand("npm", args, {
         cwd: projectRoot,
       });
       process.exit(exitCode);
