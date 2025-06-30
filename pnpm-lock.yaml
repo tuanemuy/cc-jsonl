@@ -173,6 +173,9 @@ importers:
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.3.1
+      tinyglobby:
+        specifier: ^0.2.14
+        version: 0.2.14
       uuid:
         specifier: ^11.1.0
         version: 11.1.0

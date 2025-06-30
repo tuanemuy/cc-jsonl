@@ -12,7 +12,6 @@ import type {
   AssistantLog,
   ClaudeLogEntry,
   SummaryLog,
-  SystemLog,
   UserLog,
 } from "@/core/domain/watcher/types";
 import type { Context } from "../context";
