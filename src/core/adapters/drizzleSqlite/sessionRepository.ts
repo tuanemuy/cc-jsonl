@@ -208,12 +208,12 @@ export class DrizzleSqliteSessionRepository implements SessionRepository {
 
     // Special handling for lastMessageAt to put nulls last when descending, first when ascending
     if (pagination.orderBy === "lastMessageAt") {
-      if (pagination.order === "desc") {
-        // For desc order: non-null values first (newest messages first), then nulls
-        orderClause = sql`${orderColumn} DESC NULLS LAST`;
-      } else {
+      if (pagination.order === "asc") {
         // For asc order: nulls first, then non-null values (oldest messages first)
         orderClause = sql`${orderColumn} ASC NULLS FIRST`;
+      } else {
+        // For desc order: non-null values first (newest messages first), then nulls
+        orderClause = sql`${orderColumn} DESC NULLS LAST`;
       }
     } else {
       orderClause =
