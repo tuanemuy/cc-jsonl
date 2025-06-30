@@ -1,17 +1,33 @@
 {
   "name": "cc-jsonl",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Unified CLI for Claude Code production server and log processing",
+  "author": "maku.",
+  "license": "MIT",
+  "homepage": "https://github.com/tuanemuy/cc-jsonl",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tuanemuy/cc-jsonl.git"
+  },
   "main": "./dist/index.js",
   "bin": {
     "cc-jsonl": "./dist/cli/cli.mjs"
   },
+  "files": [
+    "dist",
+    "src",
+    "drizzle.config.ts",
+    "next-env.d.ts",
+    "next.config.ts",
+    "postcss.config.mjs",
+    "tsconfig.json"
+  ],
   "scripts": {
     "dev": "next dev --turbopack",
     "build:web": "next build",
     "start:web": "next start",
     "build:watcher": "tsdown",
-    "postinstall": "tsdown",
+    "prepack": "tsdown",
     "start:prod": "node dist/cli/cli.mjs start",
     "setup": "node dist/cli/cli.mjs setup",
     "logs:batch": "node dist/cli/cli.mjs batch",
