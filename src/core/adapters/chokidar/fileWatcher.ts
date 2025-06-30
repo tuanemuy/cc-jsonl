@@ -1,8 +1,6 @@
-// @ts-ignore
-import { glob } from "node:fs/promises";
-import { join } from "node:path";
 import { type FSWatcher, watch } from "chokidar";
 import { err, ok, type Result } from "neverthrow";
+import { globSync } from "tinyglobby";
 import type {
   FileChangeHandler,
   FileWatcher,
@@ -26,17 +24,20 @@ export class ChokidarFileWatcher implements FileWatcher {
         });
       }
 
-      const watchPattern = join(config.targetDirectory, config.pattern);
-
-      this.watcher = watch(await Array.fromAsync(glob(watchPattern)), {
-        persistent: config.persistent,
-        ignoreInitial: config.ignoreInitial,
-        followSymlinks: false,
-        awaitWriteFinish: {
-          stabilityThreshold: config.stabilityThreshold,
-          pollInterval: config.pollInterval,
+      this.watcher = watch(
+        globSync([config.pattern], {
+          cwd: config.targetDirectory,
+        }),
+        {
+          persistent: config.persistent,
+          ignoreInitial: config.ignoreInitial,
+          followSymlinks: false,
+          awaitWriteFinish: {
+            stabilityThreshold: config.stabilityThreshold,
+            pollInterval: config.pollInterval,
+          },
         },
-      });
+      );
 
       this.watcher.on("add", async (filePath) => {
         await handler({
