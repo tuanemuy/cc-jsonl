@@ -11,6 +11,7 @@ import {
   type Config,
   getDefaultDatabasePath,
   getDefaultTargetDir,
+  getDefaultPathToClaudeCodeExecutable,
   hasConfig,
   loadConfig,
   saveConfig,
@@ -396,12 +397,15 @@ const setupCommand = define({
 
     const defaultDbPath = getDefaultDatabasePath();
     const defaultWatchDir = getDefaultTargetDir();
+    const defaultPathToClaudeCodeExecutable =
+      getDefaultPathToClaudeCodeExecutable();
 
     const config: Config = {
       databaseFileName: (databaseFile as string) || defaultDbPath,
       watchTargetDir: (watchDir as string) || defaultWatchDir,
       port: (port as number) || 3000,
-      pathToClaudeCodeExecutable: claudeCodeExecutable as string | undefined,
+      pathToClaudeCodeExecutable:
+        (claudeCodeExecutable as string) || defaultPathToClaudeCodeExecutable,
     };
 
     console.log("Setting up Claude Code Watcher...");
@@ -411,7 +415,7 @@ const setupCommand = define({
     console.log(`  Watch directory: ${config.watchTargetDir}`);
     console.log(`  Port: ${config.port}`);
     console.log(
-      `  Claude Code executable: ${config.pathToClaudeCodeExecutable || "Not specified"}`,
+      `  Claude Code executable: ${config.pathToClaudeCodeExecutable}`,
     );
     console.log("");
 

@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { z } from "zod";
+import { getProjectRoot } from "./util";
 
 export const configSchema = z.object({
   databaseFileName: z.string(),
@@ -31,6 +32,13 @@ export function getDefaultTargetDir(): string {
     return path.join(xdgConfigHome, "claude", "projects");
   }
   return path.join(os.homedir(), ".claude", "projects");
+}
+
+export function getDefaultPathToClaudeCodeExecutable(): string {
+  return path.join(
+    getProjectRoot(),
+    "node_modules/@anthropic-ai/claude-code/cli.js",
+  );
 }
 
 export function loadConfig(): Config | null {
