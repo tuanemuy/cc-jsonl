@@ -328,7 +328,7 @@ const startCommand = define({
 
     const pathToClaudeCodeExecutable = path.join(
       getProjectRoot(),
-      "node_modules/@authropic-ai/claude-code/cli.js",
+      "node_modules/@anthropic-ai/claude-code/cli.js",
     );
 
     // Load configuration to get the port setting
