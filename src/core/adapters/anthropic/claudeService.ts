@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import { query } from "@anthropic-ai/claude-code";
 import { err, ok, type Result } from "neverthrow";
 import type { ClaudeService } from "@/core/domain/claude/ports/claudeService";
@@ -12,8 +13,25 @@ import { ClaudeError } from "@/lib/error";
 import { jsonValueSchema } from "@/lib/json";
 import { validate } from "@/lib/validation";
 
+// Get the path to the Claude Code executable using the `which claude` command
+function getClaudeCodeExecutablePath(): string | null {
+  try {
+    const path = execSync("which claude", { encoding: "utf8" }).trim();
+    return path || null;
+  } catch (error) {
+    console.warn("Failed to find claude executable path:", error);
+    return null;
+  }
+}
+
 export class AnthropicClaudeService implements ClaudeService {
-  constructor(private readonly pathToClaudeCodeExecutable?: string) {}
+  private readonly pathToClaudeCodeExecutable?: string;
+
+  constructor(pathToClaudeCodeExecutable?: string) {
+    // If no path is provided, try to auto-detect it
+    this.pathToClaudeCodeExecutable =
+      pathToClaudeCodeExecutable || getClaudeCodeExecutablePath() || undefined;
+  }
 
   async sendMessageStream(
     input: SendMessageInput,

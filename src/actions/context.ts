@@ -27,7 +27,7 @@ function getContext(): Context {
     projectRepository: new DrizzleSqliteProjectRepository(db),
     sessionRepository: new DrizzleSqliteSessionRepository(db),
     messageRepository: new DrizzleSqliteMessageRepository(db),
-    claudeService: new AnthropicClaudeService(),
+    claudeService: new AnthropicClaudeService(), // Auto-detects Claude Code executable path
     logFileTrackingRepository: new DrizzleSqliteLogFileTrackingRepository(db),
   };
 }
