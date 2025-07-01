@@ -16,7 +16,6 @@
   "files": [
     ".next",
     "dist",
-    "node_modules/@anthropic-ai/claude-code",
     "src/core/adapters/drizzleSqlite/migrations"
   ],
   "scripts": {
