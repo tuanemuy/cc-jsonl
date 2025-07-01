@@ -15,7 +15,8 @@
   },
   "files": [
     ".next",
-    "dist"
+    "dist",
+    "src/core/adapters/drizzleSqlite/migrations"
   ],
   "scripts": {
     "dev": "next dev --turbopack",
