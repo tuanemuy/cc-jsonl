@@ -12,15 +12,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { detectPermissionError } from "@/core/application/authorization/detectPermissionError";
 import { formatAllowedTool } from "@/core/application/authorization/formatAllowedTool";
 import type { PermissionRequest } from "@/core/domain/authorization/types";
-import { isToolResult } from "@/core/domain/claude/types";
-import type { Message } from "@/core/domain/message/types";
 import {
   isAssistantMessage,
   isResultMessage,
   isSystemMessage,
+  isToolResult,
   isUserMessage,
   parseSDKMessage,
-} from "@/lib/claude";
+} from "@/core/domain/claude/types";
+import type { Message } from "@/core/domain/message/types";
 import { formatTime } from "@/lib/date";
 import { MessageContent } from "./MessageContent";
 import { PermissionDialog } from "./PermissionDialog";
