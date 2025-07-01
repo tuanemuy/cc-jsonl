@@ -56,6 +56,12 @@ cc-jsonl setup
 # Initialize with custom paths and port
 cc-jsonl setup --databaseFile /custom/path/data.db --watchDir /custom/logs --port 8080
 
+# Initialize with Claude Code executable path
+cc-jsonl setup --claudeCodeExecutable /usr/local/bin/claude
+
+# Use `which claude` to automatically set the Claude Code executable path
+cc-jsonl setup --claudeCodeExecutable "$(which claude)"
+
 # Force overwrite existing configuration (when config already exists)
 cc-jsonl setup --force
 ```
@@ -151,6 +157,7 @@ cc-jsonl watch --targetDirectory /path/to/claude-logs -p "**/*.jsonl" -i 15
 | `--databaseFile` | `-d` | Database file path | `$XDG_CONFIG_HOME/cc-jsonl/data.db` or `~/.config/cc-jsonl/data.db` |
 | `--watchDir` | `-w` | Directory to watch for log files | `$XDG_CONFIG_HOME/claude/projects` or `~/.claude/projects` |
 | `--port` | `-p` | Port for the production server | 3000 |
+| `--claudeCodeExecutable` | `-c` | Path to Claude Code executable (optional) | Not specified |
 | `--force` | `-f` | Force overwrite existing configuration | false |
 
 ### Production Server Options
@@ -199,7 +206,8 @@ cat ~/.config/cc-jsonl/settings.json
 {
   "databaseFileName": "/home/user/.config/cc-jsonl/data.db",
   "watchTargetDir": "/home/user/.claude/projects",
-  "port": 3000
+  "port": 3000,
+  "pathToClaudeCodeExecutable": "/usr/local/bin/claude"
 }
 ```
 
@@ -239,6 +247,9 @@ cc-jsonl setup
 
 # Custom setup with specific paths and port
 cc-jsonl setup --databaseFile /srv/data/claude.db --watchDir /var/log/claude --port 8080
+
+# Custom setup with Claude Code executable path
+cc-jsonl setup --databaseFile /srv/data/claude.db --watchDir /var/log/claude --port 8080 --claudeCodeExecutable "$(which claude)"
 ```
 
 ### Production Server Operations

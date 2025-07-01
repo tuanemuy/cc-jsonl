@@ -7,6 +7,7 @@ export const configSchema = z.object({
   databaseFileName: z.string(),
   watchTargetDir: z.string(),
   port: z.number().default(3000),
+  pathToClaudeCodeExecutable: z.string().optional(),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -68,6 +69,7 @@ export function getConfigOrEnv(): {
   databaseFileName: string | undefined;
   watchTargetDir: string | undefined;
   port: number;
+  pathToClaudeCodeExecutable: string | undefined;
 } {
   const config = loadConfig();
 
@@ -76,6 +78,7 @@ export function getConfigOrEnv(): {
       databaseFileName: config.databaseFileName,
       watchTargetDir: config.watchTargetDir,
       port: config.port,
+      pathToClaudeCodeExecutable: config.pathToClaudeCodeExecutable,
     };
   }
 
@@ -83,5 +86,6 @@ export function getConfigOrEnv(): {
     databaseFileName: process.env.DATABASE_FILE_NAME,
     watchTargetDir: process.env.WATCH_TARGET_DIR,
     port: process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 3000,
+    pathToClaudeCodeExecutable: process.env.PATH_TO_CLAUDE_CODE_EXECUTABLE,
   };
 }

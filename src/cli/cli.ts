@@ -373,6 +373,11 @@ const setupCommand = define({
       default: 3000,
       description: "Port for the production server",
     },
+    claudeCodeExecutable: {
+      type: "string",
+      short: "c",
+      description: "Path to Claude Code executable (optional)",
+    },
     force: {
       type: "boolean",
       short: "f",
@@ -381,7 +386,8 @@ const setupCommand = define({
     },
   },
   run: async (ctx) => {
-    const { databaseFile, watchDir, port, force } = ctx.values;
+    const { databaseFile, watchDir, port, claudeCodeExecutable, force } =
+      ctx.values;
 
     if (hasConfig() && !force) {
       console.error("Configuration already exists. Use --force to overwrite.");
@@ -395,6 +401,7 @@ const setupCommand = define({
       databaseFileName: (databaseFile as string) || defaultDbPath,
       watchTargetDir: (watchDir as string) || defaultWatchDir,
       port: (port as number) || 3000,
+      pathToClaudeCodeExecutable: claudeCodeExecutable as string | undefined,
     };
 
     console.log("Setting up Claude Code Watcher...");
@@ -403,6 +410,9 @@ const setupCommand = define({
     console.log(`  Database file: ${config.databaseFileName}`);
     console.log(`  Watch directory: ${config.watchTargetDir}`);
     console.log(`  Port: ${config.port}`);
+    console.log(
+      `  Claude Code executable: ${config.pathToClaudeCodeExecutable || "Not specified"}`,
+    );
     console.log("");
 
     try {
