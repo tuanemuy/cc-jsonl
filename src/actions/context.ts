@@ -6,6 +6,7 @@ import { DrizzleSqliteMessageRepository } from "@/core/adapters/drizzleSqlite/me
 import { DrizzleSqliteProjectRepository } from "@/core/adapters/drizzleSqlite/projectRepository";
 import { DrizzleSqliteSessionRepository } from "@/core/adapters/drizzleSqlite/sessionRepository";
 import type { Context } from "@/core/application/context";
+import { getClaudeCodeExecutablePath } from "@/lib/claude";
 
 export const envSchema = z.object({
   DATABASE_FILE_NAME: z.string(),
@@ -23,11 +24,14 @@ function getContext(): Context {
 
   const db = getDatabase(env.data.DATABASE_FILE_NAME);
 
+  // Get the path to the Claude Code executable
+  const claudeExecutablePath = getClaudeCodeExecutablePath();
+
   return {
     projectRepository: new DrizzleSqliteProjectRepository(db),
     sessionRepository: new DrizzleSqliteSessionRepository(db),
     messageRepository: new DrizzleSqliteMessageRepository(db),
-    claudeService: new AnthropicClaudeService(),
+    claudeService: new AnthropicClaudeService(claudeExecutablePath || undefined),
     logFileTrackingRepository: new DrizzleSqliteLogFileTrackingRepository(db),
   };
 }

@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import type {
   AssistantMessage,
   ResultMessage,
@@ -81,4 +82,15 @@ export function parseSDKMessage(data: unknown): SDKMessage | null {
   }
 
   return null;
+}
+
+// Get the path to the Claude Code executable using the `which claude` command
+export function getClaudeCodeExecutablePath(): string | null {
+  try {
+    const path = execSync("which claude", { encoding: "utf8" }).trim();
+    return path || null;
+  } catch (error) {
+    console.warn("Failed to find claude executable path:", error);
+    return null;
+  }
 }
