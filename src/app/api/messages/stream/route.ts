@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const sessionId = searchParams.get("sessionId");
     const cwd = searchParams.get("cwd");
     const allowedToolsParam = searchParams.get("allowedTools");
+    const bypassPermissionsParam = searchParams.get("bypassPermissions");
 
     if (!message || typeof message !== "string") {
       return new Response("Valid message is required", { status: 400 });
@@ -35,6 +36,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Parse bypassPermissions if provided
+    const bypassPermissions = bypassPermissionsParam === "true";
+
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
@@ -49,6 +53,7 @@ export async function GET(request: NextRequest) {
               sessionId: sessionId || undefined,
               cwd: cwd || undefined,
               allowedTools,
+              bypassPermissions,
             },
             (chunk: ChunkData) => {
               try {

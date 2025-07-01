@@ -14,6 +14,7 @@ export const sendMessageStreamInputSchema = z
     sessionId: z.string().min(1).optional(),
     cwd: z.string().min(1).optional(),
     allowedTools: z.array(z.string()).optional(),
+    bypassPermissions: z.boolean().optional(),
   })
   .refine(
     (data) => {
@@ -91,6 +92,7 @@ export async function sendMessageStream(
         sessionId: session?.id || undefined, // Use session ID for resuming, undefined for new sessions
         cwd: params.cwd || (session ? session.cwd : undefined),
         allowedTools: params.allowedTools,
+        bypassPermissions: params.bypassPermissions,
       },
       onChunk,
     );

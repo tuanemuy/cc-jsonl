@@ -11,6 +11,7 @@ export const sendMessageInputSchema = z.object({
   sessionId: z.string().optional(),
   cwd: z.string().optional(),
   allowedTools: z.array(z.string()).optional(),
+  bypassPermissions: z.boolean().optional(),
 });
 export type SendMessageInput = z.infer<typeof sendMessageInputSchema>;
 

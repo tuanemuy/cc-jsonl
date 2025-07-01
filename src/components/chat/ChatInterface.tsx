@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { detectPermissionError } from "@/core/application/authorization/detectPermissionError";
 import { formatAllowedTool } from "@/core/application/authorization/formatAllowedTool";
@@ -59,6 +60,7 @@ export function ChatInterface({
   const [input, setInput] = useState("");
   const [currentCwd, setCurrentCwd] = useState(cwd || "");
   const [isLoading, setIsLoading] = useState(false);
+  const [bypassPermissions, setBypassPermissions] = useState(false);
   const [permissionRequest, setPermissionRequest] =
     useState<PermissionRequest | null>(null);
   const [showPermissionDialog, setShowPermissionDialog] = useState(false);
@@ -172,6 +174,9 @@ export function ChatInterface({
       }
       if (allowedTools) {
         url.searchParams.set("allowedTools", JSON.stringify(allowedTools));
+      }
+      if (bypassPermissions) {
+        url.searchParams.set("bypassPermissions", "true");
       }
 
       const eventSource = new EventSource(url.toString());
@@ -497,6 +502,19 @@ export function ChatInterface({
               />
             </div>
           )}
+
+          {/* Bypass Permissions Switch */}
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="bypass-permissions"
+              checked={bypassPermissions}
+              onCheckedChange={setBypassPermissions}
+              disabled={isLoading}
+            />
+            <Label htmlFor="bypass-permissions" className="text-sm font-medium">
+              Bypass Permissions
+            </Label>
+          </div>
 
           <div className="flex items-end gap-2 sm:gap-3 w-full">
             <Textarea
