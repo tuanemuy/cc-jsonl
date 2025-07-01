@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { getConfigOrEnv } from "@/cli/config";
 import { AnthropicClaudeService } from "@/core/adapters/anthropic/claudeService";
 import { getDatabase } from "@/core/adapters/drizzleSqlite/client";
 import { DrizzleSqliteLogFileTrackingRepository } from "@/core/adapters/drizzleSqlite/logFileTrackingRepository";
@@ -10,6 +9,7 @@ import type { Context } from "@/core/application/context";
 
 export const envSchema = z.object({
   DATABASE_FILE_NAME: z.string(),
+  PATH_TO_CLAUDE_CODE_EXECUTABLE: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -23,14 +23,13 @@ function getContext(): Context {
   }
 
   const db = getDatabase(env.data.DATABASE_FILE_NAME);
-  const config = getConfigOrEnv();
 
   return {
     projectRepository: new DrizzleSqliteProjectRepository(db),
     sessionRepository: new DrizzleSqliteSessionRepository(db),
     messageRepository: new DrizzleSqliteMessageRepository(db),
     claudeService: new AnthropicClaudeService(
-      config.pathToClaudeCodeExecutable,
+      env.data.PATH_TO_CLAUDE_CODE_EXECUTABLE,
     ),
     logFileTrackingRepository: new DrizzleSqliteLogFileTrackingRepository(db),
   };

@@ -11,7 +11,6 @@ import {
   type Config,
   getDefaultDatabasePath,
   getDefaultTargetDir,
-  getDefaultPathToClaudeCodeExecutable,
   hasConfig,
   loadConfig,
   saveConfig,
@@ -327,6 +326,11 @@ const startCommand = define({
   run: async (ctx) => {
     const { port: argPort } = ctx.values;
 
+    const pathToClaudeCodeExecutable = path.join(
+      getProjectRoot(),
+      "node_modules/@authropic-ai/claude-code/cli.js",
+    );
+
     // Load configuration to get the port setting
     const config = loadConfig();
     const configuredPort = config?.port || 3000;
@@ -342,6 +346,7 @@ const startCommand = define({
           PORT: String(port),
           DATABASE_FILE_NAME:
             config?.databaseFileName || getDefaultDatabasePath(),
+          PATH_TO_CLAUDE_CODE_EXECUTABLE: pathToClaudeCodeExecutable,
         },
       });
       process.exit(exitCode);
@@ -374,11 +379,6 @@ const setupCommand = define({
       default: 3000,
       description: "Port for the production server",
     },
-    claudeCodeExecutable: {
-      type: "string",
-      short: "c",
-      description: "Path to Claude Code executable (optional)",
-    },
     force: {
       type: "boolean",
       short: "f",
@@ -387,8 +387,7 @@ const setupCommand = define({
     },
   },
   run: async (ctx) => {
-    const { databaseFile, watchDir, port, claudeCodeExecutable, force } =
-      ctx.values;
+    const { databaseFile, watchDir, port, force } = ctx.values;
 
     if (hasConfig() && !force) {
       console.error("Configuration already exists. Use --force to overwrite.");
@@ -397,15 +396,11 @@ const setupCommand = define({
 
     const defaultDbPath = getDefaultDatabasePath();
     const defaultWatchDir = getDefaultTargetDir();
-    const defaultPathToClaudeCodeExecutable =
-      getDefaultPathToClaudeCodeExecutable();
 
     const config: Config = {
       databaseFileName: (databaseFile as string) || defaultDbPath,
       watchTargetDir: (watchDir as string) || defaultWatchDir,
       port: (port as number) || 3000,
-      pathToClaudeCodeExecutable:
-        (claudeCodeExecutable as string) || defaultPathToClaudeCodeExecutable,
     };
 
     console.log("Setting up Claude Code Watcher...");
@@ -414,9 +409,6 @@ const setupCommand = define({
     console.log(`  Database file: ${config.databaseFileName}`);
     console.log(`  Watch directory: ${config.watchTargetDir}`);
     console.log(`  Port: ${config.port}`);
-    console.log(
-      `  Claude Code executable: ${config.pathToClaudeCodeExecutable}`,
-    );
     console.log("");
 
     try {
