@@ -15,13 +15,7 @@
   },
   "files": [
     ".next",
-    "dist",
-    "src",
-    "drizzle.config.ts",
-    "next-env.d.ts",
-    "next.config.ts",
-    "postcss.config.mjs",
-    "tsconfig.json"
+    "dist"
   ],
   "scripts": {
     "dev": "next dev --turbopack",
