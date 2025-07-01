@@ -14,9 +14,18 @@ import { jsonValueSchema } from "@/lib/json";
 import { validate } from "@/lib/validation";
 
 // Get the path to the Claude Code executable using the `which claude` command
+// This function uses the user's shell environment to find the executable,
+// ensuring it matches what the user would get when running `which claude` in their terminal
 function getClaudeCodeExecutablePath(): string | null {
   try {
-    const path = execSync("which claude", { encoding: "utf8" }).trim();
+    // Use user's shell and full environment to match terminal behavior
+    const shell = process.env.SHELL || "/bin/bash";
+
+    const path = execSync("which claude", {
+      encoding: "utf8",
+      shell,
+    }).trim();
+
     return path || null;
   } catch (error) {
     console.warn("Failed to find claude executable path:", error);
