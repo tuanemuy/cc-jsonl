@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getConfigOrEnv } from "@/cli/config";
 import { AnthropicClaudeService } from "@/core/adapters/anthropic/claudeService";
 import { getDatabase } from "@/core/adapters/drizzleSqlite/client";
 import { DrizzleSqliteLogFileTrackingRepository } from "@/core/adapters/drizzleSqlite/logFileTrackingRepository";
@@ -22,12 +23,15 @@ function getContext(): Context {
   }
 
   const db = getDatabase(env.data.DATABASE_FILE_NAME);
+  const config = getConfigOrEnv();
 
   return {
     projectRepository: new DrizzleSqliteProjectRepository(db),
     sessionRepository: new DrizzleSqliteSessionRepository(db),
     messageRepository: new DrizzleSqliteMessageRepository(db),
-    claudeService: new AnthropicClaudeService(), // Auto-detects Claude Code executable path
+    claudeService: new AnthropicClaudeService(
+      config.pathToClaudeCodeExecutable,
+    ),
     logFileTrackingRepository: new DrizzleSqliteLogFileTrackingRepository(db),
   };
 }
