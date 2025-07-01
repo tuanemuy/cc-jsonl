@@ -133,7 +133,6 @@ cc-jsonl watch --targetDirectory /path/to/claude-logs -p "**/*.jsonl" -i 15
 | Command | Description | Usage |
 |---------|-------------|-------|
 | `setup` | Initialize configuration and run database migrations | `cc-jsonl setup [options]` |
-| `build` | Build the Next.js application for production | `cc-jsonl build` |
 | `start` | Start production server | `cc-jsonl start [options]` |
 | `batch` | Process log files once and exit | `cc-jsonl batch [options]` |
 | `watch` | Process log files periodically | `cc-jsonl watch [options]` |
@@ -153,10 +152,6 @@ cc-jsonl watch --targetDirectory /path/to/claude-logs -p "**/*.jsonl" -i 15
 | `--watchDir` | `-w` | Directory to watch for log files | `$XDG_CONFIG_HOME/claude/projects` or `~/.claude/projects` |
 | `--port` | `-p` | Port for the production server | 3000 |
 | `--force` | `-f` | Force overwrite existing configuration | false |
-
-### Build Command Options
-
-The `build` command has no options and simply builds the Next.js application for production.
 
 ### Production Server Options
 
@@ -241,11 +236,9 @@ WATCH_TARGET_DIR=/home/user/claude-code-logs
 # Complete initialization process
 npm install -g cc-jsonl
 cc-jsonl setup
-cc-jsonl build
 
 # Custom setup with specific paths and port
 cc-jsonl setup --databaseFile /srv/data/claude.db --watchDir /var/log/claude --port 8080
-cc-jsonl build
 ```
 
 ### Production Server Operations
@@ -253,7 +246,6 @@ cc-jsonl build
 # Install, setup, and start production server
 npm install -g cc-jsonl
 cc-jsonl setup
-cc-jsonl build
 cc-jsonl start --port 8080
 ```
 
@@ -375,7 +367,6 @@ cc-jsonl --help
 
 # Show help for individual commands
 cc-jsonl setup --help
-cc-jsonl build --help
 cc-jsonl batch --help
 cc-jsonl watch --help
 cc-jsonl start --help
@@ -388,7 +379,6 @@ cc-jsonl start --help
 npm install -g cc-jsonl   # Install globally
 cc-jsonl --version        # Verify operation
 cc-jsonl setup            # Initialize configuration and database
-cc-jsonl build            # Build application for production
 ```
 
 ### Daily Operations
@@ -407,7 +397,6 @@ cc-jsonl watch --targetDirectory /path/to/logs --interval 30
 ```bash
 cc-jsonl --help          # Check all commands
 cc-jsonl setup --help    # Detailed setup help
-cc-jsonl build --help    # Detailed build help
 cc-jsonl batch --help    # Detailed batch help
 npm list -g cc-jsonl     # Check installation
 ```

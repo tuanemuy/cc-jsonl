@@ -13,16 +13,7 @@
   "bin": {
     "cc-jsonl": "./dist/cli/cli.mjs"
   },
-  "files": [
-    ".next",
-    "dist",
-    "src",
-    "drizzle.config.ts",
-    "next-env.d.ts",
-    "next.config.ts",
-    "postcss.config.mjs",
-    "tsconfig.json"
-  ],
+  "files": [".next", "dist"],
   "scripts": {
     "dev": "next dev --turbopack",
     "build:web": "next build",
