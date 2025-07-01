@@ -500,7 +500,7 @@ export function ChatInterface({
                 value={currentCwd}
                 onChange={(e) => setCurrentCwd(e.target.value)}
                 placeholder="/path/to/your/project"
-                className="mt-2 bg-background"
+                className="mt-2 bg-background !text-[16px]"
                 disabled={isLoading}
               />
             </div>
