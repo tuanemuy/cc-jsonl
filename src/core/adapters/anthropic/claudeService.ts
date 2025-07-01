@@ -26,6 +26,7 @@ export class AnthropicClaudeService implements ClaudeService {
         resume?: string;
         cwd?: string;
         allowedTools?: string[];
+        permissionMode?: "bypassPermissions";
       } = {
         pathToClaudeCodeExecutable: this.pathToClaudeCodeExecutable,
       };
@@ -43,6 +44,11 @@ export class AnthropicClaudeService implements ClaudeService {
       // Add allowed tools if provided
       if (input.allowedTools) {
         options.allowedTools = input.allowedTools;
+      }
+
+      // Add bypass permissions mode if provided
+      if (input.bypassPermissions) {
+        options.permissionMode = "bypassPermissions";
       }
 
       const messages: SDKMessage[] = [];
