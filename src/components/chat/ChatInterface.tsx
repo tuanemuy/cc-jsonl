@@ -485,7 +485,10 @@ export function ChatInterface({
 
       {/* Input Form */}
       <div className="border-t bg-muted">
-        <form onSubmit={handleSubmit} className="px-4 sm:px-6 py-4 space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="px-4 sm:px-6 pt-4 pb-8 space-y-4"
+        >
           {/* CWD Input for new sessions */}
           {!currentSessionId && (
             <div className="w-full">
@@ -523,7 +526,7 @@ export function ChatInterface({
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message..."
               rows={5}
-              className="h-[5.75rem] leading-[1.75] resize-none bg-background"
+              className="h-[90px] !text-[16px] leading-[1.5] resize-none bg-background"
               onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
                 if (
                   e.key === "Enter" &&
