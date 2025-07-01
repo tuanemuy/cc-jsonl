@@ -3,7 +3,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
 
 export default function NewSessionPage() {
   return (
-    <PageLayout back>
+    <PageLayout returnTo="/">
       <ChatInterface
         sessionId={undefined} // No session ID for new chat
         projectId={undefined} // No specific project for new chat
