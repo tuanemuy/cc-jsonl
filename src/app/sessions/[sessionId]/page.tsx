@@ -25,7 +25,7 @@ export default async function SessionPage({ params }: PageProps) {
   });
 
   return (
-    <PageLayout back>
+    <PageLayout returnTo="/">
       <ChatInterface
         sessionId={sessionId}
         projectId={session.projectId || undefined}

@@ -5,8 +5,14 @@ import { Toaster } from "@/components/ui/sonner";
 import "@/styles/index.css";
 
 export const metadata: Metadata = {
-  title: "Claude Code JSONL",
+  title: "CC.jsonl",
   description: "Browse and interact with your Claude Code chat sessions",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "CC.jsonl",
+  },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -15,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body>
         <ThemeProvider
           attribute="class"
