@@ -13,7 +13,10 @@
   "bin": {
     "cc-jsonl": "./dist/cli/cli.mjs"
   },
-  "files": [".next", "dist"],
+  "files": [
+    ".next",
+    "dist"
+  ],
   "scripts": {
     "dev": "next dev --turbopack",
     "build:web": "next build",
