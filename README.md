@@ -1,6 +1,11 @@
 # CC.jsonl
 
-A unified CLI tool for processing Claude Code log files and managing production servers.
+A unified CLI tool for processing Claude Code log files and serving a web application for managing these logs.
+
+<div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+  <img src="./public/screenshots/screenshot_01.png" alt="Screenshot 1" width="240" />
+  <img src="./public/screenshots/screenshot_02.png" alt="Screenshot 2" width="240" />
+</div>
 
 ## Key Features
 
@@ -33,10 +38,12 @@ cc-jsonl watch
 ## Installation
 
 ### Prerequisites
+
 - Node.js 22.x or higher
 - npm or yarn
 
 ### Global Installation (Recommended)
+
 ```bash
 # Install globally for system-wide access
 npm install -g cc-jsonl
@@ -61,11 +68,13 @@ cc-jsonl setup --force
 ```
 
 **Configuration locations (follows XDG Base Directory specification):**
+
 - **Config file**: `$XDG_CONFIG_HOME/cc-jsonl/settings.json` or `~/.config/cc-jsonl/settings.json`
 - **Default database**: `$XDG_CONFIG_HOME/cc-jsonl/data.db` or `~/.config/cc-jsonl/data.db`
 - **Default watch directory**: `$XDG_CONFIG_HOME/claude/projects` or `~/.claude/projects`
 
 ### Alternative: NPX Usage
+
 ```bash
 # Use without installation
 npx cc-jsonl --help
@@ -90,6 +99,7 @@ cc-jsonl start -p 3001
 ### Log File Processing
 
 #### One-Time Execution (Batch)
+
 Process accumulated log files once and exit - perfect for cleaning up past logs:
 
 ```bash
@@ -110,6 +120,7 @@ cc-jsonl batch --targetDirectory /path/to/claude-logs --pattern "session-*.jsonl
 ```
 
 #### Continuous Monitoring (Watch)
+
 Monitor directory periodically and automatically process new files - ideal for real-time processing:
 
 ```bash
@@ -196,6 +207,7 @@ cat ~/.config/cc-jsonl/settings.json
 ```
 
 **Configuration file format:**
+
 ```json
 {
   "databaseFileName": "/home/user/.config/cc-jsonl/data.db",
@@ -206,6 +218,7 @@ cat ~/.config/cc-jsonl/settings.json
 ```
 
 **Configuration file locations:**
+
 - If `$XDG_CONFIG_HOME` is set: `$XDG_CONFIG_HOME/cc-jsonl/settings.json`
 - Otherwise: `~/.config/cc-jsonl/settings.json`
 
@@ -223,6 +236,7 @@ cc-jsonl batch --targetDirectory /custom/path
 ```
 
 ### .env File Configuration
+
 For local development, create a `.env` file in the project root:
 
 ```env
@@ -234,6 +248,7 @@ WATCH_TARGET_DIR=/home/user/claude-code-logs
 ## Practical Usage Examples
 
 ### First Time Setup
+
 ```bash
 # Complete initialization process
 npm install -g cc-jsonl
@@ -244,6 +259,7 @@ cc-jsonl setup --databaseFile /srv/data/claude.db --watchDir /var/log/claude --p
 ```
 
 ### Production Server Operations
+
 ```bash
 # Install, setup, and start production server
 npm install -g cc-jsonl
@@ -254,24 +270,28 @@ cc-jsonl start --port 8080
 ### Log Processing Workflows
 
 #### Bulk Processing of Past Logs
+
 ```bash
 # Process large backlog of accumulated logs
 cc-jsonl batch --targetDirectory /archive/claude-logs -c 15 --skipExisting false
 ```
 
 #### Real-time Monitoring
+
 ```bash
 # Monitor active log directory every 10 minutes
 cc-jsonl watch --targetDirectory /active/claude-logs -i 10 -c 8
 ```
 
 #### Selective File Processing
+
 ```bash
 # Process only 2024 session files
 cc-jsonl batch --targetDirectory /logs/2024 -p "session-2024-*.jsonl"
 ```
 
 #### High-Performance Processing
+
 ```bash
 # Maximum efficiency processing for large datasets
 cc-jsonl batch --targetDirectory /massive-logs -c 20 --pattern "*.jsonl"
@@ -280,17 +300,20 @@ cc-jsonl batch --targetDirectory /massive-logs -c 20 --pattern "*.jsonl"
 ## Performance Tuning
 
 ### Concurrency Settings
+
 - **Low concurrency (1-5)**: For limited resources or network-constrained environments
 - **Medium concurrency (5-10)**: Balanced performance for general use cases
 - **High concurrency (10-20)**: Maximum throughput for high-performance systems
 
 ### File Pattern Usage
+
 - `**/*.jsonl`: All .jsonl files recursively (default)
 - `*.jsonl`: Files in target directory only
 - `session-*.jsonl`: Session files only
 - `{chat,session}-*.jsonl`: Multiple pattern specification
 
 ### Monitoring Interval Guidelines
+
 - **1-5 minutes**: Real-time processing for active systems
 - **15-30 minutes**: Regular monitoring for moderate activity
 - **60+ minutes**: Periodic processing for low-activity systems
@@ -377,6 +400,7 @@ cc-jsonl start --help
 ## Common Command Patterns
 
 ### Initial Setup
+
 ```bash
 npm install -g cc-jsonl   # Install globally
 cc-jsonl --version        # Verify operation
@@ -384,6 +408,7 @@ cc-jsonl setup            # Initialize configuration and database
 ```
 
 ### Daily Operations
+
 ```bash
 cc-jsonl start            # Start server (uses configured port, default 3000)
 cc-jsonl batch           # Process logs (uses configured watch directory)
@@ -396,6 +421,7 @@ cc-jsonl watch --targetDirectory /path/to/logs --interval 30
 ```
 
 ### Troubleshooting
+
 ```bash
 cc-jsonl --help          # Check all commands
 cc-jsonl setup --help    # Detailed setup help
@@ -406,6 +432,7 @@ npm list -g cc-jsonl     # Check installation
 ## Development
 
 ### Local Development
+
 For developers who want to contribute or modify this tool:
 
 ```bash
@@ -424,6 +451,7 @@ npm run logs:watch -- /path/to/logs
 ```
 
 ### Publishing
+
 ```bash
 # Publish to npm registry
 npm publish
