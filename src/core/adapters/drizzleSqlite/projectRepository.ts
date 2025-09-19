@@ -25,9 +25,9 @@ export class DrizzleSqliteProjectRepository implements ProjectRepository {
         .insert(projects)
         .values(params)
         .onConflictDoUpdate({
-          target: projects.path,
+          target: projects.name,
           set: {
-            name: params.name,
+            path: params.path,
             updatedAt: new Date(),
           },
         })

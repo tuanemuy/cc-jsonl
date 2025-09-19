@@ -340,6 +340,25 @@ const startCommand = define({
 
     try {
       const projectRoot = getProjectRoot();
+
+      // Run database migrations before starting the server
+      console.log("Running database migrations...");
+      const migrationExitCode = await spawnCommand(
+        "node",
+        ["dist/cli/migrate.mjs"],
+        {
+          cwd: projectRoot,
+        },
+      );
+
+      if (migrationExitCode !== 0) {
+        console.error("❌ Database migration failed!");
+        process.exit(1);
+      }
+
+      console.log("✅ Database migrations completed successfully!");
+
+      // Start the web server
       const exitCode = await spawnCommand("npm", ["run", "start:web"], {
         cwd: projectRoot,
         env: {

@@ -28,16 +28,16 @@ export class MockProjectRepository implements ProjectRepository {
       return err(new RepositoryError("Mock repository upsert failure"));
     }
 
-    // Check if project with same path already exists
+    // Check if project with same name already exists
     const existingProject = Array.from(this.projects.values()).find(
-      (project) => project.path === params.path,
+      (project) => project.name === params.name,
     );
 
     if (existingProject) {
       // Update existing project
       const updatedProject: Project = {
         ...existingProject,
-        name: params.name,
+        path: params.path,
         updatedAt: new Date(),
       };
 
@@ -85,12 +85,12 @@ export class MockProjectRepository implements ProjectRepository {
       return err(new RepositoryError("Project not found"));
     }
 
-    // Check if path is being updated to a path that already exists
-    if (params.path) {
+    // Check if name is being updated to a name that already exists
+    if (params.name) {
       for (const [id, project] of this.projects.entries()) {
-        if (id !== params.id && project.path === params.path) {
+        if (id !== params.id && project.name === params.name) {
           return err(
-            new RepositoryError("Project with this path already exists"),
+            new RepositoryError("Project with this name already exists"),
           );
         }
       }
