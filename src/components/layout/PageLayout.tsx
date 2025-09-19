@@ -12,12 +12,14 @@ interface PageLayoutProps {
   children: React.ReactNode;
   returnTo?: string;
   back?: boolean;
+  cwd?: string;
 }
 
 export function PageLayout({
   children,
   returnTo,
   back = false,
+  cwd,
 }: PageLayoutProps) {
   const router = useRouter();
 
@@ -52,7 +54,10 @@ export function PageLayout({
         </div>
         <div className="flex items-center gap-4">
           <Button asChild variant="ghost" size="icon">
-            <NextLink href="/sessions/new" aria-label="New Session">
+            <NextLink
+              href={cwd ? `/sessions/new?cwd=${cwd}` : "/sessions/new"}
+              aria-label="New Session"
+            >
               <MessageCirclePlus />
             </NextLink>
           </Button>

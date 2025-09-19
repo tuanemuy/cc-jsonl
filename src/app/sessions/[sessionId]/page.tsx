@@ -27,6 +27,7 @@ export default async function SessionPage({ params }: PageProps) {
   return (
     <PageLayout
       returnTo={session.projectId ? `/projects/${session.projectId}` : "/"}
+      cwd={session.cwd}
     >
       <ChatInterface
         sessionId={sessionId}

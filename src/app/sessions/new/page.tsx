@@ -1,14 +1,22 @@
 import { ChatInterface } from "@/components/chat/ChatInterface";
 import { PageLayout } from "@/components/layout/PageLayout";
 
-export default function NewSessionPage() {
+type Props = {
+  searchParams: Promise<{
+    cwd?: string;
+  }>;
+};
+
+export default async function NewSessionPage({ searchParams }: Props) {
+  const { cwd } = await searchParams;
+
   return (
     <PageLayout returnTo="/">
       <ChatInterface
-        sessionId={undefined} // No session ID for new chat
-        projectId={undefined} // No specific project for new chat
-        initialMessages={[]} // No initial messages for new chat
-        cwd={""} // Let user specify working directory
+        sessionId={undefined}
+        projectId={undefined}
+        initialMessages={[]}
+        cwd={cwd || ""}
       />
     </PageLayout>
   );
