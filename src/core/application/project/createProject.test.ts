@@ -274,16 +274,16 @@ describe("createProject", () => {
       }
     });
 
-    it("同一パスのプロジェクトが既に存在する場合は更新される", async () => {
+    it("同一名前のプロジェクトが既に存在する場合はパスが更新される", async () => {
       // Arrange
       const existingInput: CreateProjectInput = {
-        name: "Existing Project",
-        path: "/duplicate/path",
+        name: "Duplicate Project",
+        path: "/original/path",
       };
 
       const duplicateInput: CreateProjectInput = {
-        name: "Updated Project",
-        path: "/duplicate/path",
+        name: "Duplicate Project",
+        path: "/updated/path",
       };
 
       // 既存プロジェクトを作成
@@ -296,9 +296,37 @@ describe("createProject", () => {
       // Assert
       expect(result.isOk()).toBe(true);
       if (result.isOk() && existingResult.isOk()) {
-        expect(result.value.name).toBe("Updated Project");
-        expect(result.value.path).toBe("/duplicate/path");
-        expect(result.value.id).toBe(existingResult.value.id); // Same ID, updated content
+        expect(result.value.name).toBe("Duplicate Project");
+        expect(result.value.path).toBe("/updated/path");
+        expect(result.value.id).toBe(existingResult.value.id); // Same ID, updated path
+      }
+    });
+
+    it("異なる名前で同じパスのプロジェクトを作成できる", async () => {
+      // Arrange
+      const firstInput: CreateProjectInput = {
+        name: "First Project",
+        path: "/shared/path",
+      };
+
+      const secondInput: CreateProjectInput = {
+        name: "Second Project",
+        path: "/shared/path",
+      };
+
+      // 最初のプロジェクトを作成
+      const firstResult = await createProject(context, firstInput);
+      expect(firstResult.isOk()).toBe(true);
+
+      // Act
+      const result = await createProject(context, secondInput);
+
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk() && firstResult.isOk()) {
+        expect(result.value.name).toBe("Second Project");
+        expect(result.value.path).toBe("/shared/path");
+        expect(result.value.id).not.toBe(firstResult.value.id); // Different ID, new project
       }
     });
 

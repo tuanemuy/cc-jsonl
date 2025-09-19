@@ -6,8 +6,8 @@ export const projects = sqliteTable("projects", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => uuidv7()),
-  name: text("name").notNull(),
-  path: text("path").notNull().unique(),
+  name: text("name").notNull().unique(),
+  path: text("path").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

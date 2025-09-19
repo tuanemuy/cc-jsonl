@@ -97,7 +97,20 @@ export async function processLogFile(
       return ok({ entriesProcessed: 0, skipped: false });
     }
 
-    const ensureProjectResult = await ensureProjectExists(context, projectName);
+    let projectPath = projectName;
+    for (let i = entries.length - 1; i >= 0; i--) {
+      const entry = entries[i];
+      if ("cwd" in entry && entry.cwd) {
+        projectPath = entry.cwd;
+        break;
+      }
+    }
+
+    const ensureProjectResult = await ensureProjectExists(
+      context,
+      projectName,
+      projectPath,
+    );
     if (ensureProjectResult.isErr()) {
       return err(ensureProjectResult.error);
     }
@@ -164,11 +177,12 @@ export async function processLogFile(
 
 async function ensureProjectExists(
   context: Context,
-  projectName: string,
+  name: string,
+  path: string,
 ): Promise<Result<Project, ProcessLogFileError>> {
   const result = await context.projectRepository.upsert({
-    name: projectName,
-    path: projectName,
+    name,
+    path,
   });
 
   if (result.isErr()) {
@@ -180,7 +194,8 @@ async function ensureProjectExists(
     console.error(
       "[ensureProjectExists] Project upsert failed",
       {
-        projectName,
+        name,
+        path,
       },
       error,
     );

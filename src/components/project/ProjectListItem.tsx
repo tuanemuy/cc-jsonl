@@ -17,7 +17,7 @@ export function ProjectListItem({ project, href }: SessionListItemProps) {
         <div>
           <Folder className="size-6 text-muted-foreground group-hover:text-foreground transition-colors" />
           <h3 className="mt-2 font-medium group-hover:text-primary transition-colors leading-[1.5]">
-            {project.name}
+            {project.path}
           </h3>
           <p className="mt-1 text-sm text-muted-foreground">
             Updated: {formatDate(project.createdAt)}
