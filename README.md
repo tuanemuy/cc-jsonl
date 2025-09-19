@@ -113,7 +113,7 @@ cc-jsonl batch --targetDirectory /path/to/claude-logs
 cc-jsonl batch --targetDirectory /path/to/claude-logs -c 10 -p "*.jsonl"
 
 # Reprocess all files including already processed ones
-cc-jsonl batch --targetDirectory /path/to/claude-logs --skipExisting false
+cc-jsonl batch --targetDirectory /path/to/claude-logs --no-skipExisting
 
 # Process only specific pattern files
 cc-jsonl batch --targetDirectory /path/to/claude-logs --pattern "session-*.jsonl"
@@ -180,6 +180,7 @@ cc-jsonl watch --targetDirectory /path/to/claude-logs -p "**/*.jsonl" -i 15
 | `--targetDirectory` | - | Directory to process | Uses configured watch directory or WATCH_TARGET_DIR |
 | `--maxConcurrency` | `-c` | Maximum concurrent processing | 5 |
 | `--skipExisting` | `-s` | Skip already processed files | true |
+| `--no-skipExisting` | | Do not skip already processed files | |
 | `--pattern` | `-p` | File pattern to match | `**/*.jsonl` |
 
 **Watch Command Options:**
@@ -189,6 +190,7 @@ cc-jsonl watch --targetDirectory /path/to/claude-logs -p "**/*.jsonl" -i 15
 | `--targetDirectory` | - | Directory to process | Uses configured watch directory or WATCH_TARGET_DIR |
 | `--maxConcurrency` | `-c` | Maximum concurrent processing | 5 |
 | `--skipExisting` | `-s` | Skip already processed files | true |
+| `--no-skipExisting` | | Do not skip already processed files | |
 | `--pattern` | `-p` | File pattern to match | `**/*.jsonl` |
 | `--interval` | `-i` | Processing interval in minutes | 60 |
 
@@ -273,7 +275,7 @@ cc-jsonl start --port 8080
 
 ```bash
 # Process large backlog of accumulated logs
-cc-jsonl batch --targetDirectory /archive/claude-logs -c 15 --skipExisting false
+cc-jsonl batch --targetDirectory /archive/claude-logs -c 15 --no-skipExisting
 ```
 
 #### Real-time Monitoring

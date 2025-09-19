@@ -137,6 +137,7 @@ const batchCommand = define({
     },
     skipExisting: {
       type: "boolean",
+      negatable: true,
       short: "s",
       default: true,
       description: "Skip files that have already been processed",
@@ -222,6 +223,7 @@ const watchCommand = define({
     },
     skipExisting: {
       type: "boolean",
+      negatable: true,
       short: "s",
       default: true,
       description: "Skip files that have already been processed",
